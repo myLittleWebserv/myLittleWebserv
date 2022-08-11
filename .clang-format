@@ -1,0 +1,9 @@
+---
+Language: Cpp
+BasedOnStyle: Google
+AlignConsecutiveDeclarations: true
+AlignConsecutiveAssignments: true
+AllowShortLoopsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+ColumnLimit: 120
+---
