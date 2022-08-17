@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2022-08-17T12:18:10.826Z" agent="5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36" etag="_Ov3A93HXsM-8kfgziId" version="20.2.4" type="github">
+<mxfile host="app.diagrams.net" modified="2022-08-17T12:26:15.838Z" agent="5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36" etag="SKrmq4HL1k2-Ftx5XobC" version="20.2.4" type="github">
   <diagram id="C5RBs43oDa-KdzZeNtuy" name="Page-1">
-    <mxGraphModel dx="2431" dy="1236" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2336" pageHeight="1654" math="0" shadow="0">
+    <mxGraphModel dx="2066" dy="1051" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2336" pageHeight="1654" math="0" shadow="0">
       <root>
         <mxCell id="WIyWlLk6GJQsqaUBKTNV-0" />
         <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0" />
@@ -42,7 +42,7 @@
         <mxCell id="ISS-MAZRoN_019uG36cg-28" value="HTTP REQ 파싱&lt;br&gt;REQ 수신 완료?" style="rhombus;whiteSpace=wrap;html=1;rounded=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="1340" y="280" width="210" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="ISS-MAZRoN_019uG36cg-34" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-30" edge="1" target="ISS-MAZRoN_019uG36cg-35">
+        <mxCell id="ISS-MAZRoN_019uG36cg-34" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-30" target="ISS-MAZRoN_019uG36cg-35" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="1915.5" y="390" as="targetPoint" />
             <Array as="points">
@@ -57,8 +57,7 @@
         <mxCell id="ISS-MAZRoN_019uG36cg-37" value="YES" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-35" target="ISS-MAZRoN_019uG36cg-36" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="2057" y="480" />
-              <mxPoint x="2057" y="480" />
+              <mxPoint x="2058" y="460" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -68,57 +67,56 @@
         <mxCell id="ISS-MAZRoN_019uG36cg-35" value="Vserv에서 판단&lt;br&gt;is CGI?" style="rhombus;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="1970" y="280" width="175" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="ISS-MAZRoN_019uG36cg-41" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-36" target="ISS-MAZRoN_019uG36cg-40" edge="1">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="ISS-MAZRoN_019uG36cg-41" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-36" target="ISS-MAZRoN_019uG36cg-42" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1303.44" y="460" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="1358.44" y="460" />
+            </Array>
+          </mxGeometry>
         </mxCell>
         <mxCell id="ISS-MAZRoN_019uG36cg-36" value="Call CGI" style="whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-          <mxGeometry x="1940" y="430" width="175" height="60" as="geometry" />
+          <mxGeometry x="1633.44" y="430" width="175" height="60" as="geometry" />
         </mxCell>
         <mxCell id="ISS-MAZRoN_019uG36cg-76" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.32;entryY=0.988;entryDx=0;entryDy=0;entryPerimeter=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-38" target="ISS-MAZRoN_019uG36cg-11" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="970" y="140" as="targetPoint" />
             <Array as="points">
-              <mxPoint x="2240" y="1100" />
-              <mxPoint x="970" y="1100" />
+              <mxPoint x="2058" y="840" />
+              <mxPoint x="970" y="840" />
               <mxPoint x="970" y="112" />
               <mxPoint x="968" y="112" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="ISS-MAZRoN_019uG36cg-38" value="HTTP RES 생성&lt;br&gt;Read Event disable&lt;br&gt;Write Event on" style="whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-          <mxGeometry x="2150" y="790" width="120" height="120" as="geometry" />
+          <mxGeometry x="1997.5" y="630" width="120" height="120" as="geometry" />
         </mxCell>
-        <mxCell id="ISS-MAZRoN_019uG36cg-43" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-40" target="ISS-MAZRoN_019uG36cg-42" edge="1">
+        <mxCell id="ISS-MAZRoN_019uG36cg-45" value="PARENT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-42" target="ISS-MAZRoN_019uG36cg-44" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="ISS-MAZRoN_019uG36cg-40" value="fork" style="whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-          <mxGeometry x="1365.63" y="520" width="152.5" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="ISS-MAZRoN_019uG36cg-45" value="YES" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-42" target="ISS-MAZRoN_019uG36cg-44" edge="1">
+        <mxCell id="ISS-MAZRoN_019uG36cg-49" value="CHILD" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-42" target="ISS-MAZRoN_019uG36cg-48" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="ISS-MAZRoN_019uG36cg-49" value="chlid" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-42" target="ISS-MAZRoN_019uG36cg-48" edge="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="ISS-MAZRoN_019uG36cg-42" value="is parent?" style="rhombus;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-          <mxGeometry x="1618.13" y="510" width="93.75" height="80" as="geometry" />
+        <mxCell id="ISS-MAZRoN_019uG36cg-42" value="fork" style="rhombus;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="1311.5700000000002" y="510" width="93.75" height="80" as="geometry" />
         </mxCell>
         <mxCell id="ISS-MAZRoN_019uG36cg-47" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-44" target="ISS-MAZRoN_019uG36cg-46" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="ISS-MAZRoN_019uG36cg-44" value="pipe의 Read-end를 event로 등록" style="whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-          <mxGeometry x="1795.005" y="520" width="120" height="60" as="geometry" />
+          <mxGeometry x="1488.4450000000002" y="520" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="ISS-MAZRoN_019uG36cg-46" value="해당 client socket의 read event disable" style="whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-          <mxGeometry x="1995.005" y="520" width="120" height="60" as="geometry" />
+          <mxGeometry x="1688.4450000000002" y="520" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="ISS-MAZRoN_019uG36cg-51" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-48" edge="1">
+        <mxCell id="ISS-MAZRoN_019uG36cg-51" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-48" edge="1" target="ISS-MAZRoN_019uG36cg-52">
           <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1665.005" y="820" as="targetPoint" />
+            <mxPoint x="1358.4450000000002" y="820" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="ISS-MAZRoN_019uG36cg-48" value="해당 CGI execve" style="whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-          <mxGeometry x="1605.005" y="680" width="120" height="60" as="geometry" />
+          <mxGeometry x="1298.4450000000002" y="680" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="ISS-MAZRoN_019uG36cg-54" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-52" target="ISS-MAZRoN_019uG36cg-53" edge="1">
           <mxGeometry relative="1" as="geometry" />
@@ -127,24 +125,24 @@
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="1000" y="110" as="targetPoint" />
             <Array as="points">
-              <mxPoint x="1000" y="860" />
-              <mxPoint x="1000" y="110" />
+              <mxPoint x="1549" y="790" />
+              <mxPoint x="1000" y="790" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="ISS-MAZRoN_019uG36cg-52" value="execve 성공?" style="rhombus;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-          <mxGeometry x="1596.56" y="820" width="136.88" height="80" as="geometry" />
+          <mxGeometry x="1480.01" y="670" width="136.88" height="80" as="geometry" />
         </mxCell>
         <mxCell id="ISS-MAZRoN_019uG36cg-55" value="NO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-53" target="ISS-MAZRoN_019uG36cg-52" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="ISS-MAZRoN_019uG36cg-53" value="child EXIT" style="whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-          <mxGeometry x="1821.88" y="830" width="120" height="60" as="geometry" />
+          <mxGeometry x="1717.8100000000002" y="680" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="ISS-MAZRoN_019uG36cg-61" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-59" target="ISS-MAZRoN_019uG36cg-28" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="ISS-MAZRoN_019uG36cg-63" value="CGI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-59" edge="1" target="ISS-MAZRoN_019uG36cg-65">
+        <mxCell id="ISS-MAZRoN_019uG36cg-63" value="CGI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="ISS-MAZRoN_019uG36cg-59" target="ISS-MAZRoN_019uG36cg-65" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="1140" y="520" as="targetPoint" />
           </mxGeometry>
@@ -171,8 +169,8 @@
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="1120" y="820" as="targetPoint" />
             <Array as="points">
-              <mxPoint x="1190" y="1030" />
-              <mxPoint x="2180" y="1030" />
+              <mxPoint x="1190" y="820" />
+              <mxPoint x="2028" y="820" />
             </Array>
           </mxGeometry>
         </mxCell>
