@@ -4,7 +4,7 @@
 #include "Config.h"
 #include "VirtualServer.h"
 #include "EventHandler.h"
-#include <algorithm>
+#include <vector>
 
 class Router {
   private:
