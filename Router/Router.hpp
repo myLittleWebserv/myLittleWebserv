@@ -1,9 +1,9 @@
-#ifndef MYLITTLEWEBSERV_ROUTER_H
-#define MYLITTLEWEBSERV_ROUTER_H
+#ifndef MYLITTLEWEBSERV_ROUTER_HPP
+#define MYLITTLEWEBSERV_ROUTER_HPP
 
-#include "Config.h"
-#include "VirtualServer.h"
-#include "EventHandler.h"
+#include "Config.hpp"
+#include "VirtualServer.hpp"
+#include "EventHandler.hpp"
 #include <vector>
 
 class Router {
