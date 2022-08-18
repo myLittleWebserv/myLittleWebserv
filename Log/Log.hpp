@@ -6,7 +6,7 @@
 /*   By: jaemjung <jaemjung@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:30:14 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/18 18:41:14 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/18 19:14:32 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,16 +16,16 @@
 # include <iostream>
 # include <string>
 # include <fstream>
+# include <chrono>
 
 enum LogStatus {
   ALL,
-  FILE,
+  INFILE,
   CONSOLE
 };
 
 class Log {
   private:
-    std::ofstream _logfile;
     Log();
     Log(Log const & ref);
     Log& operator=(Log const & ref);
@@ -33,7 +33,7 @@ class Log {
 
   public:
     static Log& getInstance();
-    void operator()(std::string fileName, std::string methodName, std::string lineNum
+    void operator()(std::string fileName, std::string methodName, int lineNum
                     , std::string msg, int errno = 0, LogStatus status = ALL);
 };
 
