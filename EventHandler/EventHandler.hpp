@@ -5,6 +5,7 @@
 
 #include <map>
 #include <vector>
+
 #include "Event.hpp"
 
 class EventHandler {
@@ -16,11 +17,11 @@ class EventHandler {
   std::map<int, std::vector<Event> > _routedEvents;
   // Interface
  public:
-  void               addConnection();
-  void               appendNewEventToChangeList(struct kevent);
-  void               removeConnection(struct kevent);
-  void               routeEvents();
-  std::vector<Event> getRoutedEvents(int server_id);
+  void                addConnection(int listen_fd);
+  void                appendNewEventToChangeList(struct kevent& kevent);
+  void                removeConnection(Event& event);
+  void                routeEvents();
+  std::vector<Event>& getRoutedEvents(int server_id);
 };
 
 #endif  // EvnetHandler_hpp
