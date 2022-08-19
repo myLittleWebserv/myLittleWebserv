@@ -12,6 +12,8 @@ struct Event {
   HttpRequest*   httpRequest;
   CgiResponse*   cgiResponse;
   int            keventId;
+
+  Event(enum EventType t, int kevent_id) : type(t), keventId(kevent_id) {}
 };
 
 #endif  // Event_hpp
