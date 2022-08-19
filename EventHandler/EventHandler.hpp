@@ -22,7 +22,7 @@ class EventHandler {
 
   // Constructor
  public:
-  EventHandler(Router* router, int kqfd);
+  EventHandler(Router* router);
   // Interface
  public:
   void                addConnection(int listen_fd);

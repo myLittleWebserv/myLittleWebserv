@@ -9,7 +9,8 @@
 #define MAX_EVENTS 20
 #define TIME_OUT_MICRO 10000
 
-EventHandler::EventHandler(Router* router, int kqfd) : _router(router), _kQueue(kqfd) {
+EventHandler::EventHandler(Router* router) : _router(router) {
+  _kQueue          = kqueue();
   _timeOut.tv_sec  = TIME_OUT_MICRO / 1000;
   _timeOut.tv_nsec = TIME_OUT_MICRO % 1000 * 1000 * 1000;
 }
