@@ -8,13 +8,21 @@
 
 #include "Event.hpp"
 
+class Router;
+
 class EventHandler {
   // Member Variable
  private:
+  Router*                            _router;
   int                                _kQueue;
   std::vector<struct kevent>         _changeList;
   std::vector<struct kevent>         _keventList;
   std::map<int, std::vector<Event> > _routedEvents;
+  timespec                           _timeOut;
+
+  // Constructor
+ public:
+  EventHandler(Router* router, int kqfd);
   // Interface
  public:
   void                addConnection(int listen_fd);
