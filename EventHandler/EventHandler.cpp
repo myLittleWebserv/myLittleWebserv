@@ -5,12 +5,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define kMaxEvents 20
-#define kTimeOutMicro 10000
+#define MAX_EVENTS 20
+#define TIME_OUT_MICRO 10000
 
 EventHandler::EventHandler(Router* router, int kqfd) : _router(router), _kQueue(kqfd) {
-  _timeOut.tv_sec  = kTimeOutMicro / 1000;
-  _timeOut.tv_nsec = kTimeOutMicro % 1000 * 1000 * 1000;
+  _timeOut.tv_sec  = TIME_OUT_MICRO / 1000;
+  _timeOut.tv_nsec = TIME_OUT_MICRO % 1000 * 1000 * 1000;
 }
 
 std::vector<Event>& EventHandler::getRoutedEvents(int server_id) { return _routedEvents[server_id]; }
@@ -41,7 +41,7 @@ void EventHandler::removeConnection(Event& event) {
 
 void EventHandler::routeEvents() {
   _routedEvents.clear();
-  int num_kevents = kevent(_kQueue, _changeList.data(), _changeList.size(), _keventList.data(), kMaxEvents, &_timeOut);
+  int num_kevents = kevent(_kQueue, _changeList.data(), _changeList.size(), _keventList.data(), MAX_EVENTS, &_timeOut);
 
   for (int i = 0; i < num_kevents; ++i) {
     Event& event  = *(Event*)_keventList[i].udata;
