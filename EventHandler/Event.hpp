@@ -12,6 +12,7 @@ struct Event {
   enum EventType type;
   int            keventId;
   int            serverId;
+  int            clientFd;
   pid_t          pid;
   HttpRequest*   httpRequest;
   CgiResponse*   cgiResponse;
@@ -21,7 +22,13 @@ struct Event {
     delete cgiResponse;
   }
   Event(enum EventType t, int kevent_id)
-      : type(t), keventId(kevent_id), serverId(-1), pid(-1), httpRequest(NULL), cgiResponse(NULL) {}
+      : type(t),
+        keventId(kevent_id),
+        serverId(-1),
+        clientFd(kevent_id),
+        pid(-1),
+        httpRequest(NULL),
+        cgiResponse(NULL) {}
 };
 
 #endif  // Event_hpp
