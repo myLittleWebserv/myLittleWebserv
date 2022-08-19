@@ -14,8 +14,8 @@ struct Event {
   int            serverId;
   int            clientFd;
   pid_t          pid;
-  HttpRequest*   httpRequest;
-  CgiResponse*   cgiResponse;
+  HttpRequest    httpRequest;
+  CgiResponse    cgiResponse;
 
   ~Event() {
     delete httpRequest;
