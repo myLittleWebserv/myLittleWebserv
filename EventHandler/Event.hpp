@@ -17,10 +17,6 @@ struct Event {
   HttpRequest    httpRequest;
   CgiResponse    cgiResponse;
 
-  ~Event() {
-    delete httpRequest;
-    delete cgiResponse;
-  }
   Event(enum EventType t, int kevent_id)
       : type(t),
         keventId(kevent_id),
