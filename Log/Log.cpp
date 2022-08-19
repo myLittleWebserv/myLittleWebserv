@@ -3,37 +3,66 @@
 /*                                                        :::      ::::::::   */
 /*   Log.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jaemjung <jaemjung@student.42.fr>          +#+  +:+       +#+        */
+/*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:41:24 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/18 19:16:22 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/20 00:30:54 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Log.hpp"
 
-Log::Log() {
+const std::string currentTimestamp(TimestampType type) {
+  time_t rawtime;
+  time(&rawtime);
+
+  struct tm* timeinfo;
+  timeinfo = localtime(&rawtime);
+
+  std::stringstream timestamp;
+  if (type == LOG_TITLE) {
+    timestamp << std::setfill('0') << std::setw(4) << timeinfo->tm_year + 1900 << std::setw(2) << timeinfo->tm_mon + 1
+              << std::setw(2) << timeinfo->tm_mday << "_" << std::setw(2) << timeinfo->tm_hour << std::setw(2)
+              << timeinfo->tm_min << std::setw(2) << timeinfo->tm_sec;
+  } else {
+    timestamp << "[" << std::setfill('0') << std::setw(4) << timeinfo->tm_year + 1900 << "/" << std::setw(2)
+              << timeinfo->tm_mon + 1 << "/" << std::setw(2) << timeinfo->tm_mday << " " << std::setw(2)
+              << timeinfo->tm_hour << ":" << std::setw(2) << timeinfo->tm_min << ":" << std::setw(2) << timeinfo->tm_sec
+              << "] ";
+  }
+
+  return timestamp.str();
 }
 
-Log::~Log() {
+Log::Log() { _logFile.open(currentTimestamp(LOG_TITLE) + ".log", std::ofstream::out | std::ofstream::app); }
+
+Log::~Log() { _logFile.close(); }
+
+std::ofstream& Log::getLogStream() { return _logFile; }
+
+void Log::mark(const std::string& mark) {
+  for (int i = 0; i < 30; i++) {
+    _logFile << "-";
+  }
+  _logFile << mark;
+  for (int i = 0; i < 30; i++) {
+    _logFile << "-";
+  }
+  _logFile << std::endl;
 }
 
-Log& Log::getInstance() {
-  static Log instance;
+void Log::operator()(const char* file, int line, const char*function, const std::string& message, LogLocationType location) {
+
+  std::stringstream logMessage;
+
+  logMessage << currentTimestamp(LOG_FILE) << std::endl 
+  << "[Logged from : " << file << ":" << function << ":" << line << "] " << std::endl
+  << message << std::endl;
   
-  return instance;
-}
-
-void Log::operator()(std::string fileName, std::string methodName, int lineNum, std::string msg, int errno, LogStatus status) {
-  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-  std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
-  std::ofstream _logfile = std::ofstream("log.txt");
-  
-  if (status == ALL || status == INFILE) {
-    _logfile << "logged time: " << std::ctime(&currentTime) << std::endl;
-    _logfile << fileName << ":" << methodName << ":" << lineNum << ":" << msg << ":" << errno << std::endl;
-  } else if (status == ALL || status == CONSOLE) {
-    std::cout << "logged time: " << std::ctime(&currentTime) << std::endl;
-    std::cout << fileName << ":" << methodName << ":" << lineNum << ":" << msg << ":" << errno << std::endl;
+  if (location == ALL || location == CONSOLE) {
+    std::cout << logMessage.str();
+  }
+  if (location == ALL || location == INFILE) {
+    _logFile << logMessage.str();
   }
 }
