@@ -5,6 +5,7 @@
 
 #include <map>
 #include <vector>
+#include "Event.hpp"
 
 class EventHandler {
   // Member Variable
@@ -20,6 +21,6 @@ class EventHandler {
   void               removeConnection(struct kevent);
   void               routeEvents();
   std::vector<Event> getRoutedEvents(int server_id);
-}
+};
 
 #endif  // EvnetHandler_hpp

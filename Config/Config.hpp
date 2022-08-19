@@ -3,31 +3,31 @@
 /*                                                        :::      ::::::::   */
 /*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jaemjung <jaemjung@student.42.fr>          +#+  +:+       +#+        */
+/*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/18 18:24:15 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/19 15:51:02 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CONFIG_HPP
-# define CONFIG_HPP
+#define CONFIG_HPP
 
-# include <vector>
-# include <map>
-# include <string>
+#include <map>
+#include <string>
+#include <vector>
 
 typedef struct LocationInfo {
-  int                         maxBodySize;
-  std::string                 root;
-  std::map<int, std::string>  defaultErrorPages;
-  std::vector<std::string>    allowedMethods;
-  std::string                 cgiExtension;
-  std::string                 cgiPath;
-  std::string                 indexPagePath;
-  bool                        isAutoIndexOn;
-  int                         redirStatus;
-  std::string                 redirPath;
+  int                        maxBodySize;
+  std::string                root;
+  std::map<int, std::string> defaultErrorPages;
+  std::vector<std::string>   allowedMethods;
+  std::string                cgiExtension;
+  std::string                cgiPath;
+  std::string                indexPagePath;
+  bool                       isAutoIndexOn;
+  int                        redirStatus;
+  std::string                redirPath;
 };
 
 typedef struct ServerInfo {
@@ -41,18 +41,16 @@ typedef struct ServerInfo {
 };
 
 class Config {
-  
-  private:
-    std::vector<ServerInfo> _serverInfos;
-    std::vector<int>        _ports;
-    
-  public:
+ private:
+  std::vector<ServerInfo> _serverInfos;
+  std::vector<int>        _ports;
+
+ public:
   // Constructor
-    Config();
-    virtual ~Config();
-    std::vector<ServerInfo> getServerInfos();
-    std::vector<int>        getPorts();
-  
+  Config();
+  virtual ~Config();
+  std::vector<ServerInfo> getServerInfos();
+  std::vector<int>        getPorts();
 };
 
 #endif
