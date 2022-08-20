@@ -18,13 +18,7 @@ struct Event {
   CgiResponse    cgiResponse;
 
   Event(enum EventType t, int kevent_id)
-      : type(t),
-        keventId(kevent_id),
-        serverId(-1),
-        clientFd(kevent_id),
-        pid(-1),
-        httpRequest(NULL),
-        cgiResponse(NULL) {}
+      : type(t), keventId(kevent_id), serverId(-1), clientFd(kevent_id), pid(-1), httpRequest(), cgiResponse() {}
 };
 
 #endif  // Event_hpp

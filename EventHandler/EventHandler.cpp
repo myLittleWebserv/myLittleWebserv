@@ -15,7 +15,7 @@ EventHandler::EventHandler(Router* router) : _router(router) {
   _timeOut.tv_nsec = TIME_OUT_MICRO % 1000 * 1000 * 1000;
 }
 
-std::vector<Event>& EventHandler::getRoutedEvents(int server_id) { return _routedEvents[server_id]; }
+std::vector<Event*>& EventHandler::getRoutedEvents(int server_id) { return _routedEvents[server_id]; }
 
 void EventHandler::appendNewEventToChangeList(int ident, int filter, int flag, Event* event) {
   struct kevent kevent;

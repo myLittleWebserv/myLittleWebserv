@@ -25,11 +25,11 @@ class EventHandler {
   EventHandler(Router* router);
   // Interface
  public:
-  void                addConnection(int listen_fd);
-  void                appendNewEventToChangeList(int ident, int filter, int flag, Event* event);
-  void                removeConnection(Event& event);
-  void                routeEvents();
-  std::vector<Event>& getRoutedEvents(int server_id);
+  void                 addConnection(int listen_fd);
+  void                 appendNewEventToChangeList(int ident, int filter, int flag, Event* event);
+  void                 removeConnection(Event& event);
+  void                 routeEvents();
+  std::vector<Event*>& getRoutedEvents(int server_id);
 };
 
 #endif  // EvnetHandler_hpp
