@@ -8,21 +8,24 @@
 
 #include "Event.hpp"
 
+#define MAX_EVENTS 20
+#define TIME_OUT_MICRO 10000
+
 class Router;
 
 class EventHandler {
   // Member Variable
  private:
-  Router*                             _router;
+  const Router&                       _router;
   int                                 _kQueue;
   std::vector<struct kevent>          _changeList;
-  std::vector<struct kevent>          _keventList;
+  struct kevent                       _keventList[MAX_EVENTS];
   std::map<int, std::vector<Event*> > _routedEvents;
   timespec                            _timeOut;
 
   // Constructor
  public:
-  EventHandler(Router* router);
+  EventHandler(const Router& router);
   // Interface
  public:
   void                 addConnection(int listen_fd);
