@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Log.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: jaemjung <jaemjung@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:41:24 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/20 00:30:54 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/20 12:46:27 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,11 @@ const std::string currentTimestamp(TimestampType type) {
 Log::Log() { _logFile.open(currentTimestamp(LOG_TITLE) + ".log", std::ofstream::out | std::ofstream::app); }
 
 Log::~Log() { _logFile.close(); }
+
+Log& Log::log() {
+  static Log log;
+  return log;
+}
 
 std::ofstream& Log::getLogStream() { return _logFile; }
 
