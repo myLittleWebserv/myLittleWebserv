@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-typedef struct LocationInfo {
+struct LocationInfo {
   int                        maxBodySize;
   std::string                root;
   std::map<int, std::string> defaultErrorPages;
@@ -30,7 +30,7 @@ typedef struct LocationInfo {
   std::string                redirPath;
 };
 
-typedef struct ServerInfo {
+struct ServerInfo {
   int                                 maxBodySize;
   std::string                         root;
   std::map<int, std::string>          defaultErrorPages;
