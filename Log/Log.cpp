@@ -12,6 +12,8 @@
 
 #include "Log.hpp"
 
+#include <cstdlib>
+
 const std::string currentTimestamp(TimestampType type) {
   time_t rawtime;
   time(&rawtime);
@@ -56,14 +58,25 @@ void Log::mark(const std::string& mark) {
   _logFile << std::endl;
 }
 
-void Log::operator()(const char* file, int line, const char*function, const std::string& message, LogLocationType location) {
+void Log::condition(bool condition, const char* file, int line, const char* function,
+                    const std::string& success_message, const std::string& failure_message, LogLocationType location) {
+  if (condition && !success_message.empty()) {
+    operator()(file, line, function, success_message, location);
 
+  } else {
+    operator()(file, line, function, failure_message, location);
+    exit(1);
+  }
+}
+
+void Log::operator()(const char* file, int line, const char* function, const std::string& message,
+                     LogLocationType location) {
   std::stringstream logMessage;
 
-  logMessage << currentTimestamp(LOG_FILE) << std::endl 
-  << "[Logged from : " << file << ":" << function << ":" << line << "] " << std::endl
-  << message << std::endl;
-  
+  logMessage << currentTimestamp(LOG_FILE) << std::endl
+             << "[Logged from : " << file << ":" << function << ":" << line << "] " << std::endl
+             << message << std::endl;
+
   if (location == ALL || location == CONSOLE) {
     std::cout << logMessage.str();
   }
