@@ -31,7 +31,7 @@ const std::string currentTimestamp(TimestampType type) {
               << timeinfo->tm_mon + 1 << "/" << std::setw(2) << timeinfo->tm_mday << " " << std::setw(2)
               << timeinfo->tm_hour << ":" << std::setw(2) << timeinfo->tm_min << ":" << std::setw(2) << timeinfo->tm_sec
               << "] ";
-  }
+  }<<<<<<< EventHandler
 
   return timestamp.str();
 }
@@ -58,6 +58,7 @@ void Log::mark(const std::string& mark) {
   _logFile << std::endl;
 }
 
+
 void Log::condition(bool condition, const char* file, int line, const char* function,
                     const std::string& success_message, const std::string& failure_message, LogLocationType location) {
   if (condition && !success_message.empty()) {
@@ -76,6 +77,7 @@ void Log::operator()(const char* file, int line, const char* function, const std
   logMessage << currentTimestamp(LOG_FILE) << std::endl
              << "[Logged from : " << file << ":" << function << ":" << line << "] " << std::endl
              << message << std::endl;
+
 
   if (location == ALL || location == CONSOLE) {
     std::cout << logMessage.str();
