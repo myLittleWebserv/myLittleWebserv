@@ -6,7 +6,7 @@
 /*   By: jaemjung <jaemjung@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/18 18:24:15 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/20 14:23:29 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,8 @@
 # include <vector>
 # include <map>
 # include <string>
+# include <fstream>
+# include <iostream>
 
 typedef struct LocationInfo {
   int                         maxBodySize;
@@ -43,12 +45,13 @@ typedef struct ServerInfo {
 class Config {
   
   private:
+    std::vector<std::string> _configContent;
     std::vector<ServerInfo> _serverInfos;
     std::vector<int>        _ports;
+    void _readConfigFile(const std::string& confFile);
     
   public:
-  // Constructor
-    Config();
+    Config(const std::string& confFile);
     virtual ~Config();
     std::vector<ServerInfo> getServerInfos();
     std::vector<int>        getPorts();
