@@ -5,22 +5,22 @@
 VirtualServer::VirtualServer(int id, ServerInfo info) : _serverId(id), _serverInfo(info) {}
 
 void VirtualServer::start(EventHandler& eventHandler) {
-  std::vector<Event> event_list = eventHandler.getRoutedEvents(_serverId);
+  std::vector<Event *> event_list = eventHandler.getRoutedEvents(_serverId);
   for (int i = 0; i < event_list.size(); i++) {
-    Event* event = &event_list[i];
+    Event* event = event_list[i];
     switch (event->type) {
       case CONNECTION_REQUEST:
         eventHandler.addConnection(event->keventId);
         break;
       case HTTP_REQUEST_READABLE:
-        if (event->httpRequest->isCgi()) {
-          callCgi(event);
-        } else {
           eventHandler.appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD | EV_ENABLE, event);
-        }
         break;
       case HTTP_RESPONSE_WRITABLE:
-        sendResponse(event->keventId(event->httpRequest));
+        if (event->httpRequest->isCgi()) {
+          callCgi(event);
+          break ;
+        }
+        sendResponse(event->keventId, HttpResponse(event->httpRequest));
         eventHandler.appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD | EV_DISABLE, event);
         eventHandler.appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD | EV_ENABLE, event);
         if (!event->httpRequest->isKeepAlive()) {
