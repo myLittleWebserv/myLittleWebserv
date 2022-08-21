@@ -6,7 +6,7 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/20 13:37:55 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/21 22:24:20 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/22 00:07:04 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@ void Config::_printConfigContent() {
   }
 }
 
+//TODO : 서버가 여러 개 있을 때 리스트에 담기도록 잘 하기!
 void Config::_startParse() {
   configIterator it = _configContent.begin();
   while (it != _configContent.end()) {
@@ -46,6 +47,7 @@ void Config::_startParse() {
       _parseServer(++it);
     } else {
       std::cout << "ERROR: invalid config file" << std::endl;
+      Log::log()(LOG_LOCATION, "ERROR: invalid config file", ALL);
       std::exit(1);
     }
     ++it;
@@ -56,14 +58,17 @@ void Config::_parseServer(configIterator& it) {
   ServerInfo _server_info;
 
   while (*it != "\n") {
+    std::cout << "current token: " << *it << std::endl;
     std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
     if (_trimmed.first != 1) {
       std::cout << "ERROR: invalid config file" << std::endl;
+      Log::log()(LOG_LOCATION, "ERROR: invalid config file " + _trimmed.second, ALL);
       std::exit(1);
     }
     std::vector<std::string> _splitted = _split(_trimmed.second, ":");
     if (_splitted.size() != 2) {
       std::cout << "ERROR: invalid config file" << std::endl;
+      Log::log()(LOG_LOCATION, "ERROR: invalid config file");
       std::exit(1);
     }
     std::string _identifier = _splitted[0];
@@ -82,9 +87,11 @@ void Config::_parseServer(configIterator& it) {
     } else if (_identifier == "server_name") {
       _server_info.serverName = _value;
     } else if (_identifier == "location") {
-      _parseLocation(++it, _server_info);
+      _server_info.locations[_value] = _parseLocation(++it, _server_info);
+      continue;
     } else {
       std::cout << "ERROR: invalid config file" << std::endl;
+      Log::log()(LOG_LOCATION, "ERROR: invalid config file" + _identifier + _value, ALL);
       std::exit(1);
     }
     it++;
@@ -93,7 +100,9 @@ void Config::_parseServer(configIterator& it) {
 
 LocationInfo Config::_parseLocation(configIterator& it, const ServerInfo& serverInfo) {
   LocationInfo _location_info = _init_locationInfo(serverInfo);
+  std::cout << "--------------parse Location start-------------" << std::endl;
   while (*it != "\n") {
+    std::cout << "current token: " << *it << std::endl;
     std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
     if (_trimmed.first != 2) {
       break;
@@ -112,6 +121,27 @@ LocationInfo Config::_parseLocation(configIterator& it, const ServerInfo& server
     std::string _identifier = _splitted[0];
     std::string _value      = _trimLeftSpace(_splitted[1]);
     std::cout << _identifier << " " << _value << std::endl;
+    if (_identifier == "client_max_body_size") {
+      _location_info.maxBodySize = std::stoi(_value);
+    } else if (_identifier == "root") {
+      _location_info.root = _value;
+    } else if (_identifier == "default_error_page") {
+      _location_info.defaultErrorPages = _parseDefaultErrorPage(_value);
+    } else if (_identifier == "allowed_method") {
+      _location_info.allowedMethods = _parseAllowedMethod(_value);
+    } else if (_identifier == "cgi_extension") {
+      _location_info.cgiExtension = _value;
+    } else if (_identifier == "cgi_path") {
+      _location_info.cgiPath = _value;
+    } else if (_identifier == "redirection") {
+      _parseRedirection(_value, _location_info);
+    } else if (_identifier == "index") {
+      _location_info.indexPagePath = _value;
+    } else {
+      std::cout << "ERROR: invalid config file" << std::endl;
+      Log::log()(LOG_LOCATION, "ERROR: invalid config file" + _identifier + _value, ALL);
+      std::exit(1);
+    }
     it++;
   }
   return _location_info;
@@ -159,6 +189,32 @@ std::string Config::_trimLeftSpace(const std::string& str) {
   return _trimmed_str;
 }
 
+void Config::_parseRedirection(const std::string& value, LocationInfo& info) {
+  std::vector<std::string> _splitted = _split(value, " ");
+  if (_splitted.size() != 2) {
+    std::cout << "ERROR: invalid config file" << std::endl;
+    Log::log()(LOG_LOCATION, "ERROR: invalid config file" + value, ALL);
+    std::exit(1);
+  }
+  try {
+    info.redirStatus = std::stoi(_splitted[0]);
+  } catch (std::invalid_argument& e) {
+    std::cout << "ERROR: invalid config file" << std::endl;
+    Log::log()(LOG_LOCATION, "ERROR: invalid config file" + value, ALL);
+    std::exit(1);
+  }
+  info.redirPath = _splitted[1];
+}
+
+std::vector<std::string> Config::_parseAllowedMethod(const std::string& value) {
+  std::vector<std::string> _allowed_methods;
+  std::vector<std::string> _splitted = _split(value, " ");
+  for (std::vector<std::string>::iterator it = _splitted.begin(); it != _splitted.end(); ++it) {
+    _allowed_methods.push_back(*it);
+  }
+  return _allowed_methods;
+}
+
 std::map<int, std::string> Config::_parseDefaultErrorPage(const std::string& pages) {
   std::map<int, std::string> _result;
 
@@ -167,7 +223,7 @@ std::map<int, std::string> Config::_parseDefaultErrorPage(const std::string& pag
     std::cout << "ERROR: invalid config file" << std::endl;
     std::exit(1);
   }
-  for (int i = 0; i < _splitted.size(); i = +2) {
+  for (int i = 0; i < _splitted.size(); i += 2) {
     try {
       int _error_code      = std::stoi(_splitted[i]);
       _result[_error_code] = _splitted[i + 1];
