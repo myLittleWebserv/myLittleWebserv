@@ -60,7 +60,7 @@ void EventHandler::routeEvents() {
     } else if (filter == EVFILT_READ && event.type == CONNECTION_REQUEST) {
       addConnection(event.keventId);
     } else if (filter == EVFILT_READ && event.type == HTTP_REQUEST_READABLE) {
-      event.httpRequest.add(event.keventId);
+      event.httpRequest.storeChunk(event.keventId);
       if (event.httpRequest.isEnd()) {
         event.serverId = _router.findServerId(event.httpRequest);
         _routedEvents[event.serverId].push_back(&event);
@@ -68,7 +68,7 @@ void EventHandler::routeEvents() {
         Log::log()(LOG_LOCATION, "(event routed) Http Request Readable", ALL);
       }
     } else if (filter == EVFILT_READ && event.type == CGI_RESPONSE_READABLE) {
-      event.cgiResponse.add(event.keventId);
+      event.cgiResponse.storeChunk(event.keventId);
       if (event.cgiResponse.isEnd()) {
         _routedEvents[event.serverId].push_back(&event);
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, NULL);
