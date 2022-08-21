@@ -47,8 +47,8 @@ class Config {
 
  public:
   // Constructor
-  Config();
-  virtual ~Config();
+  Config() {}
+  virtual ~Config() {}
   std::vector<ServerInfo> getServerInfos();
   std::vector<int>        getPorts();
 };

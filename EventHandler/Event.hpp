@@ -1,17 +1,34 @@
 #if !defined(Event_hpp)
 #define Event_hpp
 
-enum EventType { CONNECTION_REQUEST, HTTP_REQUEST_READABLE, HTTP_RESPONSE_WRITABLE, CGI_RESPONSE_WRITABLE };
+#include <sys/types.h>
 
-class HttpRequest;
-class CgiResponse;
+#include "test/CgiResponse.hpp"
+#include "test/HttpRequest.hpp"
+
+class HttpResponse;
+
+enum EventType { CONNECTION_REQUEST, HTTP_REQUEST_READABLE, HTTP_RESPONSE_WRITABLE, CGI_RESPONSE_READABLE };
 
 struct Event {
   enum EventType type;
-  int            serverId;
-  HttpRequest*   httpRequest;
-  CgiResponse*   cgiResponse;
   int            keventId;
+  int            serverId;
+  int            clientFd;
+  pid_t          pid;
+  HttpRequest    httpRequest;
+  CgiResponse    cgiResponse;
+  HttpResponse*  httpResponse;
+
+  Event(enum EventType t, int kevent_id)
+      : type(t),
+        keventId(kevent_id),
+        serverId(-1),
+        clientFd(kevent_id),
+        pid(-1),
+        httpRequest(),
+        cgiResponse(),
+        httpResponse(NULL) {}
 };
 
 #endif  // Event_hpp
