@@ -6,7 +6,7 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/20 13:37:55 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 00:07:04 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/22 00:42:34 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,31 +39,29 @@ void Config::_printConfigContent() {
   }
 }
 
-//TODO : 서버가 여러 개 있을 때 리스트에 담기도록 잘 하기!
+// TODO : 서버가 여러 개 있을 때 리스트에 담기도록 잘 하기!
 void Config::_startParse() {
   configIterator it = _configContent.begin();
   while (it != _configContent.end()) {
     if (*it == "server") {
-      _parseServer(++it);
+      ServerInfo serverInfo = _parseServer(++it);
+      _serverInfos[serverInfo.serverName] = serverInfo;
     } else {
       std::cout << "ERROR: invalid config file" << std::endl;
       Log::log()(LOG_LOCATION, "ERROR: invalid config file", ALL);
       std::exit(1);
     }
-    ++it;
   }
 }
 
-void Config::_parseServer(configIterator& it) {
+ServerInfo Config::_parseServer(configIterator& it) {
   ServerInfo _server_info;
 
   while (*it != "\n") {
     std::cout << "current token: " << *it << std::endl;
     std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
     if (_trimmed.first != 1) {
-      std::cout << "ERROR: invalid config file" << std::endl;
-      Log::log()(LOG_LOCATION, "ERROR: invalid config file " + _trimmed.second, ALL);
-      std::exit(1);
+      break;
     }
     std::vector<std::string> _splitted = _split(_trimmed.second, ":");
     if (_splitted.size() != 2) {
@@ -96,6 +94,7 @@ void Config::_parseServer(configIterator& it) {
     }
     it++;
   }
+  return _server_info;
 }
 
 LocationInfo Config::_parseLocation(configIterator& it, const ServerInfo& serverInfo) {
