@@ -3,11 +3,13 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <sys/socket.h>
+
 #include <cstring>
 
 #define BACKLOG 1024
 
-Router::Router(const Config& config): _config(config), _virtualServers(std::vector<VirtualServer>()), _eventHandler(EventHandler()) {
+Router::Router(const Config& config)
+    : _config(config), _virtualServers(std::vector<VirtualServer>()), _eventHandler(EventHandler()) {
   for (int i = 0; i < _config.getServerInfos().size(); ++i) {
     _virtualServers.push_back(VirtualServer(i, _config.getServerInfos()[i]));
   }
@@ -47,9 +49,22 @@ void Router::serverSocketsInit() {
     }
     fcntl(server_socket, F_SETFL, O_NONBLOCK);
 
-    struct kevent kevent;
-    struct Event* event = new Event;
-    event->type         = CONNECTION_REQUEST;
-    event->keventId     = server_socket;
+    Event* event = new Event(CONNECTION_REQUEST, server_socket);
     _eventHandler.appendNewEventToChangeList(server_socket, EVFILT_READ, EV_ADD | EV_ENABLE, event);
   }
+}
+
+int Router::findServerId(HttpRequest& request) {
+  for (int i = 0; i < _virtualServers.size(); ++i) {
+    if (_virtualServers[i].getServerInfo().getPort() == request.getPort() &&
+        _virtualServer[i].getServerInfo().getHost() == request.getHost()) {
+      return i;
+    }
+  }
+  for (int i = 0; i < _virtualServers.size(); ++i) {  // default server if no matching host:port
+    if (_virtualServers[i].getServerInfo().getPort() == request.getPort()) {
+      return i;
+    }
+  }
+  return -1;
+}
