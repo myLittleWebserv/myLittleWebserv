@@ -10,14 +10,13 @@
 
 Router::Router(const Config& config)
     : _config(config), _virtualServers(std::vector<VirtualServer>()), _eventHandler(*this) {
-  _virtualServers = std::vector<VirtualServer>();
   for (int i = 0; i < _config.getServerInfos().size(); ++i) {
     _virtualServers.push_back(VirtualServer(i, _config.getServerInfos()[i]));
   }
 }
 
 void Router::start() {
-  serverSocketsInit();
+  _serverSocketsInit();
   while (1) {
     _eventHandler.routeEvents();
     for (int i = 0; i < _virtualServers.size(); ++i) {
@@ -26,7 +25,7 @@ void Router::start() {
   }
 }
 
-void Router::serverSocketsInit() {
+void Router::_serverSocketsInit() {
   for (std::vector<int>::iterator port = _config.getPorts().begin(); port != _config.getPorts().end(); ++port) {
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);
     if (server_socket == -1) {

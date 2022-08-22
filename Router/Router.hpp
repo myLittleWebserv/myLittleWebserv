@@ -13,7 +13,7 @@ class Router {
   std::vector<VirtualServer> _virtualServers;
   EventHandler               _eventHandler;
 
-  void serverSocketsInit();
+  void _serverSocketsInit();
 
  public:
   Router(const Config& config);
