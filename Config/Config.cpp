@@ -6,7 +6,7 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/20 13:37:55 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 23:17:07 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/22 23:21:15 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -155,6 +155,9 @@ LocationInfo Config::_init_locationInfo(const ServerInfo& serverInfo) {
   _location_info.root              = serverInfo.root;
   _location_info.defaultErrorPages = serverInfo.defaultErrorPages;
   _location_info.maxBodySize       = serverInfo.maxBodySize;
+  _location_info.hostIp            = serverInfo.hostIp;
+  _location_info.hostPort          = serverInfo.hostPort;
+  _location_info.serverName        = serverInfo.serverName;
   return _location_info;
 }
 

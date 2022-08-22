@@ -6,7 +6,7 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 23:17:04 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/22 23:20:23 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,8 +23,6 @@
 
 #include "Log.hpp"
 
-
-
 struct LocationInfo {
   int                        maxBodySize;
   std::string                root;
@@ -36,6 +34,9 @@ struct LocationInfo {
   bool                       isAutoIndexOn;
   int                        redirStatus;
   std::string                redirPath;
+  struct in_addr             hostIp;
+  int                        hostPort;
+  std::string                serverName;
 };
 
 struct ServerInfo {
