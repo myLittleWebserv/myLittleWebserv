@@ -6,7 +6,7 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 23:07:08 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/22 23:17:04 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,9 +23,7 @@
 
 #include "Log.hpp"
 
-// TODO : location에 서버의 정보 포함하기. (서버 주소, 포트, 서버 이름)
-// TODO : listen host:port의 host는 옵셔널임. 있으면 해당 ip의 해당 포트만 받겠다는 뜻이고, 없으면 해당 포트번호로
-// 들어오는 요청에 대해 모두 다 처리한다는 뜻.
+
 
 struct LocationInfo {
   int                        maxBodySize;

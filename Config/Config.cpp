@@ -6,12 +6,14 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/20 13:37:55 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 23:05:20 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/22 23:17:07 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// TODO : 포트 번호들만 모여있는 벡터 만들어주기
 // TODO : allowedMethods에 이상한 애들 들어왔으면 튕기기
+// TODO : location에 서버의 정보 포함하기. (서버 주소, 포트, 서버 이름)
+// TODO : listen host:port의 host는 옵셔널임. 있으면 해당 ip의 해당 포트만 받겠다는 뜻이고, 없으면 해당 포트번호로
+// 들어오는 요청에 대해 모두 다 처리한다는 뜻.
 
 #include "Config.hpp"
 
@@ -250,6 +252,8 @@ std::stringstream Config::_locatinInfoString(const LocationInfo& info) {
   _ss << "\t"
       << "index: " << info.indexPagePath << std::endl;
   _ss << "\t"
+      << "autoindex: " << info.isAutoIndexOn << std::endl;
+  _ss << "\t"
       << "cgi_extension: " << info.cgiExtension << std::endl;
   _ss << "\t"
       << "cgi_path: " << info.cgiPath << std::endl;
@@ -294,4 +298,12 @@ void Config::_parsedConfigResult() {
   std::cout << "=================================================" << std::endl;
 }
 
-void Config::_setPorts() {}
+void Config::_setPorts() {
+  for (serverInfoConstIterator it = _serverInfos.begin(); it != _serverInfos.end(); ++it) {
+    _ports.push_back(it->hostPort);
+  }
+  // std::cout << "ports: ";
+  // for (std::vector<int>::const_iterator it = _ports.begin(); it != _ports.end(); ++it) {
+  //   std::cout << *it << " ";
+  // }
+}
