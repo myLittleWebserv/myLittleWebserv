@@ -10,12 +10,13 @@ class VirtualServer {
   int        _serverId;
   ServerInfo _serverInfo;
 
-  void callCgi(Event* event);
+  void callCgi(Event& event);
   void sendResponse(int fd, HttpResponse& response);
 
  public:
   VirtualServer(int id, ServerInfo info);
-  void start(EventHandler& eventHandler);
+  void       start(EventHandler& eventHandler);
+  ServerInfo getServerInfo();
 };
 
 #endif

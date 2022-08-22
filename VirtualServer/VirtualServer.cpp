@@ -45,7 +45,7 @@ void VirtualServer::start(EventHandler& eventHandler) {
 #define READEND 0
 #define WRITEEND 1
 
-void VirtualServer::callCgi(Event* event) {
+void VirtualServer::callCgi(Event& event) {
   //  std::string cgi_path = getCgiPath(_serverInfo.locations);
   int to_pipe[2];  // 0 = readend, 1 = writeend // to pipe 필요 없음
   int from_pipe[2];
@@ -79,3 +79,5 @@ void sendResponse(int fd, HttpResponse& response) {
     throw "send() error!";
   } // 반복으로 보내야 함
 }
+
+ServerInfo VirtualServer::getServerInfo() { return _serverInfo; }
