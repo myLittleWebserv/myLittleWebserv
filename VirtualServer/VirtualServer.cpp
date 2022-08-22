@@ -28,7 +28,7 @@ void VirtualServer::start(EventHandler& eventHandler) {
         eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_ADD | EV_ENABLE, &event);
         break;
       case HTTP_RESPONSE_WRITABLE:
-        //다보냈는지 확인하고 리스폰스를 계속 다시 send한다.
+        sendResponse(event.keventId, *event.httpResponse);
         if (!event.httpRequest.isKeepAlive()) {
           eventHandler.removeConnection(event);
         }
@@ -64,20 +64,35 @@ void VirtualServer::callCgi(Event& event) {
 //  close(to_pipe[READEND]);
 //  write(to_pipe[WRITEEND], event->httpRequest.getBody().c_str(), event->httpRequest.getBody().size());
 //  close(to_pipe[WRITEEND]);
-  event->pid = fork();
-  if (event->pid == -1) {
+  event.pid = fork();
+  if (event.pid == -1) {
     throw "error";
-  } else if (event->pid == 0) {  // child
-
+  } else if (event.pid == 0) {  // child
+    int temp = open("temp/temp.txt", O_RDWR | O_CREAT, 0644);
+    if (temp == -1) {
+      throw "error";
+    }
+    dup2(temp, STDIN_FILENO);
+    close(temp);
+    dup2(from_pipe[READEND], STDOUT_FILENO);
+    close(from_pipe[READEND]);
+    close(from_pipe[WRITEEND]);
+    close(to_pipe[READEND]);
+    close(to_pipe[WRITEEND]);
+    execve(cgi_path.c_str(), cgi_path.c_str(), NULL);
   } else {  // parent
   }
 }
 
 void sendResponse(int fd, HttpResponse& response) {
   std::string response_str = response.getResponse();
-  if (send(fd, response_str.c_str(), response_str.size(), 0) == -1) {
+  //httpResponse 내부에 sentLength 넣을 까 요?
+  int sentLength = response.sentLength;
+  int len;
+  if ((len = send(fd, response_str.c_str() + sentLength, response_str.size() - sentLength, 0)) == -1) {
     throw "send() error!";
-  } // 반복으로 보내야 함
+  }
+  response.sentLength += len; // 반복으로 보내야 함
 }
 
 ServerInfo VirtualServer::getServerInfo() { return _serverInfo; }
