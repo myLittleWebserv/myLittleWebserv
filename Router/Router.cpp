@@ -9,7 +9,8 @@
 #define BACKLOG 1024
 
 Router::Router(const Config& config)
-    : _config(config), _virtualServers(std::vector<VirtualServer>()), _eventHandler(EventHandler()) {
+    : _config(config), _virtualServers(std::vector<VirtualServer>()), _eventHandler(*this) {
+  _virtualServers = std::vector<VirtualServer>();
   for (int i = 0; i < _config.getServerInfos().size(); ++i) {
     _virtualServers.push_back(VirtualServer(i, _config.getServerInfos()[i]));
   }
@@ -57,7 +58,7 @@ void Router::serverSocketsInit() {
 int Router::findServerId(HttpRequest& request) {
   for (int i = 0; i < _virtualServers.size(); ++i) {
     if (_virtualServers[i].getServerInfo().getPort() == request.getPort() &&
-        _virtualServer[i].getServerInfo().getHost() == request.getHost()) {
+        _virtualServers[i].getServerInfo().getHost() == request.getHost()) {
       return i;
     }
   }
