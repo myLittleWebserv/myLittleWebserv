@@ -6,7 +6,7 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 13:12:29 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/22 23:07:08 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,10 @@
 #include <vector>
 
 #include "Log.hpp"
+
+// TODO : location에 서버의 정보 포함하기. (서버 주소, 포트, 서버 이름)
+// TODO : listen host:port의 host는 옵셔널임. 있으면 해당 ip의 해당 포트만 받겠다는 뜻이고, 없으면 해당 포트번호로
+// 들어오는 요청에 대해 모두 다 처리한다는 뜻.
 
 struct LocationInfo {
   int                        maxBodySize;
@@ -49,15 +53,15 @@ struct ServerInfo {
 class Config {
   typedef std::vector<std::string>::iterator                  configIterator;
   typedef std::map<std::string, LocationInfo>::const_iterator locationInfoConstIterator;
-  typedef std::map<std::string, ServerInfo>::const_iterator   serverInfoConstIterator;
+  typedef std::vector<ServerInfo>::const_iterator             serverInfoConstIterator;
   typedef std::map<int, std::string>::const_iterator          defaultErrorPagesConstIterator;
 
  private:
-  std::vector<std::string>          _configContent;
-  std::map<std::string, ServerInfo> _serverInfos;
-  std::vector<int>                  _ports;
-  void                              _readConfigFile(const std::string& confFile);
-  void                              _printConfigContent();
+  std::vector<std::string> _configContent;
+  std::vector<ServerInfo>  _serverInfos;
+  std::vector<int>         _ports;
+  void                     _readConfigFile(const std::string& confFile);
+  void                     _printConfigContent();
 
   void         _startParse();
   ServerInfo   _parseServer(configIterator& it);
@@ -73,6 +77,7 @@ class Config {
   std::stringstream           _serverInfoString(const ServerInfo& info);
   std::stringstream           _locatinInfoString(const LocationInfo& info);
   void                        _parsedConfigResult();
+  void                        _setPorts();
 
  public:
   Config(const std::string& confFile);

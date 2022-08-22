@@ -6,13 +6,15 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/20 14:36:56 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 13:14:38 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/22 22:57:47 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 
 int main() {
-  Config config("test.conf");
-  Config config2("test2.conf");
+  std::cout << "==test1: normal file==" << std::endl;
+  Config config("test.conf"); // 정상 conf
+  std::cout << "==test2: no file==" << std::endl;
+  Config config2("nofile.conf"); // 없는 conf  
 }

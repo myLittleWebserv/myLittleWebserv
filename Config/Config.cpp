@@ -6,15 +6,19 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/20 13:37:55 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 13:13:30 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/22 23:05:20 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+
+// TODO : 포트 번호들만 모여있는 벡터 만들어주기
+// TODO : allowedMethods에 이상한 애들 들어왔으면 튕기기
 
 #include "Config.hpp"
 
 Config::Config(const std::string& confFile) {
   _readConfigFile(confFile);
   _startParse();
+  _setPorts();
   _parsedConfigResult();
 }
 
@@ -44,8 +48,8 @@ void Config::_startParse() {
   configIterator it = _configContent.begin();
   while (it != _configContent.end()) {
     if (*it == "server") {
-      ServerInfo serverInfo               = _parseServer(++it);
-      _serverInfos[serverInfo.serverName] = serverInfo;
+      ServerInfo serverInfo = _parseServer(++it);
+      _serverInfos.push_back(serverInfo);
     } else {
       std::cout << "ERROR: invalid config file" << std::endl;
       Log::log()(LOG_LOCATION, "ERROR: invalid config file", ALL);
@@ -231,6 +235,7 @@ std::map<int, std::string> Config::_parseDefaultErrorPage(const std::string& pag
   return _result;
 }
 
+// TODO : autoindex 여부 추가
 std::stringstream Config::_locatinInfoString(const LocationInfo& info) {
   std::stringstream _ss;
   _ss << "\t"
@@ -284,7 +289,9 @@ std::stringstream Config::_serverInfoString(const ServerInfo& info) {
 void Config::_parsedConfigResult() {
   std::cout << "===============parsed result=====================" << std::endl;
   for (serverInfoConstIterator it = _serverInfos.begin(); it != _serverInfos.end(); ++it) {
-    std::cout << _serverInfoString(it->second).str();
+    std::cout << _serverInfoString(*it).str();
   }
   std::cout << "=================================================" << std::endl;
 }
+
+void Config::_setPorts() {}
