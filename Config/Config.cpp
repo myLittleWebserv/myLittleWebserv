@@ -6,12 +6,10 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/20 13:37:55 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 23:21:15 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/22 23:36:24 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// TODO : allowedMethods에 이상한 애들 들어왔으면 튕기기
-// TODO : location에 서버의 정보 포함하기. (서버 주소, 포트, 서버 이름)
 // TODO : listen host:port의 host는 옵셔널임. 있으면 해당 ip의 해당 포트만 받겠다는 뜻이고, 없으면 해당 포트번호로
 // 들어오는 요청에 대해 모두 다 처리한다는 뜻.
 
@@ -83,9 +81,9 @@ ServerInfo Config::_parseServer(configIterator& it) {
     } else if (_identifier == "default_error_page") {
       _server_info.defaultErrorPages = _parseDefaultErrorPage(_value);
     } else if (_identifier == "host") {
-      inet_aton(_value.c_str(), &_server_info.hostIp);
+      inet_aton(_value.c_str(), &_server_info.hostIp); //TODO: ip 주소 잘못됐을 때 에러처리
     } else if (_identifier == "port") {
-      _server_info.hostPort = std::stoi(_value);
+      _server_info.hostPort = std::stoi(_value); //TODO: 포트넘버 범위 벗어나거나 잘못됐을 때 에러처리
     } else if (_identifier == "server_name") {
       _server_info.serverName = _value;
     } else if (_identifier == "location") {
@@ -215,7 +213,13 @@ std::vector<std::string> Config::_parseAllowedMethod(const std::string& value) {
   std::vector<std::string> _allowed_methods;
   std::vector<std::string> _splitted = _split(value, " ");
   for (std::vector<std::string>::iterator it = _splitted.begin(); it != _splitted.end(); ++it) {
-    _allowed_methods.push_back(*it);
+    if (*it == "GET" || *it == "POST" || *it == "PUT" || *it == "DELETE" || *it == "HEAD") {
+      _allowed_methods.push_back(*it);
+    } else {
+      std::cout << "ERROR: invalid HTTP Method" << std::endl;
+      Log::log()(LOG_LOCATION, "ERROR: invalid HTTP Method" + value, ALL);
+      std::exit(1);
+    }
   }
   return _allowed_methods;
 }
