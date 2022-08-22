@@ -6,7 +6,7 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 00:27:43 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/22 13:12:29 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,10 @@ struct ServerInfo {
 };
 
 class Config {
-  typedef std::vector<std::string>::iterator configIterator;
+  typedef std::vector<std::string>::iterator                  configIterator;
+  typedef std::map<std::string, LocationInfo>::const_iterator locationInfoConstIterator;
+  typedef std::map<std::string, ServerInfo>::const_iterator   serverInfoConstIterator;
+  typedef std::map<int, std::string>::const_iterator          defaultErrorPagesConstIterator;
 
  private:
   std::vector<std::string>          _configContent;
@@ -55,16 +58,21 @@ class Config {
   std::vector<int>                  _ports;
   void                              _readConfigFile(const std::string& confFile);
   void                              _printConfigContent();
-  void                              _startParse();
-  ServerInfo                        _parseServer(configIterator& it);
-  LocationInfo                      _parseLocation(configIterator& it, const ServerInfo& serverInfo);
-  std::map<int, std::string>        _parseDefaultErrorPage(const std::string& pages);
-  std::vector<std::string>          _parseAllowedMethod(const std::string& value);
-  void                              _parseRedirection(const std::string& value, LocationInfo& info);
-  LocationInfo                      _init_locationInfo(const ServerInfo& serverInfo);
-  std::vector<std::string>          _split(const std::string& str, const std::string& delimiter);
-  std::pair<int, std::string>       _trimLeftTab(const std::string& str);
-  std::string                       _trimLeftSpace(const std::string& str);
+
+  void         _startParse();
+  ServerInfo   _parseServer(configIterator& it);
+  LocationInfo _parseLocation(configIterator& it, const ServerInfo& serverInfo);
+  void         _parseLocationInfoToken(LocationInfo& info, const std::string& identifier, const std::string& value);
+  std::map<int, std::string>  _parseDefaultErrorPage(const std::string& pages);
+  std::vector<std::string>    _parseAllowedMethod(const std::string& value);
+  void                        _parseRedirection(const std::string& value, LocationInfo& info);
+  LocationInfo                _init_locationInfo(const ServerInfo& serverInfo);
+  std::vector<std::string>    _split(const std::string& str, const std::string& delimiter);
+  std::pair<int, std::string> _trimLeftTab(const std::string& str);
+  std::string                 _trimLeftSpace(const std::string& str);
+  std::stringstream           _serverInfoString(const ServerInfo& info);
+  std::stringstream           _locatinInfoString(const LocationInfo& info);
+  void                        _parsedConfigResult();
 
  public:
   Config(const std::string& confFile);

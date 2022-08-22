@@ -6,7 +6,7 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/20 13:37:55 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 00:42:34 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/22 13:13:30 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 Config::Config(const std::string& confFile) {
   _readConfigFile(confFile);
   _startParse();
+  _parsedConfigResult();
 }
 
 Config::~Config() {}
@@ -39,12 +40,11 @@ void Config::_printConfigContent() {
   }
 }
 
-// TODO : 서버가 여러 개 있을 때 리스트에 담기도록 잘 하기!
 void Config::_startParse() {
   configIterator it = _configContent.begin();
   while (it != _configContent.end()) {
     if (*it == "server") {
-      ServerInfo serverInfo = _parseServer(++it);
+      ServerInfo serverInfo               = _parseServer(++it);
       _serverInfos[serverInfo.serverName] = serverInfo;
     } else {
       std::cout << "ERROR: invalid config file" << std::endl;
@@ -58,7 +58,6 @@ ServerInfo Config::_parseServer(configIterator& it) {
   ServerInfo _server_info;
 
   while (*it != "\n") {
-    std::cout << "current token: " << *it << std::endl;
     std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
     if (_trimmed.first != 1) {
       break;
@@ -71,7 +70,6 @@ ServerInfo Config::_parseServer(configIterator& it) {
     }
     std::string _identifier = _splitted[0];
     std::string _value      = _trimLeftSpace(_splitted[1]);
-    std::cout << _identifier << " " << _value << std::endl;
     if (_identifier == "client_max_body_size") {
       _server_info.maxBodySize = std::stoi(_value);
     } else if (_identifier == "root") {
@@ -99,9 +97,7 @@ ServerInfo Config::_parseServer(configIterator& it) {
 
 LocationInfo Config::_parseLocation(configIterator& it, const ServerInfo& serverInfo) {
   LocationInfo _location_info = _init_locationInfo(serverInfo);
-  std::cout << "--------------parse Location start-------------" << std::endl;
   while (*it != "\n") {
-    std::cout << "current token: " << *it << std::endl;
     std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
     if (_trimmed.first != 2) {
       break;
@@ -113,37 +109,38 @@ LocationInfo Config::_parseLocation(configIterator& it, const ServerInfo& server
         it++;
         continue;
       }
-      std::cout << "ERROR: invalid config file"
-                << "current token: " << _trimmed.second << std::endl;
       std::exit(1);
     }
     std::string _identifier = _splitted[0];
     std::string _value      = _trimLeftSpace(_splitted[1]);
-    std::cout << _identifier << " " << _value << std::endl;
-    if (_identifier == "client_max_body_size") {
-      _location_info.maxBodySize = std::stoi(_value);
-    } else if (_identifier == "root") {
-      _location_info.root = _value;
-    } else if (_identifier == "default_error_page") {
-      _location_info.defaultErrorPages = _parseDefaultErrorPage(_value);
-    } else if (_identifier == "allowed_method") {
-      _location_info.allowedMethods = _parseAllowedMethod(_value);
-    } else if (_identifier == "cgi_extension") {
-      _location_info.cgiExtension = _value;
-    } else if (_identifier == "cgi_path") {
-      _location_info.cgiPath = _value;
-    } else if (_identifier == "redirection") {
-      _parseRedirection(_value, _location_info);
-    } else if (_identifier == "index") {
-      _location_info.indexPagePath = _value;
-    } else {
-      std::cout << "ERROR: invalid config file" << std::endl;
-      Log::log()(LOG_LOCATION, "ERROR: invalid config file" + _identifier + _value, ALL);
-      std::exit(1);
-    }
+    _parseLocationInfoToken(_location_info, _identifier, _value);
     it++;
   }
   return _location_info;
+}
+
+void Config::_parseLocationInfoToken(LocationInfo& info, const std::string& identifier, const std::string& value) {
+  if (identifier == "client_max_body_size") {
+    info.maxBodySize = std::stoi(value);
+  } else if (identifier == "root") {
+    info.root = value;
+  } else if (identifier == "default_error_page") {
+    info.defaultErrorPages = _parseDefaultErrorPage(value);
+  } else if (identifier == "allowed_method") {
+    info.allowedMethods = _parseAllowedMethod(value);
+  } else if (identifier == "cgi_extension") {
+    info.cgiExtension = value;
+  } else if (identifier == "cgi_path") {
+    info.cgiPath = value;
+  } else if (identifier == "redirection") {
+    _parseRedirection(value, info);
+  } else if (identifier == "index") {
+    info.indexPagePath = value;
+  } else {
+    std::cout << "ERROR: invalid config file" << std::endl;
+    Log::log()(LOG_LOCATION, "ERROR: invalid config file" + identifier + value, ALL);
+    std::exit(1);
+  }
 }
 
 LocationInfo Config::_init_locationInfo(const ServerInfo& serverInfo) {
@@ -232,4 +229,62 @@ std::map<int, std::string> Config::_parseDefaultErrorPage(const std::string& pag
     }
   }
   return _result;
+}
+
+std::stringstream Config::_locatinInfoString(const LocationInfo& info) {
+  std::stringstream _ss;
+  _ss << "\t"
+      << "root: " << info.root << std::endl;
+  _ss << "\t"
+      << "default_error_page: ";
+  for (std::map<int, std::string>::const_iterator it2 = info.defaultErrorPages.begin();
+       it2 != info.defaultErrorPages.end(); ++it2) {
+    _ss << it2->first << ": " << it2->second << " ";
+  }
+  _ss << std::endl;
+  _ss << "\t"
+      << "index: " << info.indexPagePath << std::endl;
+  _ss << "\t"
+      << "cgi_extension: " << info.cgiExtension << std::endl;
+  _ss << "\t"
+      << "cgi_path: " << info.cgiPath << std::endl;
+  _ss << "\t"
+      << "redirection: " << info.redirStatus << " " << info.redirPath << std::endl;
+  _ss << "\t"
+      << "allowed_method: ";
+  for (std::vector<std::string>::const_iterator it2 = info.allowedMethods.begin(); it2 != info.allowedMethods.end();
+       ++it2) {
+    _ss << *it2 << " ";
+  }
+  _ss << std::endl;
+  return _ss;
+}
+
+std::stringstream Config::_serverInfoString(const ServerInfo& info) {
+  std::stringstream _ss;
+  _ss << "----------------------------------------" << std::endl;
+  _ss << "server_name: " << info.serverName << std::endl;
+  _ss << "root: " << info.root << std::endl;
+  _ss << "default_error_page: ";
+  for (defaultErrorPagesConstIterator it = info.defaultErrorPages.begin(); it != info.defaultErrorPages.end(); ++it) {
+    _ss << it->first << ": " << it->second << " ";
+  }
+  _ss << std::endl;
+  _ss << "client_max_body_size: " << info.maxBodySize << std::endl;
+  _ss << "host IP: " << info.hostIp.s_addr << std::endl;
+  _ss << "host port: " << info.hostPort << std::endl;
+  for (locationInfoConstIterator it = info.locations.begin(); it != info.locations.end(); ++it) {
+    _ss << it->first << ": " << std::endl;
+    _ss << _locatinInfoString(it->second).str();
+  }
+  _ss << "----------------------------------------" << std::endl;
+  return _ss;
+}
+
+void Config::_parsedConfigResult() {
+  std::cout << "===============parsed result=====================" << std::endl;
+  for (serverInfoConstIterator it = _serverInfos.begin(); it != _serverInfos.end(); ++it) {
+    std::cout << _serverInfoString(it->second).str();
+  }
+  std::cout << "=================================================" << std::endl;
 }
