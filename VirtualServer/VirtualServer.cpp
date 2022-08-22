@@ -13,22 +13,18 @@ void VirtualServer::start(EventHandler& eventHandler) {
     switch (event->type) {
       case CONNECTION_REQUEST:
         eventHandler.addConnection(event->keventId);
-        event->type = HTTP_REQUEST_READABLE;
         break;
       case HTTP_REQUEST_READABLE:
-        if (event->httpRequest.isEnd()) {
-          if (event->httpRequest.isCgi(_serverInfo.locations)) {
-            callCgi(event);
-            break;
-          }
-          event->type = HTTP_RESPONSE_WRITABLE;
-          eventHandler.appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD | EV_DISABLE, event);
-          eventHandler.appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD | EV_ENABLE, event);
-        } else {
-          eventHandler.appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD | EV_ENABLE, event);
+        if (event->httpRequest.isCgi(_serverInfo.locations)) {
+          callCgi(event);
+          break;
         }
+        event->type = HTTP_RESPONSE_WRITABLE;
+        eventHandler.appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD | EV_DISABLE, event);
+        eventHandler.appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD | EV_ENABLE, event);
         break;
       case HTTP_RESPONSE_WRITABLE:
+        //다보냈는지 확인하고 리스폰스를 계속 다시 send한다.
         sendResponse(event->keventId, HttpResponse(event->httpRequest));
         if (!event->httpRequest->isKeepAlive()) {
           eventHandler.removeConnection(event);
@@ -38,13 +34,11 @@ void VirtualServer::start(EventHandler& eventHandler) {
         delete event;
         break;
       case CGI_RESPONSE_READABLE:
-        sendResponse(event->keventId, HttpResponse(event->cgiResponse));
-        if (!event->httpRequest->isKeepAlive()) {
-          eventHandler.removeConnection(event);
-        }
+        event->httpResponse = HttpResponse(event->cgiResponse));
+        event->type = HTTP_RESPONSE_WRITABLE;
         eventHandler.appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD | EV_DISABLE, event);
-        eventHandler.appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD | EV_DISABLE, event);
-        delete event;
+        eventHandler.appendNewEventToChangeList(event->clientFd, EVFILT_WRITE, EV_ADD | EV_ENABLE, event);
+
         break;
       default:
         break;
@@ -79,8 +73,6 @@ void VirtualServer::callCgi(Event* event) {
     throw "error";
   } else if (event->pid == 0) {  // child
 
-
-
   } else {  // parent
   }
 }
@@ -89,5 +81,5 @@ void sendResponse(int fd, HttpResponse& response) {
   std::string response_str = response.getResponse();
   if (send(fd, response_str.c_str(), response_str.size(), 0) == -1) {
     throw "send() error!";
-  }
+  } // 반복으로 보내야 함
 }
