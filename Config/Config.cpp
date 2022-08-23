@@ -84,7 +84,6 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
     }
     ++it;
   }
-  std::cout << "server parsing end" << std::endl;
   return _server_info;
 }
 
@@ -275,8 +274,9 @@ std::stringstream Config::_serverInfoString(const ServerInfo& info) {
     _ss << it->first << ": " << it->second << " ";
   }
   _ss << std::endl;
+  in_addr addr = info.hostIp;
   _ss << "client_max_body_size: " << info.maxBodySize << std::endl;
-  _ss << "host IP: " << info.hostIp.s_addr << std::endl;
+  _ss << "host IP: " << inet_ntoa(addr) << std::endl;
   _ss << "host port: " << info.hostPort << std::endl;
   for (locationInfoConstIterator it = info.locations.begin(); it != info.locations.end(); ++it) {
     _ss << it->first << ": " << std::endl;
