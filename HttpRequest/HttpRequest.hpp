@@ -4,26 +4,43 @@
 
 #include <sstream>
 
+#include "Log.hpp"
+
+#define BUFFER_SIZE 1000
+
 class HttpRequest {
   int         _hostPort;
   std::string _hostName;
   bool        _keepAlive;
+  bool        _end;
+  bool        _badRequest;
+  bool        _connectionClosed;
 
   // Constructor
  public:
-  HttpRequest() {}
+  HttpRequest() : _hostPort(7777), _hostName("for test"), _keepAlive(true), _end(true), _connectionClosed(false) {}
 
   // Interface
  public:
-  bool isEnd() { return true; }
-  bool isCgi(const std::string& cgi_extension) {
-    (void)cgi_extension;
-    return false;
+  bool& isEnd() { return _end; }
+  bool  isCgi(const std::string& cgi_extension) {
+     (void)cgi_extension;
+     return false;
   }
+  bool               isConnectionClosed() { return _connectionClosed; }
   bool               isKeepAlive() { return _keepAlive; }
   int                hostPort() { return _hostPort; }
   const std::string& hostName() { return _hostName; }
-  void               storeChunk(int client_fd) { (void)client_fd; }
+
+  void storeChunk(int client_fd) {
+    unsigned char buf[BUFFER_SIZE];
+    int           recv_size = recv(client_fd, buf, BUFFER_SIZE, 0);
+    Log::log()("recv_size", recv_size, ALL);
+    if (recv_size == 0) {
+      _connectionClosed = true;
+      return;
+    }
+  }
 };
 
 #endif

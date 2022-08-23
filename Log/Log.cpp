@@ -6,7 +6,7 @@
 /*   By: mypark <mypark@student.42seoul.kr>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:41:24 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/23 22:30:31 by mypark           ###   ########.fr       */
+/*   Updated: 2022/08/24 01:44:50 by mypark           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ const std::string currentTimestamp(TimestampType type) {
   return timestamp.str();
 }
 
-Log::Log() { _logFile.open(currentTimestamp(LOG_TITLE) + ".log", std::ofstream::out | std::ofstream::app); }
+Log::Log() { _logFile.open(LOG_DIR + currentTimestamp(LOG_TITLE) + ".log", std::ofstream::out | std::ofstream::app); }
 
 Log::~Log() { _logFile.close(); }
 
@@ -59,14 +59,34 @@ void Log::mark(const std::string& mark) {
   _logFile << std::endl;
 }
 
-void Log::condition(bool condition, const char* file, int line, const char* function,
-                    const std::string& success_message, const std::string& failure_message, LogLocationType location) {
-  if (condition && !success_message.empty()) {
-    operator()(file, line, function, success_message, location);
+void Log::mark(bool condition, const std::string& m) {
+  if (condition) {
+    mark(m);
+    throw _failure_message;
+  }
+}
 
-  } else {
+void Log::syscall(int ret, const char* file, int line, const char* function, const std::string& success_message,
+                  const std::string& failure_message, LogLocationType location) {
+  if (ret == -1) {
     operator()(file, line, function, failure_message, location);
-    exit(1);
+    operator()("errno", strerror(errno));
+    _failure_message = failure_message;
+  } else if (!success_message.empty()) {
+    operator()(file, line, function, success_message, location);
+  }
+}
+
+void Log::operator()(const std::string& message, LogLocationType location) {
+  std::stringstream logMessage;
+
+  logMessage << message;
+
+  if (location == ALL || location == CONSOLE) {
+    std::cerr << logMessage.str() << std::endl;
+  }
+  if (location == ALL || location == INFILE) {
+    _logFile << logMessage.str() << std::endl;
   }
 }
 
@@ -74,14 +94,14 @@ void Log::operator()(const char* file, int line, const char* function, const std
                      LogLocationType location) {
   std::stringstream logMessage;
 
-  logMessage << currentTimestamp(LOG_FILE) << std::endl
+  logMessage << currentTimestamp(LOG_FILE) << '\n'
              << "[Logged from : " << file << ":" << function << ":" << line << "] " << std::endl
-             << message << std::endl;
+             << message;
 
   if (location == ALL || location == CONSOLE) {
-    std::cout << logMessage.str();
+    std::cerr << logMessage.str() << std::endl;
   }
   if (location == ALL || location == INFILE) {
-    _logFile << logMessage.str();
+    _logFile << logMessage.str() << std::endl;
   }
 }

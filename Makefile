@@ -1,6 +1,7 @@
 NAME := myLittleWebserv
 
 OBJ_DIR := objs
+LOG_DIR := LogFiles
 
 SRC :=	main.cpp\
 				Router.cpp\
@@ -32,9 +33,14 @@ endif
 
 VPATH := $(shell ls -R)
 
-all : $(OBJ_DIR) $(NAME)
+all : directories $(NAME)
 
-$(OBJ_DIR) :
+directories : $(OBJ_DIR) $(LOG_DIR)
+
+$(OBJ_DIR):
+	mkdir $@
+
+$(LOG_DIR):
 	mkdir $@
 
 $(NAME) : $(OBJ)
@@ -44,7 +50,7 @@ $(OBJ_DIR)/%.o:%.cpp
 	$(CXX) -c -o $@ $^ $(INCS) $(CXXFALGS)
 
 clean-log:
-	rm -rf *.log
+	rm -rf $(LOG_DIR)/*.log
 
 clean:
 	rm -rf $(OBJ_DIR)

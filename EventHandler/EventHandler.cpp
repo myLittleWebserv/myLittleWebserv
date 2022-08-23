@@ -24,43 +24,64 @@ void EventHandler::appendNewEventToChangeList(int ident, int filter, int flag, E
   _changeList.push_back(kevent);
 }
 
-void EventHandler::removeConnection(Event& event) { close(event.keventId); }
+void EventHandler::removeConnection(Event& event) {
+  int ret = close(event.clientFd);
+  Log::log().syscall(ret, LOG_LOCATION, "(SYSCALL) close done", "(SYSCALL) close error", ALL);
+  Log::log()("closed fd", event.clientFd);
+  Log::log().mark(ret == -1);
+}
 
-void EventHandler::addConnection(int listen_fd) {
+void EventHandler::addConnection(Event& listen_event, int listen_fd) {
   sockaddr_in addr;
   socklen_t   alen;
   int         client_fd = accept(listen_fd, (struct sockaddr*)&addr, &alen);  // addr 버리나?
 
-  Log::log().condition(client_fd != -1, LOG_LOCATION, "(connect) accpeted", "(connect) not accepted", ALL);
-  Log::log().getLogStream() << "Server Socket fd : " << listen_fd << " Client fd : " << client_fd << std::endl;
+  Log::log().syscall(client_fd, LOG_LOCATION, "(connect) accepted", "(connect) not accepted", ALL);
+  Log::log()("Server Socket fd", listen_fd, ALL);
+  Log::log()("Client Socket fd", client_fd, ALL);
+  Log::log().mark(client_fd == -1);
 
   fcntl(client_fd, F_SETFL, O_NONBLOCK);
   Event* event = new Event(HTTP_REQUEST_READABLE, client_fd);
 
   appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD, event);
-  appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD | EV_DISABLE, event);
+  appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD, event);
+  appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_DISABLE, event);
 }
 
 void EventHandler::routeEvents() {
   int num_kevents = kevent(_kQueue, _changeList.data(), _changeList.size(), _keventList, MAX_EVENTS, &_timeOut);
   _changeList.clear();
   _routedEvents.clear();
+  Log::log().syscall(num_kevents, LOG_LOCATION, "", "(SYSCALL) kevent error", ALL);
+  Log::log().mark(num_kevents == -1);
 
   if (num_kevents == 0) {
-    Log::log()(LOG_LOCATION, "Wating event...", CONSOLE);
+    Log::log()("Wating event...", CONSOLE);
   }
 
   for (int i = 0; i < num_kevents; ++i) {
     Event& event  = *(Event*)_keventList[i].udata;
     int    filter = _keventList[i].filter;
+    int    flags  = _keventList[i].flags;
 
-    if (filter == EVFILT_WRITE) {  //   event.type == HTTP_REPONSE_WRITABLE
+    if (flags & EV_ERROR) {
+      Log::log()(LOG_LOCATION, "(flags) EV_ERROR", ALL);
+    }
+
+    if (flags & EV_EOF) {
+      removeConnection(event);
+      delete &event;
+    } else if (filter == EVFILT_WRITE && event.type == HTTP_RESPONSE_WRITABLE) {
       _routedEvents[event.serverId].push_back(&event);
       Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", ALL);
     } else if (filter == EVFILT_READ && event.type == CONNECTION_REQUEST) {
-      addConnection(event.keventId);
+      addConnection(event, event.keventId);
     } else if (filter == EVFILT_READ && event.type == HTTP_REQUEST_READABLE) {
-      event.httpRequest.storeChunk(event.keventId);
+      event.httpRequest.storeChunk(event.clientFd);
+      if (event.httpRequest.isConnectionClosed()) {
+        appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_EOF, &event);
+      }
       if (event.httpRequest.isEnd()) {
         event.serverId = _router.findServerId(event.httpRequest);
         _routedEvents[event.serverId].push_back(&event);

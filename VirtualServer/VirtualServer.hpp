@@ -3,7 +3,8 @@
 
 #include "Config.hpp"
 #include "EventHandler.hpp"
-#include "HttpResponse.hpp"
+
+class HttpResponse;
 
 class VirtualServer {
  private:

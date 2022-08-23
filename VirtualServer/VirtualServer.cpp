@@ -27,25 +27,34 @@ void VirtualServer::start() {
         }
         event.httpResponse = new HttpResponse(event.httpRequest, location_info);
         event.type         = HTTP_RESPONSE_WRITABLE;
-        _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ADD | EV_DISABLE, &event);
-        _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ADD | EV_ENABLE, &event);
+        _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, &event);
+        _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ENABLE, &event);
+        Log::log()(LOG_LOCATION, "(DONE) making Http Response", ALL);
         break;
 
       case CGI_RESPONSE_READABLE:
         event.httpResponse = new HttpResponse(event.cgiResponse, location_info);
         event.type         = HTTP_RESPONSE_WRITABLE;
-        _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ADD | EV_DISABLE, &event);
-        _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_ADD | EV_ENABLE, &event);
+        _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, &event);
+        _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_ENABLE, &event);
+        Log::log()(LOG_LOCATION, "(DONE) making Http Response", ALL);
         break;
 
       case HTTP_RESPONSE_WRITABLE:
         _sendResponse(event.clientFd, *event.httpResponse);
-        if (!event.httpRequest.isKeepAlive()) {
+        if (event.httpRequest.isKeepAlive()) {
+          event.type = HTTP_REQUEST_READABLE;
+          delete event.httpResponse;
+          event.httpResponse = NULL;
+          Log::log()(LOG_LOCATION, "(FREE) event.httpResponse removed", ALL);
+          _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_DISABLE, &event);
+          _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
+          event.httpRequest.isEnd() = false;
+        } else {  // 조건문 추가
           _eventHandler.removeConnection(event);
-        }  // 조건문 추가
-        _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ADD | EV_DISABLE, NULL);
-        _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ADD | EV_DISABLE, NULL);
-        delete &event;
+          delete &event;
+          Log::log()(LOG_LOCATION, "(FREE) event removed", ALL);
+        }
         break;
 
       default:
@@ -91,6 +100,7 @@ void VirtualServer::_callCgi(Event& event) {
 }
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
+  send(fd, "hi\n", 3, 0);
   // std::string response_str = response.getResponse();
   // int         sent_length  = response.sentLength;  // httpResponse 내부에 sent_length 넣을 까 요?
   // if (response_str.length() == sent_length) {

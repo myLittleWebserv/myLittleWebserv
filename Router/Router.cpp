@@ -6,6 +6,8 @@
 
 #include <cstring>
 
+#include "Log.hpp"
+
 #define BACKLOG 1024
 
 Router::Router(const std::string& confFile) : _config(confFile), _virtualServers(), _eventHandler(*this) {
@@ -26,31 +28,42 @@ void Router::start() {
 
 void Router::_serverSocketsInit() {
   for (std::vector<int>::iterator port = _config.getPorts().begin(); port != _config.getPorts().end(); ++port) {
-    int server_socket = socket(PF_INET, SOCK_STREAM, 0);
-    if (server_socket == -1) {
-      throw "socket() error!";
-    }
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    Log::log().syscall(server_socket, LOG_LOCATION, "", "(SYSCALL) socket error", ALL);
+    Log::log().mark(server_socket == -1);
 
+    int ret;
     int sock_opt = 1;
-    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &sock_opt, sizeof(sock_opt));
 
-    struct sockaddr_in server_addr = {0};
-    server_addr.sin_family         = AF_INET;
-    server_addr.sin_addr.s_addr    = htonl(INADDR_ANY);
-    server_addr.sin_port           = htons(*port);
+    ret = setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &sock_opt, sizeof(sock_opt));
+    Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) setsockopt error", ALL);
+    Log::log().mark(ret == -1);
 
-    if (bind(server_socket, (sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
-      throw "bind() error!";
-    }
+    sockaddr_in server_addr     = {0};
+    server_addr.sin_family      = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port        = htons(*port);
 
-    if (listen(server_socket, BACKLOG) == -1) {
-      throw "listen() error!";
-    }
-    fcntl(server_socket, F_SETFL, O_NONBLOCK);
+    ret = bind(server_socket, (sockaddr*)&server_addr, sizeof(server_addr));
+    Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) bind error", ALL);
+    Log::log()(ret == -1, "port", *port);
+    Log::log()(ret == -1, "addr", inet_ntoa(server_addr.sin_addr));
+    Log::log()(ret == -1, "socket fd", server_socket);
+    Log::log().mark(ret == -1);
+
+    ret = listen(server_socket, BACKLOG);
+    Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) listen error", ALL);
+    Log::log()(ret == -1, "socket fd", server_socket);
+    Log::log().mark(ret == -1);
+
+    ret = fcntl(server_socket, F_SETFL, O_NONBLOCK);
+    Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) fcntl error", ALL);
+    Log::log().mark(ret == -1);
 
     Event* event = new Event(CONNECTION_REQUEST, server_socket);
-    _eventHandler.appendNewEventToChangeList(server_socket, EVFILT_READ, EV_ADD | EV_ENABLE, event);
+    _eventHandler.appendNewEventToChangeList(server_socket, EVFILT_READ, EV_ADD, event);
   }
+  Log::log()(LOG_LOCATION, "(SUCCESS) Server Initialization", ALL);
 }
 
 int Router::findServerId(HttpRequest& request) const {
@@ -65,5 +78,9 @@ int Router::findServerId(HttpRequest& request) const {
       return i;
     }
   }
+  Log::log()(LOG_LOCATION, "(Not Found) ServerId ", ALL);
+  Log::log()("HttpRequest.hostPort", request.hostPort());
+  Log::log()("HttpRequest.hostName", request.hostName());
+  throw std::string("invalid ServerId");
   return -1;
 }
