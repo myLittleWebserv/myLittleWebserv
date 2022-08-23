@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: mypark <mypark@student.42seoul.kr>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 23:34:57 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/23 22:59:56 by mypark           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "Log.hpp"
-
 
 struct LocationInfo {
   int                        maxBodySize;
@@ -51,20 +50,24 @@ struct ServerInfo {
 };
 
 class Config {
+  // Types
   typedef std::vector<std::string>::iterator                  configIterator;
   typedef std::map<std::string, LocationInfo>::const_iterator locationInfoConstIterator;
   typedef std::vector<ServerInfo>::const_iterator             serverInfoConstIterator;
   typedef std::map<int, std::string>::const_iterator          defaultErrorPagesConstIterator;
 
+  // Member Variable
  private:
   std::vector<std::string> _configContent;
   std::vector<ServerInfo>  _serverInfos;
   std::vector<int>         _ports;
-  void                     _readConfigFile(const std::string& confFile);
-  void                     _printConfigContent();
 
+  // Method
+ private:
+  void         _readConfigFile(const std::string& confFile);
+  void         _printConfigContent();
   void         _startParse();
-  ServerInfo   _parseServer(configIterator& it);
+  ServerInfo   _parseServer(configIterator& it, const configIterator& end);
   LocationInfo _parseLocation(configIterator& it, const ServerInfo& serverInfo);
   void         _parseLocationInfoToken(LocationInfo& info, const std::string& identifier, const std::string& value);
   std::map<int, std::string>  _parseDefaultErrorPage(const std::string& pages);
@@ -79,11 +82,18 @@ class Config {
   void                        _parsedConfigResult();
   void                        _setPorts();
 
+  // Constructor
  public:
   Config(const std::string& confFile);
+
+  // Destructor
+ public:
   virtual ~Config();
-  std::vector<ServerInfo> getServerInfos();
-  std::vector<int>        getPorts();
+
+  // Interface
+ public:
+  std::vector<ServerInfo>& getServerInfos();
+  std::vector<int>&        getPorts();
 };
 
 #endif
