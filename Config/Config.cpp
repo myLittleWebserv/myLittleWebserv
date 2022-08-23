@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Config.cpp                                         :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/08/20 13:37:55 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/22 23:36:24 by jaemjung         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 // TODO : listen host:port의 host는 옵셔널임. 있으면 해당 ip의 해당 포트만 받겠다는 뜻이고, 없으면 해당 포트번호로
 // 들어오는 요청에 대해 모두 다 처리한다는 뜻.
 
@@ -48,7 +36,7 @@ void Config::_startParse() {
   configIterator it = _configContent.begin();
   while (it != _configContent.end()) {
     if (*it == "server") {
-      ServerInfo serverInfo = _parseServer(++it);
+      ServerInfo serverInfo = _parseServer(++it, _configContent.end());
       _serverInfos.push_back(serverInfo);
     } else {
       std::cout << "ERROR: invalid config file" << std::endl;
@@ -58,14 +46,14 @@ void Config::_startParse() {
   }
 }
 
-ServerInfo Config::_parseServer(configIterator& it) {
+ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
   ServerInfo _server_info;
 
-  while (*it != "\n") {
+  while (it != end && *it != "server" && *it != "\n") {
     std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
-    if (_trimmed.first != 1) {
-      break;
-    }
+    // if (_trimmed.first != 1) {
+    //   break;
+    // }
     std::vector<std::string> _splitted = _split(_trimmed.second, ":");
     if (_splitted.size() != 2) {
       std::cout << "ERROR: invalid config file" << std::endl;
@@ -81,9 +69,9 @@ ServerInfo Config::_parseServer(configIterator& it) {
     } else if (_identifier == "default_error_page") {
       _server_info.defaultErrorPages = _parseDefaultErrorPage(_value);
     } else if (_identifier == "host") {
-      inet_aton(_value.c_str(), &_server_info.hostIp); //TODO: ip 주소 잘못됐을 때 에러처리
+      inet_aton(_value.c_str(), &_server_info.hostIp);  // TODO: ip 주소 잘못됐을 때 에러처리
     } else if (_identifier == "port") {
-      _server_info.hostPort = std::stoi(_value); //TODO: 포트넘버 범위 벗어나거나 잘못됐을 때 에러처리
+      _server_info.hostPort = std::stoi(_value);  // TODO: 포트넘버 범위 벗어나거나 잘못됐을 때 에러처리
     } else if (_identifier == "server_name") {
       _server_info.serverName = _value;
     } else if (_identifier == "location") {
@@ -94,8 +82,9 @@ ServerInfo Config::_parseServer(configIterator& it) {
       Log::log()(LOG_LOCATION, "ERROR: invalid config file" + _identifier + _value, ALL);
       std::exit(1);
     }
-    it++;
+    ++it;
   }
+  std::cout << "server parsing end" << std::endl;
   return _server_info;
 }
 
@@ -314,3 +303,6 @@ void Config::_setPorts() {
   //   std::cout << *it << " ";
   // }
 }
+
+std::vector<int>&        Config::getPorts() { return _ports; }
+std::vector<ServerInfo>& Config::getServerInfos() { return _serverInfos; }
