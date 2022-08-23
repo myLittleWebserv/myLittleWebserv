@@ -16,14 +16,14 @@ void VirtualServer::start(EventHandler& eventHandler) {
           callCgi(event);
           break;
         }
-        event.httpResponse = HttpResponse(event.httpRequest);
-        event.type = HTTP_RESPONSE_WRITABLE;
+        event.httpResponse = new HttpResponse(event.httpRequest);
+        event.type         = HTTP_RESPONSE_WRITABLE;
         eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ADD | EV_DISABLE, &event);
         eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ADD | EV_ENABLE, &event);
         break;
       case CGI_RESPONSE_READABLE:
-        event.httpResponse = HttpResponse(event.cgiResponse));
-        event.type = HTTP_RESPONSE_WRITABLE;
+        event.httpResponse = new HttpResponse(event.cgiResponse));
+        event.type         = HTTP_RESPONSE_WRITABLE;
         eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ADD | EV_DISABLE, &event);
         eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_ADD | EV_ENABLE, &event);
         break;
@@ -31,7 +31,7 @@ void VirtualServer::start(EventHandler& eventHandler) {
         sendResponse(event.keventId, *event.httpResponse);
         if (!event.httpRequest.isKeepAlive()) {
           eventHandler.removeConnection(event);
-        } // 조건문 추가
+        }  // 조건문 추가
         delete &event;
         eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ADD | EV_DISABLE, NULL);
         eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ADD | EV_DISABLE, NULL);
@@ -47,9 +47,9 @@ void VirtualServer::start(EventHandler& eventHandler) {
 
 void VirtualServer::callCgi(Event& event) {
   //  std::string cgi_path = getCgiPath(_serverInfo.locations); -> httpRequest에서 url 받아와서 찾아야 할 듯
-  int _pipe[2]; // pipe를 event에 넣어야 할 것 같다.
-                // Waitpid Wnohang시 프로스세가 끝난지 한참 지나도 pid를 리턴 하는 것 확인
-                // eventHandler에서 WNOHANG으로 pid를 확인해,
+  int _pipe[2];  // pipe를 event에 넣어야 할 것 같다.
+                 // Waitpid Wnohang시 프로스세가 끝난지 한참 지나도 pid를 리턴 하는 것 확인
+                 // eventHandler에서 WNOHANG으로 pid를 확인해,
   if (pipe(_pipe) == -1) {
     throw "error";
   }
@@ -64,7 +64,7 @@ void VirtualServer::callCgi(Event& event) {
   fcntl(_pipe[READEND], F_SETFL, O_NONBLOCK);
   event.pid = fork();
   if (event.pid == -1) {
-    throw "500"; // 500번대 에러
+    throw "500";                // 500번대 에러
   } else if (event.pid == 0) {  // child
     int temp = open("temp/temp.txt", O_RDWR | O_CREAT, 0644);
     if (temp == -1) {
@@ -80,7 +80,7 @@ void VirtualServer::callCgi(Event& event) {
 
 void VirtualServer::sendResponse(int fd, HttpResponse& response) {
   std::string response_str = response.getResponse();
-  int sent_length = response.sentLength; //httpResponse 내부에 sent_length 넣을 까 요?
+  int         sent_length  = response.sentLength;  // httpResponse 내부에 sent_length 넣을 까 요?
   if (response_str.length() == sent_length) {
     return;
   }
@@ -92,4 +92,3 @@ void VirtualServer::sendResponse(int fd, HttpResponse& response) {
 }
 
 ServerInfo VirtualServer::getServerInfo() { return _serverInfo; }
-

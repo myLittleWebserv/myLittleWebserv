@@ -3,3 +3,4 @@
 objs
 *.o
 *.json
+*.pseudo
