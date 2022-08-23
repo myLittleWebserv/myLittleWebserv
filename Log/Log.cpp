@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Log.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jaemjung <jaemjung@student.42.fr>          +#+  +:+       +#+        */
+/*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:41:24 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/20 12:46:27 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/21 22:39:29 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ const std::string currentTimestamp(TimestampType type) {
               << timeinfo->tm_mon + 1 << "/" << std::setw(2) << timeinfo->tm_mday << " " << std::setw(2)
               << timeinfo->tm_hour << ":" << std::setw(2) << timeinfo->tm_min << ":" << std::setw(2) << timeinfo->tm_sec
               << "] ";
-  }<<<<<<< EventHandler
+  }
 
   return timestamp.str();
 }
