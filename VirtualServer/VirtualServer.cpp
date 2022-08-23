@@ -46,14 +46,16 @@ void VirtualServer::start(EventHandler& eventHandler) {
 #define WRITEEND 1
 
 void VirtualServer::callCgi(Event& event) {
-  //  std::string cgi_path = getCgiPath(_serverInfo.locations);
-  int _pipe[2]; // pipe를 event에 넣어야 할 것 같다. Waitpid Wnohang시 프로스세가 끝난지 한참 지나도 pid를 리턴 하는 것 확인
+  //  std::string cgi_path = getCgiPath(_serverInfo.locations); -> httpRequest에서 url 받아와서 찾아야 할 듯
+  int _pipe[2]; // pipe를 event에 넣어야 할 것 같다.
+                // Waitpid Wnohang시 프로스세가 끝난지 한참 지나도 pid를 리턴 하는 것 확인
+                // eventHandler에서 WNOHANG으로 pid를 확인해,
   if (pipe(_pipe) == -1) {
     throw "error";
   }
   int env = 0;
   env += setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
-  env += setenv("REQUEST_METHOD", event.httpRequest.getMethod().c_str(), 1); // METHOD have to be decided
+  env += setenv("REQUEST_METHOD", event.httpRequest.getMethod().c_str(), 1);
   env += setenv("PATH_INFO", cgiPath.c_str(), 1);
   if (env != 0) {
     throw "error";
