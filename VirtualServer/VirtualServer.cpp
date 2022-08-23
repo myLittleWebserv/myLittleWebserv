@@ -76,7 +76,7 @@ void VirtualServer::callCgi(Event& event) {
   }
 }
 
-void sendResponse(int fd, HttpResponse& response) {
+void VirtualServer::sendResponse(int fd, HttpResponse& response) {
   std::string response_str = response.getResponse();
   int sent_length = response.sentLength; //httpResponse 내부에 sent_length 넣을 까 요?
   if (response_str.length() == sent_length) {
