@@ -10,12 +10,15 @@
 class Router {
  private:
   Config                     _config;
-  std::vector<VirtualServer> _virtual_servers;
-  EventHandler               _event_handler;
+  std::vector<VirtualServer> _virtualServers;
+  EventHandler               _eventHandler;
+
+  void _serverSocketsInit();
 
  public:
   Router(const Config& config);
   void start();
+  int  findServerId(HttpRequest& request);
 };
 
 #endif
