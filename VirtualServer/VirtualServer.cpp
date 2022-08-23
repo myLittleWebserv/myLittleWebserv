@@ -31,7 +31,7 @@ void VirtualServer::start(EventHandler& eventHandler) {
         sendResponse(event.keventId, *event.httpResponse);
         if (!event.httpRequest.isKeepAlive()) {
           eventHandler.removeConnection(event);
-        }
+        } // 조건문 추가
         delete &event;
         eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ADD | EV_DISABLE, NULL);
         eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ADD | EV_DISABLE, NULL);
@@ -47,52 +47,47 @@ void VirtualServer::start(EventHandler& eventHandler) {
 
 void VirtualServer::callCgi(Event& event) {
   //  std::string cgi_path = getCgiPath(_serverInfo.locations);
-  int to_pipe[2];  // 0 = readend, 1 = writeend // to pipe 필요 없음
-  int from_pipe[2];
-  if (::pipe(to_pipe) == -1 || ::pipe(from_pipe) == -1) {
+  int _pipe[2]; // pipe를 event에 넣어야 할 것 같다. Waitpid Wnohang시 프로스세가 끝난지 한참 지나도 pid를 리턴 하는 것 확인
+  if (pipe(_pipe) == -1) {
     throw "error";
   }
   int env = 0;
   env += setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
-  env += setenv("REQUEST_METHOD", "METHOD", 1); // METHOD have to be decided
+  env += setenv("REQUEST_METHOD", event.httpRequest.getMethod().c_str(), 1); // METHOD have to be decided
   env += setenv("PATH_INFO", cgiPath.c_str(), 1);
   if (env != 0) {
     throw "error";
-  } // 자식에서 임시파일 열고 httpRequest를 write해서 dup2로 stdin으로~~ NONBLOCK X
-  // 비동기적으로 되게
-//  fcntl(to_pipe[WRITEEND], F_SETFL, O_NONBLOCK);
-//  close(to_pipe[READEND]);
-//  write(to_pipe[WRITEEND], event->httpRequest.getBody().c_str(), event->httpRequest.getBody().size());
-//  close(to_pipe[WRITEEND]);
+  }
+  fcntl(_pipe[WRITEEND], F_SETFL, O_NONBLOCK);
+  fcntl(_pipe[READEND], F_SETFL, O_NONBLOCK);
   event.pid = fork();
   if (event.pid == -1) {
-    throw "error";
+    throw "500"; // 500번대 에러
   } else if (event.pid == 0) {  // child
     int temp = open("temp/temp.txt", O_RDWR | O_CREAT, 0644);
     if (temp == -1) {
-      throw "error";
+      exit(EXIT_FAILURE);
     }
     dup2(temp, STDIN_FILENO);
-    close(temp);
-    dup2(from_pipe[READEND], STDOUT_FILENO);
-    close(from_pipe[READEND]);
-    close(from_pipe[WRITEEND]);
-    close(to_pipe[READEND]);
-    close(to_pipe[WRITEEND]);
+    dup2(_pipe[WRITEEND], STDOUT_FILENO);
+    close(_pipe[READEND]);
     execve(cgi_path.c_str(), cgi_path.c_str(), NULL);
-  } else {  // parent
+    exit(EXIT_FAILURE);
   }
 }
 
 void sendResponse(int fd, HttpResponse& response) {
   std::string response_str = response.getResponse();
-  //httpResponse 내부에 sentLength 넣을 까 요?
-  int sentLength = response.sentLength;
+  int sent_length = response.sentLength; //httpResponse 내부에 sent_length 넣을 까 요?
+  if (response_str.length() == sent_length) {
+    return;
+  }
   int len;
-  if ((len = send(fd, response_str.c_str() + sentLength, response_str.size() - sentLength, 0)) == -1) {
+  if ((len = send(fd, response_str.c_str() + sent_length, response_str.size() - sent_length, 0)) == -1) {
     throw "send() error!";
   }
-  response.sentLength += len; // 반복으로 보내야 함
+  response.sentLength += len;
 }
 
 ServerInfo VirtualServer::getServerInfo() { return _serverInfo; }
+
