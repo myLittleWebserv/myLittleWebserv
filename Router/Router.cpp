@@ -8,10 +8,9 @@
 
 #define BACKLOG 1024
 
-Router::Router(const Config& config)
-    : _config(config), _virtualServers(std::vector<VirtualServer>()), _eventHandler(*this) {
-  for (int i = 0; i < _config.getServerInfos().size(); ++i) {
-    _virtualServers.push_back(VirtualServer(i, _config.getServerInfos()[i]));
+Router::Router(const std::string& confFile) : _config(confFile), _virtualServers(), _eventHandler(*this) {
+  for (int id = 0; id < _config.getServerInfos().size(); ++id) {
+    _virtualServers.push_back(VirtualServer(id, _config.getServerInfos()[id], _eventHandler));
   }
 }
 
@@ -20,7 +19,7 @@ void Router::start() {
   while (1) {
     _eventHandler.routeEvents();
     for (int i = 0; i < _virtualServers.size(); ++i) {
-      _virtualServers[i].start(_eventHandler);
+      _virtualServers[i].start();
     }
   }
 }
@@ -54,15 +53,15 @@ void Router::_serverSocketsInit() {
   }
 }
 
-int Router::findServerId(HttpRequest& request) {
+int Router::findServerId(HttpRequest& request) const {
   for (int i = 0; i < _virtualServers.size(); ++i) {
-    if (_virtualServers[i].getServerInfo().getPort() == request.getPort() &&
-        _virtualServers[i].getServerInfo().getHost() == request.getHost()) {
+    if (_virtualServers[i].getServerInfo().hostPort == request.hostPort() &&
+        _virtualServers[i].getServerInfo().serverName == request.hostName()) {
       return i;
     }
   }
   for (int i = 0; i < _virtualServers.size(); ++i) {  // default server if no matching host:port
-    if (_virtualServers[i].getServerInfo().getPort() == request.getPort()) {
+    if (_virtualServers[i].getServerInfo().hostPort == request.hostPort()) {
       return i;
     }
   }

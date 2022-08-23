@@ -7,8 +7,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "./test/Router.hpp"
 #include "Log.hpp"
+#include "Router.hpp"
 
 EventHandler::EventHandler(const Router& router) : _router(router) {
   _kQueue          = kqueue();

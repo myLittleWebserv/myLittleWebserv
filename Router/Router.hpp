@@ -16,9 +16,9 @@ class Router {
   void _serverSocketsInit();
 
  public:
-  Router(const Config& config);
+  Router(const std::string& confFile);
   void start();
-  int  findServerId(HttpRequest& request);
+  int  findServerId(HttpRequest& request) const;
 };
 
 #endif

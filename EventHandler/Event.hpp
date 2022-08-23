@@ -3,8 +3,8 @@
 
 #include <sys/types.h>
 
-#include "test/CgiResponse.hpp"
-#include "test/HttpRequest.hpp"
+#include "CgiResponse.hpp"
+#include "HttpRequest.hpp"
 
 class HttpResponse;
 

@@ -3,16 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   Log.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: mypark <mypark@student.42seoul.kr>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:41:24 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/21 22:39:29 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/23 22:30:31 by mypark           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Log.hpp"
 
 #include <cstdlib>
+#include <iomanip>
 
 const std::string currentTimestamp(TimestampType type) {
   time_t rawtime;
@@ -58,7 +59,6 @@ void Log::mark(const std::string& mark) {
   _logFile << std::endl;
 }
 
-
 void Log::condition(bool condition, const char* file, int line, const char* function,
                     const std::string& success_message, const std::string& failure_message, LogLocationType location) {
   if (condition && !success_message.empty()) {
@@ -77,7 +77,6 @@ void Log::operator()(const char* file, int line, const char* function, const std
   logMessage << currentTimestamp(LOG_FILE) << std::endl
              << "[Logged from : " << file << ":" << function << ":" << line << "] " << std::endl
              << message << std::endl;
-
 
   if (location == ALL || location == CONSOLE) {
     std::cout << logMessage.str();

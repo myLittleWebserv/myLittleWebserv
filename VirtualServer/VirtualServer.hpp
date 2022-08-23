@@ -7,16 +7,18 @@
 
 class VirtualServer {
  private:
-  int        _serverId;
-  ServerInfo _serverInfo;
+  int           _serverId;
+  ServerInfo&   _serverInfo;
+  EventHandler& _eventHandler;
 
-  void callCgi(Event& event);
-  void sendResponse(int fd, HttpResponse& response);
+  void        _callCgi(Event& event);
+  void        _sendResponse(int fd, HttpResponse& response);
+  std::string _findLocation(HttpRequest& httpRequest);
 
  public:
-  VirtualServer(int id, ServerInfo info);
-  void       start(EventHandler& eventHandler);
-  ServerInfo getServerInfo();
+  VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler);
+  void        start();
+  ServerInfo& getServerInfo() const;
 };
 
 #endif
