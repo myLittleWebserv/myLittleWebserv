@@ -77,8 +77,8 @@ class Config {
   std::vector<std::string>    _split(const std::string& str, const std::string& delimiter);
   std::pair<int, std::string> _trimLeftTab(const std::string& str);
   std::string                 _trimLeftSpace(const std::string& str);
-  void           _serverInfoString(std::stringstream& _ss, const ServerInfo& info);
-  void                       _locatinInfoString(std::stringstream& _ss, const LocationInfo& info);
+  void                        _serverInfoString(std::stringstream& _ss, const ServerInfo& info);
+  void                        _locatinInfoString(std::stringstream& _ss, const LocationInfo& info);
   void                        _parsedConfigResult();
   void                        _setPorts();
 

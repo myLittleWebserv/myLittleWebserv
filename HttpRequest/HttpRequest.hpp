@@ -8,6 +8,8 @@
 
 #define BUFFER_SIZE 1000
 
+enum HttpRequestParsingState { RECEIVING, CONNECTION_CLOSED, HEADER_END, BODY_END, PARSING_DONE, BAD_REQUEST };
+
 class HttpRequest {
   int         _hostPort;
   std::string _hostName;

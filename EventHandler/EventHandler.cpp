@@ -36,7 +36,8 @@ void EventHandler::addConnection(Event& listen_event, int listen_fd) {
   socklen_t   alen;
   int         client_fd = accept(listen_fd, (struct sockaddr*)&addr, &alen);  // addr 버리나?
 
-  Log::log().syscall(client_fd, LOG_LOCATION, "(connect) accepted", "(connect) not accepted", ALL);
+  Log::log().syscall(client_fd, LOG_LOCATION, "(SYSCALL) connection accepted", "(SYSCALL) connection not accepted",
+                     ALL);
   Log::log()("Server Socket fd", listen_fd, ALL);
   Log::log()("Client Socket fd", client_fd, ALL);
   Log::log().mark(client_fd == -1);
@@ -45,8 +46,8 @@ void EventHandler::addConnection(Event& listen_event, int listen_fd) {
   Event* event = new Event(HTTP_REQUEST_READABLE, client_fd);
 
   appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD, event);
-  appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD | EV_ENABLE, event);
-  // appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_DISABLE, event);
+  appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD, event);
+  appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_DISABLE, event);  // 따로 해야 제대로 적용된다.
 }
 
 void EventHandler::routeEvents() {
@@ -64,18 +65,6 @@ void EventHandler::routeEvents() {
     Event& event  = *(Event*)_keventList[i].udata;
     int    filter = _keventList[i].filter;
     int    flags  = _keventList[i].flags;
-
-    if (flags & EV_ERROR) {
-      Log::log()(LOG_LOCATION, "(flags) EV_ERROR", ALL);  // ?
-    }
-
-    if (filter == EVFILT_WRITE) {
-      std::cerr << "wwwwwwwwwwwwwwwwww";
-    }
-
-    if (filter == EVFILT_READ) {
-      std::cerr << "rrrrrrrrrrrrrrrrrr";
-    }
 
     if (flags & EV_EOF) {
       removeConnection(event);
