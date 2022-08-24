@@ -1,48 +1,63 @@
 #ifndef HTTPREQUEST_HPP
 
-#include <sys/socket.h>
+#include <ctime>
+#include <string>
+#include <vector>
 
-#include <sstream>
+#include "Storage.hpp"
 
-#include "Log.hpp"
+#define PARSING_TIME_OUT 10000
 
-#define BUFFER_SIZE 1000
+enum HttpRequestParsingState { PARSING_INIT, PARSING_HEADER, PARSING_BODY, PARSING_DONE, BAD_REQUEST, TIME_OUT };
 
-enum HttpRequestParsingState { RECEIVING, CONNECTION_CLOSED, HEADER_END, BODY_END, PARSING_DONE, BAD_REQUEST };
+enum MethodType { GET, HEAD, POST, PUT, DELETE };
 
 class HttpRequest {
+  // Member Variable
+ private:
+  HttpRequestParsingState    _parsingState;
+  Storage                    _storage;  // cgi 보낸 후 resize(0);
+  std::vector<unsigned char> _body;
+  int                        _headerSize;
+  clock_t                    _headerTimeStamp;  // 생성자에서 초기화
+  clock_t                    _bodyTimeStamp;    // 헤더 다 읽고 나서 초기화.
+  bool                       _isBodyExisted;
+  bool                       _isChunked;
+  // HttpRequest Variable
+  MethodType  _method;
+  std::string _uri;
+  std::string _httpVersion;
+  int         _contentLength;
+  std::string _contentType;
   int         _hostPort;
   std::string _hostName;
-  bool        _keepAlive;
-  bool        _end;
-  bool        _badRequest;
-  bool        _connectionClosed;
+
+  // Method
+ private:
+  void     _parseHeader();
+  void     _parseHeaderField(const std::string& line);
+  void     _parseStartLine(const std::string& line);
+  void     _parseBody();
+  void     _parseChunk();
+  void     _checkTimeOut(clock_t timestamp);
+  long int _parseChunkSize(const std::string& line);
 
   // Constructor
  public:
-  HttpRequest() : _hostPort(7777), _hostName("for test"), _keepAlive(true), _end(true), _connectionClosed(false) {}
+  HttpRequest()
+      : _parsingState(PARSING_INIT),
+        _headerSize(0),
+        _headerTimeStamp(clock()),
+        _bodyTimeStamp(clock()),
+        _isBodyExisted(false),
+        _isChunked(false) {}
 
   // Interface
  public:
-  bool& isEnd() { return _end; }
-  bool  isCgi(const std::string& cgi_extension) {
-     (void)cgi_extension;
-     return false;
-  }
-  bool               isConnectionClosed() { return _connectionClosed; }
-  bool               isKeepAlive() { return _keepAlive; }
-  int                hostPort() { return _hostPort; }
-  const std::string& hostName() { return _hostName; }
-
-  void storeChunk(int client_fd) {
-    unsigned char buf[BUFFER_SIZE];
-    int           recv_size = recv(client_fd, buf, BUFFER_SIZE, 0);
-    Log::log()("recv_size", recv_size, ALL);
-    if (recv_size == 0) {
-      _connectionClosed = true;
-      return;
-    }
-  }
+  bool isEnd() { return _parsingState == PARSING_DONE; }
+  bool isConnectionClosed() { return _storage.state() == CONNECTION_CLOSED; }
+  bool isBadRequest() { return _parsingState == BAD_REQUEST; }
+  void storeChunk(int fd);
 };
 
 #endif
