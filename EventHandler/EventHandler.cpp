@@ -76,6 +76,7 @@ void EventHandler::routeEvents() {
       addConnection(event, event.keventId);
     } else if (filter == EVFILT_READ && event.type == HTTP_REQUEST_READABLE) {
       event.httpRequest.storeChunk(event.clientFd);
+
       if (event.httpRequest.isConnectionClosed()) {
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_EOF, &event);
       } else if (event.httpRequest.isEnd()) {

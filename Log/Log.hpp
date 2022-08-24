@@ -59,13 +59,13 @@ template <typename ARG>
 void Log::operator()(const std::string& tag, ARG arg, LogLocationType location) {
   std::stringstream logMessage;
 
-  logMessage << tag << " : " << arg << std::endl;
+  logMessage << tag << " : " << arg;
 
   if (location == ALL || location == CONSOLE) {
-    std::cerr << logMessage.str();
+    std::cerr << logMessage.str() << std::endl;
   }
   if (location == ALL || location == INFILE) {
-    _logFile << logMessage.str();
+    _logFile << logMessage.str() << std::endl;
   }
 }
 

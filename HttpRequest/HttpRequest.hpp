@@ -54,18 +54,19 @@ class HttpRequest {
         _bodyTimeStamp(_headerTimeStamp),
         _isBodyExisted(false),
         _isChunked(false),
-        _isKeepAlive(false) {}
+        _isKeepAlive(false),
+        _hostPort(HTTP_DEFAULT_PORT) {}
 
   // Interface
  public:
-  bool               isEnd() { return _parsingState == PARSING_DONE; }
-  bool               isConnectionClosed() { return _storage.state() == CONNECTION_CLOSED; }
-  bool               isBadRequest() { return _parsingState == BAD_REQUEST; }
-  bool               isKeepAlive() { return _isKeepAlive; }
-  bool               isCgi(const std::string& ext);
-  void               storeChunk(int fd);
-  void               initialize();
-  int                hostPort() { return _hostPort; }
+  bool isEnd() { return _parsingState == PARSING_DONE || _parsingState == BAD_REQUEST || _parsingState == TIME_OUT; }
+  bool isConnectionClosed() { return _storage.state() == CONNECTION_CLOSED; }
+  bool isBadRequest() { return _parsingState == BAD_REQUEST; }
+  bool isKeepAlive() { return _isKeepAlive; }
+  bool isCgi(const std::string& ext);
+  void storeChunk(int fd);
+  void initialize();
+  int  hostPort() { return _hostPort; }
   const std::string& hostName() { return _hostName; }
   const std::string& httpVersion() { return _httpVersion; }
   int                contentLength() { return _contentLength; }

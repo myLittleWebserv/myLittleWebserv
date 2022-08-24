@@ -20,7 +20,7 @@ void HttpRequest::storeChunk(int fd) {
     return;
   }
 
-  Log::log()(LOG_LOCATION, "socket read done", ALL);
+  Log::log()(LOG_LOCATION, "(TRANSFER) socket buffer to _storage done", ALL);
 
   if (_parsingState == PARSING_INIT || _parsingState == PARSING_HEADER) {
     _parseHeader();
@@ -28,6 +28,9 @@ void HttpRequest::storeChunk(int fd) {
   if (_parsingState == PARSING_BODY) {
     _parseBody();
   }
+
+  Log::log()(LOG_LOCATION, "(STATE) CURRENT PARSING STATE", ALL);
+  Log::log()("_parsingState", _parsingState, ALL);
 }
 
 void HttpRequest::initialize() {
@@ -48,7 +51,7 @@ void HttpRequest::_checkTimeOut(clock_t timestamp) {
 }
 
 void HttpRequest::_parseStartLine(const std::string& line) {
-  if (*line.rbegin() == '\r') {
+  if (*line.rbegin() != '\r') {
     _parsingState = BAD_REQUEST;
     return;
   }
@@ -73,10 +76,11 @@ void HttpRequest::_parseStartLine(const std::string& line) {
 
   ss >> _uri;
   ss >> _httpVersion;
+  _parsingState = PARSING_HEADER;
 }
 
 void HttpRequest::_parseHeaderField(const std::string& line) {
-  if (*line.rbegin() == '\r' || line.size() + _headerSize > HTTP_MAX_HEADER_SIZE) {
+  if (*line.rbegin() != '\r' || line.size() + _headerSize > HTTP_MAX_HEADER_SIZE) {
     _parsingState = BAD_REQUEST;
     return;
   }
@@ -119,6 +123,7 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
 void HttpRequest::_parseHeader() {
   if (_parsingState == PARSING_INIT) {
     std::string line = _storage.getLine();  // 라인이 완성되어 있지 않으면 "" 리턴
+
     if (line.empty()) {
       _checkTimeOut(_bodyTimeStamp);
       return;
@@ -128,11 +133,10 @@ void HttpRequest::_parseHeader() {
 
   while (_parsingState != BAD_REQUEST) {
     std::string line = _storage.getLine();
-
     if (line.empty()) {
       _checkTimeOut(_headerTimeStamp);
       break;
-    } else if (line == "\r\n") {
+    } else if (line == "\r") {
       _parsingState  = PARSING_BODY;
       _bodyTimeStamp = clock();
       break;
@@ -178,6 +182,7 @@ long int HttpRequest::_parseChunkSize(const std::string& line) {
   long int size = std::strtol(line.c_str(), &p, 16);  // chunk 최대 크기 몇?
   if (*p != '\r') {
     _parsingState = BAD_REQUEST;
+    Log::log()(LOG_LOCATION, "BAD REQUEST", ALL);
     return 0;
   }
   return size;

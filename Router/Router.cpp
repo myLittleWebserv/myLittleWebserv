@@ -79,8 +79,7 @@ int Router::findServerId(HttpRequest& request) const {
     }
   }
   Log::log()(LOG_LOCATION, "(Not Found) ServerId ", ALL);
-  Log::log()("HttpRequest.hostPort", request.hostPort());
-  Log::log()("HttpRequest.hostName", request.hostName());
-  throw std::string("invalid ServerId");
-  return -1;
+  Log::log()("HttpRequest.hostPort", request.hostPort(), ALL);
+  Log::log()("HttpRequest.hostName", request.hostName(), ALL);
+  return 0;
 }
