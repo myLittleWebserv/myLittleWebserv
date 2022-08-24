@@ -15,6 +15,8 @@
 #include <cstdlib>
 #include <iomanip>
 
+#include "HttpRequest.hpp"
+
 const std::string currentTimestamp(TimestampType type) {
   time_t rawtime;
   time(&rawtime);
@@ -97,6 +99,23 @@ void Log::operator()(const char* file, int line, const char* function, const std
   logMessage << currentTimestamp(LOG_FILE) << '\n'
              << "[Logged from : " << file << ":" << function << ":" << line << "] " << std::endl
              << message;
+
+  if (location == ALL || location == CONSOLE) {
+    std::cerr << logMessage.str() << std::endl;
+  }
+  if (location == ALL || location == INFILE) {
+    _logFile << logMessage.str() << std::endl;
+  }
+}
+
+void Log::printHttpRequest(HttpRequest& request, LogLocationType location) {
+  std::stringstream logMessage;
+
+  logMessage << "HttpRequest:"
+             << "\nmethod: " << request.method() << "\nuri: " << request.uri()
+             << "\nhttpVersion: " << request.httpVersion() << "\ncontentLength: " << request.contentLength()
+             << "\ncontentType: " << request.contentType() << "\nhostPort: " << request.hostPort()
+             << "\nhostName: " << request.hostName() << '\n';
 
   if (location == ALL || location == CONSOLE) {
     std::cerr << logMessage.str() << std::endl;

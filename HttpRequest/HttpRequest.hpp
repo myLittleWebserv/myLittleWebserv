@@ -67,6 +67,11 @@ class HttpRequest {
   void               initialize();
   int                hostPort() { return _hostPort; }
   const std::string& hostName() { return _hostName; }
+  const std::string& httpVersion() { return _httpVersion; }
+  int                contentLength() { return _contentLength; }
+  const std::string& contentType() { return _contentType; }
+  MethodType         method() { return _method; }
+  const std::string& uri() { return _uri; }
 };
 
 #endif

@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+#include "Log.hpp"
+
 // Interface
 
 bool HttpRequest::isCgi(const std::string& ext) {
@@ -17,6 +19,8 @@ void HttpRequest::storeChunk(int fd) {
   if (_storage.state() != RECEIVE_DONE) {
     return;
   }
+
+  Log::log()(LOG_LOCATION, "socket read done", ALL);
 
   if (_parsingState == PARSING_INIT || _parsingState == PARSING_HEADER) {
     _parseHeader();
