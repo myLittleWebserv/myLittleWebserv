@@ -15,12 +15,13 @@ std::string VirtualServer::_findLocation(HttpRequest& httpReuest) {
 void VirtualServer::start() {
   std::vector<Event*> event_list = _eventHandler.getRoutedEvents(_serverId);
   for (int i = 0; i < event_list.size(); i++) {
-    Event&        event         = *event_list[i];
-    std::string   location      = _findLocation(event.httpRequest);
-    LocationInfo& location_info = _serverInfo.locations[location];
+    Event&      event = *event_list[i];
+    std::string location;
 
     switch (event.type) {
       case HTTP_REQUEST_READABLE:
+        location                    = _findLocation(event.httpRequest);
+        LocationInfo& location_info = _serverInfo.locations[location];
         Log::log().printHttpRequest(event.httpRequest, ALL);
         if (event.httpRequest.isCgi(location_info.cgiExtension)) {
           _callCgi(event);
@@ -34,8 +35,10 @@ void VirtualServer::start() {
         break;
 
       case CGI_RESPONSE_READABLE:
-        event.httpResponse = new HttpResponse(event.cgiResponse, location_info);
-        event.type         = HTTP_RESPONSE_WRITABLE;
+        location                    = _findLocation(event.httpRequest);
+        LocationInfo& location_info = _serverInfo.locations[location];
+        event.httpResponse          = new HttpResponse(event.cgiResponse, location_info);
+        event.type                  = HTTP_RESPONSE_WRITABLE;
         _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, &event);
         _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_ENABLE, &event);
         Log::log()(LOG_LOCATION, "(DONE) making Http Response", ALL);
