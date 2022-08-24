@@ -54,7 +54,7 @@ class HttpRequest {
         _bodyTimeStamp(_headerTimeStamp),
         _isBodyExisted(false),
         _isChunked(false),
-        _isKeepAlive(false),
+        _isKeepAlive(false),  //  default: close
         _hostPort(HTTP_DEFAULT_PORT) {}
 
   // Interface

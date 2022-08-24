@@ -50,6 +50,32 @@ void HttpRequest::_checkTimeOut(clock_t timestamp) {
   }
 }
 
+void HttpRequest::_parseHeader() {
+  if (_parsingState == PARSING_INIT) {
+    std::string line = _storage.getLine();  // 라인이 완성되어 있지 않으면 "" 리턴
+
+    if (line.empty()) {
+      _checkTimeOut(_bodyTimeStamp);
+      return;
+    }
+    _parseStartLine(line);
+  }
+
+  while (_parsingState != BAD_REQUEST) {
+    std::string line = _storage.getLine();
+    if (line.empty()) {
+      _checkTimeOut(_headerTimeStamp);
+      break;
+    } else if (line == "\r") {
+      _parsingState  = PARSING_BODY;
+      _bodyTimeStamp = clock();
+      break;
+    } else {
+      _parseHeaderField(line);
+    }
+  }
+}
+
 void HttpRequest::_parseStartLine(const std::string& line) {
   if (*line.rbegin() != '\r') {
     _parsingState = BAD_REQUEST;
@@ -116,32 +142,6 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
     if (word == "chunked") {
       _isChunked     = true;
       _isBodyExisted = true;
-    }
-  }
-}
-
-void HttpRequest::_parseHeader() {
-  if (_parsingState == PARSING_INIT) {
-    std::string line = _storage.getLine();  // 라인이 완성되어 있지 않으면 "" 리턴
-
-    if (line.empty()) {
-      _checkTimeOut(_bodyTimeStamp);
-      return;
-    }
-    _parseStartLine(line);
-  }
-
-  while (_parsingState != BAD_REQUEST) {
-    std::string line = _storage.getLine();
-    if (line.empty()) {
-      _checkTimeOut(_headerTimeStamp);
-      break;
-    } else if (line == "\r") {
-      _parsingState  = PARSING_BODY;
-      _bodyTimeStamp = clock();
-      break;
-    } else {
-      _parseHeaderField(line);
     }
   }
 }

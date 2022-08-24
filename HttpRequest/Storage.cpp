@@ -1,11 +1,11 @@
 #include "Storage.hpp"
 
-#include <unistd.h>
+#include <sys/socket.h>
 
 #include "Log.hpp"
 
 void Storage::readSocket(int fd) {
-  ssize_t read_size = read(fd, _buffer, READ_BUFFER_SIZE);
+  ssize_t read_size = recv(fd, _buffer, READ_BUFFER_SIZE, 0);
 
   if (read_size == 0) {
     _state = CONNECTION_CLOSED;

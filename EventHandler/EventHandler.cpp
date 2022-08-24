@@ -85,6 +85,7 @@ void EventHandler::routeEvents() {
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, NULL);
         Log::log()(LOG_LOCATION, "(event routed) Http Request Readable", ALL);
       }
+
     } else if (filter == EVFILT_READ && event.type == CGI_RESPONSE_READABLE) {
       event.cgiResponse.storeChunk(event.keventId);
       if (event.cgiResponse.isEnd()) {
