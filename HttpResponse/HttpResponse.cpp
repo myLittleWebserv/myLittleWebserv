@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "Config.hpp"
+#include "HttpRequest.hpp"
 
 // Constructor
 
@@ -120,7 +121,7 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
   // add other field ?
 }
 
-bool HttpResponse::_allowedMethod(MethodType method, std::vector<std::string>& allowed_method) {
+bool HttpResponse::_allowedMethod(int method, std::vector<std::string>& allowed_method) {
   bool is_existed;
   switch (method) {
     case GET:

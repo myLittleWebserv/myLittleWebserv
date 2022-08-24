@@ -3,8 +3,7 @@
 #include <string>
 #include <vector>
 
-// class HttpRequest;
-#include "HttpRequest.hpp"
+class HttpRequest;
 class CgiResponse;
 class LocationInfo;
 
@@ -24,7 +23,7 @@ class HttpResponse {
   void        _processPostRequest(HttpRequest& request, LocationInfo& location_info);
   void        _makeErrorResponse(int error_code, HttpRequest& request, LocationInfo& location_info);
   void        _makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info);
-  bool        _allowedMethod(MethodType method, std::vector<std::string>& allowed_method);
+  bool        _allowedMethod(int method, std::vector<std::string>& allowed_method);
   std::string _getMessage(int status_code);
   std::string _getContentType(const std::string& file_name);
 
