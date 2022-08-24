@@ -1,5 +1,7 @@
 #include "HttpRequest.hpp"
 
+#include <sstream>
+
 // Interface
 
 void HttpRequest::storeChunk(int fd) {
@@ -21,6 +23,59 @@ void HttpRequest::storeChunk(int fd) {
 void HttpRequest::_checkTimeOut(clock_t timestamp) {
   if ((static_cast<double>(clock() - timestamp) / CLOCKS_PER_SEC) > PARSING_TIME_OUT) {
     _parsingState = TIME_OUT;
+  }
+}
+
+void HttpRequest::_parseStartLine(const std::string& line) {
+  if (*line.rbegin() == '\r') {
+    _parsingState = BAD_REQUEST;
+    return;
+  }
+
+  std::stringstream ss(line);
+  std::string       word;
+
+  ss >> word;
+  if (word == "GET") {
+    _method = GET;
+  } else if (word == "HEAD") {
+    _method = HEAD;
+  } else if (word == "POST") {
+    _method = POST;
+  } else if (word == "PUT") {
+    _method = PUT;
+  } else if (word == "DELETE") {
+    _method = DELETE;
+  }
+
+  ss >> _uri;
+  ss >> _httpVersion;
+}
+
+void HttpRequest::_parseHeaderField(const std::string& line) {
+  if (*line.rbegin() == '\r') {
+    _parsingState = BAD_REQUEST;
+    return;
+  }
+
+  std::stringstream ss(line);
+  std::string       word;
+
+  ss >> word;
+  if (word == "Content-Type:") {
+    ss >> _contentType;
+  } else if (word == "Content-Length:") {
+    ss >> _contentLength;
+  } else if (word == "Host:") {
+    ss >> word;
+    std::string::size_type delim = word.find(':');
+    if (delim == std::string::npos) {
+      _hostPort = HTTP_DEFAULT_PORT;
+      _hostName = word;
+    } else {
+      _hostPort = std::atoi(word.substr(delim + 1).c_str());
+      _hostName = word.substr(0, delim);
+    }
   }
 }
 

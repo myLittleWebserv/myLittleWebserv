@@ -7,6 +7,7 @@
 #include "Storage.hpp"
 
 #define PARSING_TIME_OUT 10000
+#define HTTP_DEFAULT_PORT 80
 
 enum HttpRequestParsingState { PARSING_INIT, PARSING_HEADER, PARSING_BODY, PARSING_DONE, BAD_REQUEST, TIME_OUT };
 
@@ -34,6 +35,8 @@ class HttpRequest {
 
   // Method
  private:
+  void     _parseStartLine(const std::string& line);
+  void     _parseHeaderField(const std::string& line);
   void     _parseHeader();
   void     _parseHeaderField(const std::string& line);
   void     _parseStartLine(const std::string& line);
