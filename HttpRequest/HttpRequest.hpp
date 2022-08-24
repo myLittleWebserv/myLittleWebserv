@@ -12,7 +12,7 @@
 
 enum HttpRequestParsingState { PARSING_INIT, PARSING_HEADER, PARSING_BODY, PARSING_DONE, BAD_REQUEST, TIME_OUT };
 
-enum MethodType { GET, HEAD, POST, PUT, DELETE };
+enum MethodType { GET, HEAD, POST, PUT, DELETE, NOT_IMPL };
 
 class HttpRequest {
   // Member Variable
@@ -67,12 +67,13 @@ class HttpRequest {
   void storeChunk(int fd);
   void initialize();
   int  hostPort() { return _hostPort; }
-  const std::string& hostName() { return _hostName; }
-  const std::string& httpVersion() { return _httpVersion; }
-  int                contentLength() { return _contentLength; }
-  const std::string& contentType() { return _contentType; }
-  MethodType         method() { return _method; }
-  const std::string& uri() { return _uri; }
+  const std::string&                hostName() { return _hostName; }
+  const std::string&                httpVersion() { return _httpVersion; }
+  int                               contentLength() { return _contentLength; }
+  const std::string&                contentType() { return _contentType; }
+  MethodType                        method() { return _method; }
+  const std::string&                uri() { return _uri; }
+  const std::vector<unsigned char>& body() { return _body; }
 };
 
 #endif
