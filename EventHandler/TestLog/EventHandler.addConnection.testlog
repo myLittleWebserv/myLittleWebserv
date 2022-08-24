@@ -1,0 +1,13 @@
+------------------------------Test EventHandler.addConnection------------------------------
+Port : 7777 Listen on fd : 6
+[2022/08/20 17:18:36] 
+[Logged from : ../EventHandler.cpp:addConnection:34] 
+Connection accpeted
+Server Socket fd : 6 Client fd : 7
+[2022/08/20 17:18:46] 
+[Logged from : ../EventHandler.cpp:routeEvents:59] 
+Wating event...
+[2022/08/20 17:18:48] 
+[Logged from : ../EventHandler.cpp:addConnection:34] 
+Connection accpeted
+Server Socket fd : 6 Client fd : 8
