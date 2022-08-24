@@ -18,6 +18,15 @@ void HttpRequest::storeChunk(int fd) {
   }
 }
 
+void HttpRequest::initialize() {
+  _parsingState    = PARSING_INIT;
+  _headerSize      = 0;
+  _headerTimeStamp = clock();
+  _bodyTimeStamp   = _headerTimeStamp;
+  _isBodyExisted   = false;
+  _isChunked       = false;
+}
+
 // Method
 
 void HttpRequest::_checkTimeOut(clock_t timestamp) {
@@ -55,7 +64,7 @@ void HttpRequest::_parseStartLine(const std::string& line) {
 }
 
 void HttpRequest::_parseHeaderField(const std::string& line) {
-  if (*line.rbegin() == '\r') {
+  if (*line.rbegin() == '\r' || line.size() + _headerSize > HTTP_MAX_HEADER_SIZE) {
     _parsingState = BAD_REQUEST;
     return;
   }
@@ -70,6 +79,7 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
     ss >> _contentType;
   } else if (word == "Content-Length:") {
     ss >> _contentLength;
+    _isBodyExisted = true;
   } else if (word == "Host:") {
     ss >> word;
     std::string::size_type delim = word.find(':');
@@ -79,6 +89,17 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
     } else {
       _hostPort = std::atoi(word.substr(delim + 1).c_str());
       _hostName = word.substr(0, delim);
+    }
+  } else if (word == "Connection:") {
+    ss >> word;
+    if (word == "keep-alive") {
+      _isKeepAlive = true;
+    }
+  } else if (word == "Transfer-Encoding:") {
+    ss >> word;
+    if (word == "chunked") {
+      _isChunked     = true;
+      _isBodyExisted = true;
     }
   }
 }

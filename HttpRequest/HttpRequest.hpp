@@ -8,6 +8,7 @@
 
 #define PARSING_TIME_OUT 10000
 #define HTTP_DEFAULT_PORT 80
+#define HTTP_MAX_HEADER_SIZE 8192
 
 enum HttpRequestParsingState { PARSING_INIT, PARSING_HEADER, PARSING_BODY, PARSING_DONE, BAD_REQUEST, TIME_OUT };
 
@@ -24,6 +25,7 @@ class HttpRequest {
   clock_t                    _bodyTimeStamp;    // 헤더 다 읽고 나서 초기화.
   bool                       _isBodyExisted;
   bool                       _isChunked;
+  bool                       _isKeepAlive;
   // HttpRequest Variable
   MethodType  _method;
   std::string _uri;
@@ -38,8 +40,6 @@ class HttpRequest {
   void     _parseStartLine(const std::string& line);
   void     _parseHeaderField(const std::string& line);
   void     _parseHeader();
-  void     _parseHeaderField(const std::string& line);
-  void     _parseStartLine(const std::string& line);
   void     _parseBody();
   void     _parseChunk();
   void     _checkTimeOut(clock_t timestamp);
@@ -53,14 +53,20 @@ class HttpRequest {
         _headerTimeStamp(clock()),
         _bodyTimeStamp(clock()),
         _isBodyExisted(false),
-        _isChunked(false) {}
+        _isChunked(false),
+        _isKeepAlive(false) {}
 
   // Interface
  public:
-  bool isEnd() { return _parsingState == PARSING_DONE; }
-  bool isConnectionClosed() { return _storage.state() == CONNECTION_CLOSED; }
-  bool isBadRequest() { return _parsingState == BAD_REQUEST; }
-  void storeChunk(int fd);
+  bool               isEnd() { return _parsingState == PARSING_DONE; }
+  bool               isConnectionClosed() { return _storage.state() == CONNECTION_CLOSED; }
+  bool               isBadRequest() { return _parsingState == BAD_REQUEST; }
+  bool               isKeepAlive() { return _isKeepAlive; }
+  bool               isCgi(const std::string& ext);
+  void               storeChunk(int fd);
+  void               initialize();
+  int                hostPort() { return _hostPort; }
+  const std::string& hostName() { return _hostName; }
 };
 
 #endif

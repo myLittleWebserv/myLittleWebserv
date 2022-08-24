@@ -49,7 +49,7 @@ void VirtualServer::start() {
           Log::log()(LOG_LOCATION, "(FREE) event.httpResponse removed", ALL);
           _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_DISABLE, &event);
           _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
-          event.httpRequest.isEnd() = false;
+          event.httpRequest.initialize();
         } else {  // 조건문 추가
           _eventHandler.removeConnection(event);
           delete &event;
