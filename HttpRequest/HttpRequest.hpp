@@ -60,6 +60,7 @@ class HttpRequest {
   // Interface
  public:
   bool isEnd() { return _parsingState == PARSING_DONE || _parsingState == BAD_REQUEST || _parsingState == TIME_OUT; }
+  bool isTimeOut() { return _parsingState == TIME_OUT; }
   bool isConnectionClosed() { return _storage.state() == CONNECTION_CLOSED; }
   bool isBadRequest() { return _parsingState == BAD_REQUEST; }
   bool isKeepAlive() { return _isKeepAlive; }
