@@ -6,7 +6,6 @@
 #include <sstream>
 
 #include "Config.hpp"
-#include "HttpRequest.hpp"
 
 // Constructor
 
@@ -144,7 +143,7 @@ bool HttpResponse::_allowedMethod(MethodType method, std::vector<std::string>& a
   }
 }
 
-std::string _getMessage(int status_code) {
+std::string HttpResponse::_getMessage(int status_code) {
   switch (status_code) {
     case 100:
       return "Continue";
@@ -197,4 +196,4 @@ std::string _getMessage(int status_code) {
   }
 }
 
-std::string _getContentType(const std::string& file_name) { return "plain/text"; }
+std::string HttpResponse::_getContentType(const std::string& file_name) { return "plain/text"; }

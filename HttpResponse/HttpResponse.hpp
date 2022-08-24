@@ -3,7 +3,8 @@
 #include <string>
 #include <vector>
 
-class HttpRequest;
+// class HttpRequest;
+#include "HttpRequest.hpp"
 class CgiResponse;
 class LocationInfo;
 
