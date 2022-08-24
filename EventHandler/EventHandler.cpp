@@ -66,7 +66,15 @@ void EventHandler::routeEvents() {
     int    flags  = _keventList[i].flags;
 
     if (flags & EV_ERROR) {
-      Log::log()(LOG_LOCATION, "(flags) EV_ERROR", ALL);
+      Log::log()(LOG_LOCATION, "(flags) EV_ERROR", ALL);  // ?
+    }
+
+    if (filter == EVFILT_WRITE) {
+      std::cerr << "wwwwwwwwwwwwwwwwww";
+    }
+
+    if (filter == EVFILT_READ) {
+      std::cerr << "rrrrrrrrrrrrrrrrrr";
     }
 
     if (flags & EV_EOF) {
