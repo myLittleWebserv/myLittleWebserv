@@ -51,7 +51,7 @@ class HttpRequest {
       : _parsingState(PARSING_INIT),
         _headerSize(0),
         _headerTimeStamp(clock()),
-        _bodyTimeStamp(clock()),
+        _bodyTimeStamp(_headerTimeStamp),
         _isBodyExisted(false),
         _isChunked(false),
         _isKeepAlive(false) {}

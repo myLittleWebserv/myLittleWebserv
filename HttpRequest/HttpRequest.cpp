@@ -4,6 +4,14 @@
 
 // Interface
 
+bool HttpRequest::isCgi(const std::string& ext) {
+  std::string::size_type ext_delim = _uri.rfind('.');
+  if (std::string::npos == ext_delim || _uri.substr(ext_delim + 1) != ext) {
+    return false;
+  }
+  return true;
+}
+
 void HttpRequest::storeChunk(int fd) {
   _storage.readSocket(fd);
   if (_storage.state() != RECEIVE_DONE) {
