@@ -47,7 +47,7 @@ void EventHandler::addConnection(Event& listen_event, int listen_fd) {
 
   appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD, event);
   appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD, event);
-  appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_DISABLE, event);  // 따로 해야 제대로 적용된다.
+  appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_DISABLE, event);  // 따로 해야 제대로 적용됨.
 }
 
 void EventHandler::routeEvents() {
@@ -78,8 +78,7 @@ void EventHandler::routeEvents() {
       event.httpRequest.storeChunk(event.clientFd);
       if (event.httpRequest.isConnectionClosed()) {
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_EOF, &event);
-      }
-      if (event.httpRequest.isEnd()) {
+      } else if (event.httpRequest.isEnd()) {
         event.serverId = _router.findServerId(event.httpRequest);
         _routedEvents[event.serverId].push_back(&event);
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, NULL);
