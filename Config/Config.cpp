@@ -233,8 +233,7 @@ std::map<int, std::string> Config::_parseDefaultErrorPage(const std::string& pag
 }
 
 // TODO : autoindex 여부 추가
-std::stringstream Config::_locatinInfoString(const LocationInfo& info) {
-  std::stringstream _ss;
+void Config::_locatinInfoString(std::stringstream& _ss, const LocationInfo& info) {
   _ss << "\t"
       << "root: " << info.root << std::endl;
   _ss << "\t"
@@ -261,11 +260,9 @@ std::stringstream Config::_locatinInfoString(const LocationInfo& info) {
     _ss << *it2 << " ";
   }
   _ss << std::endl;
-  return _ss;
 }
 
-std::stringstream Config::_serverInfoString(const ServerInfo& info) {
-  std::stringstream _ss;
+void Config::_serverInfoString(std::stringstream& _ss, const ServerInfo& info) {
   _ss << "----------------------------------------" << std::endl;
   _ss << "server_name: " << info.serverName << std::endl;
   _ss << "root: " << info.root << std::endl;
@@ -280,16 +277,17 @@ std::stringstream Config::_serverInfoString(const ServerInfo& info) {
   _ss << "host port: " << info.hostPort << std::endl;
   for (locationInfoConstIterator it = info.locations.begin(); it != info.locations.end(); ++it) {
     _ss << it->first << ": " << std::endl;
-    _ss << _locatinInfoString(it->second).str();
+    _locatinInfoString(_ss, it->second);
   }
   _ss << "----------------------------------------" << std::endl;
-  return _ss;
 }
 
 void Config::_parsedConfigResult() {
   std::cout << "===============parsed result=====================" << std::endl;
   for (serverInfoConstIterator it = _serverInfos.begin(); it != _serverInfos.end(); ++it) {
-    std::cout << _serverInfoString(*it).str();
+    std::stringstream _ss;
+    _serverInfoString(_ss, *it);
+    std::cout << _ss.str();
   }
   std::cout << "=================================================" << std::endl;
 }

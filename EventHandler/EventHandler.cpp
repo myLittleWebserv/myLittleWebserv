@@ -45,8 +45,8 @@ void EventHandler::addConnection(Event& listen_event, int listen_fd) {
   Event* event = new Event(HTTP_REQUEST_READABLE, client_fd);
 
   appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD, event);
-  appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD, event);
-  appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_DISABLE, event);
+  appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD | EV_ENABLE, event);
+  // appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_DISABLE, event);
 }
 
 void EventHandler::routeEvents() {
