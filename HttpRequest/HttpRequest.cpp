@@ -98,6 +98,8 @@ void HttpRequest::_parseStartLine(const std::string& line) {
     _method = PUT;
   } else if (word == "DELETE") {
     _method = DELETE;
+  } else {
+    _method = NOT_IMPL;
   }
 
   ss >> _uri;
