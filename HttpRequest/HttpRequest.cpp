@@ -32,6 +32,8 @@ void HttpRequest::_parseStartLine(const std::string& line) {
     return;
   }
 
+  _headerTimeStamp = clock();
+
   std::stringstream ss(line);
   std::string       word;
 
@@ -57,6 +59,8 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
     _parsingState = BAD_REQUEST;
     return;
   }
+
+  _headerTimeStamp = clock();
 
   std::stringstream ss(line);
   std::string       word;
@@ -86,7 +90,7 @@ void HttpRequest::_parseHeader() {
       _checkTimeOut(_bodyTimeStamp);
       return;
     }
-    _parseStartLine(line);  // _headerTimeStamp, _badRequest
+    _parseStartLine(line);
   }
 
   while (_parsingState != BAD_REQUEST) {
@@ -100,7 +104,7 @@ void HttpRequest::_parseHeader() {
       _bodyTimeStamp = clock();
       break;
     } else {
-      _parseHeaderField(line);  // _headerTimeStamp , _badRequest
+      _parseHeaderField(line);
     }
   }
 }
