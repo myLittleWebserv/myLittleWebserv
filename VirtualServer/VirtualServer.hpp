@@ -1,17 +1,25 @@
 #ifndef MYLITTLEWEBSERV_VIRTUALSERVER_HPP
 #define MYLITTLEWEBSERV_VIRTUALSERVER_HPP
 
-// have to include a header for struct ServerInfo
 #include "Config.hpp"
+#include "EventHandler.hpp"
+
+class HttpResponse;
 
 class VirtualServer {
  private:
-  int        _serverId;
-  ServerInfo _serverInfo;
+  int           _serverId;
+  ServerInfo&   _serverInfo;
+  EventHandler& _eventHandler;
+
+  void        _callCgi(Event& event);
+  void        _sendResponse(int fd, HttpResponse& response);
+  std::string _findLocation(HttpRequest& httpRequest);
 
  public:
-  VirtualServer(int id, ServerInfo info);
-  void start();
+  VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler);
+  void        start();
+  ServerInfo& getServerInfo() const;
 };
 
 #endif

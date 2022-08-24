@@ -8,7 +8,7 @@
 
 #include "Event.hpp"
 
-#define MAX_EVENTS 20
+#define MAX_EVENTS 200
 #define TIME_OUT_MICRO 10000
 
 class Router;
@@ -28,7 +28,7 @@ class EventHandler {
   EventHandler(const Router& router);
   // Interface
  public:
-  void                 addConnection(int listen_fd);
+  void                 addConnection(Event& listen_event, int listen_fd);
   void                 appendNewEventToChangeList(int ident, int filter, int flag, Event* event);
   void                 removeConnection(Event& event);
   void                 routeEvents();
