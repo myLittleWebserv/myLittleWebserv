@@ -42,6 +42,7 @@ void VirtualServer::start() {
         break;
 
       case HTTP_RESPONSE_WRITABLE:
+        Log::log().printHttpResponse(*event.httpResponse, ALL);
         _sendResponse(event.clientFd, *event.httpResponse);
         if (event.httpRequest.isKeepAlive()) {
           event.type = HTTP_REQUEST_READABLE;

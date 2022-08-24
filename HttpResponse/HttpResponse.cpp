@@ -121,23 +121,27 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
   // add other field ?
 }
 
-bool HttpResponse::_allowedMethod(int method, std::vector<std::string>& allowed_method) {
+bool HttpResponse::_allowedMethod(int method, std::vector<std::string>& allowed_methods) {
   bool is_existed;
+  for (std::vector<std::string>::iterator it = allowed_methods.begin(); it != allowed_methods.end(); ++it) {
+    std::cout << *it << ' ';
+  }
+  std::cout << std::endl;
   switch (method) {
     case GET:
-      is_existed = std::find(allowed_method.begin(), allowed_method.end(), "GET") != allowed_method.end();
+      is_existed = std::find(allowed_methods.begin(), allowed_methods.end(), "GET") != allowed_methods.end();
       return is_existed;
     case POST:
-      is_existed = std::find(allowed_method.begin(), allowed_method.end(), "POST") != allowed_method.end();
+      is_existed = std::find(allowed_methods.begin(), allowed_methods.end(), "POST") != allowed_methods.end();
       return is_existed;
     case HEAD:
-      is_existed = std::find(allowed_method.begin(), allowed_method.end(), "HEAD") != allowed_method.end();
+      is_existed = std::find(allowed_methods.begin(), allowed_methods.end(), "HEAD") != allowed_methods.end();
       return is_existed;
     case PUT:
-      is_existed = std::find(allowed_method.begin(), allowed_method.end(), "PUT") != allowed_method.end();
+      is_existed = std::find(allowed_methods.begin(), allowed_methods.end(), "PUT") != allowed_methods.end();
       return is_existed;
     case DELETE:
-      is_existed = std::find(allowed_method.begin(), allowed_method.end(), "DELETE") != allowed_method.end();
+      is_existed = std::find(allowed_methods.begin(), allowed_methods.end(), "DELETE") != allowed_methods.end();
       return is_existed;
     default:
       return false;
