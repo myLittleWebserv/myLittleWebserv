@@ -31,7 +31,7 @@ void EventHandler::removeConnection(Event& event) {
   Log::log().mark(ret == -1);
 }
 
-void EventHandler::addConnection(Event& listen_event, int listen_fd) {
+void EventHandler::addConnection(int listen_fd) {
   sockaddr_in addr;
   socklen_t   alen;
   int         client_fd = accept(listen_fd, (struct sockaddr*)&addr, &alen);  // addr 버리나?
@@ -73,7 +73,7 @@ void EventHandler::routeEvents() {
       _routedEvents[event.serverId].push_back(&event);
       Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", ALL);
     } else if (filter == EVFILT_READ && event.type == CONNECTION_REQUEST) {
-      addConnection(event, event.keventId);
+      addConnection(event.keventId);
     } else if (filter == EVFILT_READ && event.type == HTTP_REQUEST_READABLE) {
       event.httpRequest.storeChunk(event.clientFd);
 
