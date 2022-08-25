@@ -130,10 +130,6 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
 
 bool HttpResponse::_allowedMethod(int method, std::vector<std::string>& allowed_methods) {
   bool is_existed;
-  for (std::vector<std::string>::iterator it = allowed_methods.begin(); it != allowed_methods.end(); ++it) {
-    std::cout << *it << ' ';
-  }
-  std::cout << std::endl;
   switch (method) {
     case GET:
       is_existed = std::find(allowed_methods.begin(), allowed_methods.end(), "GET") != allowed_methods.end();
@@ -158,9 +154,9 @@ bool HttpResponse::_allowedMethod(int method, std::vector<std::string>& allowed_
 std::string HttpResponse::_getMessage(int status_code) {
   switch (status_code) {
     case 100:
-      return "Continue";
+      return "Continue";  // ?
     case 101:
-      return "Switching Protocols";
+      return "Switching Protocols";  // ?
     case 200:
       return "OK";
     case 201:
@@ -168,21 +164,21 @@ std::string HttpResponse::_getMessage(int status_code) {
     case 202:
       return "Accepted";
     case 204:
-      return "No Content";
+      return "No Content";  // ?
     case 300:
-      return "Multiple Choices";
+      return "Multiple Choices";  //?
     case 301:
       return "Moved Permanently";
     case 302:
-      return "Found";
+      return "Found";  // ?
     case 303:
       return "See Other";
     case 304:
-      return "Not Modified";
+      return "Not Modified";  // ?
     case 305:
-      return "Use Proxy";
+      return "Use Proxy";  // ?
     case 307:
-      return "Temporary Redirect";
+      return "Temporary Redirect";  // ?
     case 400:
       return "Bad Request";
     case 402:
@@ -198,7 +194,7 @@ std::string HttpResponse::_getMessage(int status_code) {
     case 502:
       return "Bad Gateway";
     case 503:
-      return "Service Unavailable";
+      return "Service Unavailable";  // ?
     case 504:
       return "Gateway Timeout";
     case 505:

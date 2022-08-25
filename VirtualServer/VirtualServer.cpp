@@ -47,6 +47,7 @@ void VirtualServer::start() {
         if (event.httpRequest.isKeepAlive()) {
           event.type = HTTP_REQUEST_READABLE;
           event.httpRequest.initialize();
+          // event.cgiResponse.initialize();
           delete event.httpResponse;
           event.httpResponse = NULL;
           Log::log()(LOG_LOCATION, "(FREE) event.httpResponse removed", ALL);
@@ -105,6 +106,7 @@ void VirtualServer::_callCgi(Event& event) {
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
   (void)response;
   send(fd, "hi\n", 3, 0);
+  Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", ALL);
   // std::string response_str = response.getResponse();
   // int         sent_length  = response.sentLength;  // httpResponse 내부에 sent_length 넣을 까 요?
   // if (response_str.length() == sent_length) {
