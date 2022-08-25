@@ -21,7 +21,7 @@ void Storage::readSocket(int fd) {
 }
 
 std::string Storage::getLine() {
-  for (int i = _pos; i != size(); ++i) {
+  for (std::vector<unsigned char>::size_type i = _pos; i != size(); ++i) {
     if ((*this)[i] == '\n') {
       std::string line(begin() + _pos, begin() + i);
       _pos = i + 1;

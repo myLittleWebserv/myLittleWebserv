@@ -41,7 +41,10 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : 
   }
 }
 
-HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info) {}
+HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info) {
+  (void)cgi_response;
+  (void)location_info;
+}
 
 // Interface
 
@@ -69,7 +72,7 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
   }
 
   std::string   file_name = location_info.root + request.uri();
-  std::ifstream file(file_name);
+  std::ifstream file(file_name.c_str());
 
   if (!file.is_open()) {
     _makeErrorResponse(404, request, location_info);  // 403 ?
@@ -91,14 +94,14 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
   }
 
   std::string   file_name = location_info.root + request.uri();
-  std::ifstream ifile(file_name);
+  std::ifstream ifile(file_name.c_str());
 
   if (ifile.is_open()) {
     _makeRedirResponse(303, request, location_info);
     return;
   }
 
-  std::ofstream ofile(file_name);
+  std::ofstream ofile(file_name.c_str());
   ofile.write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
 
   _httpVersion = request.httpVersion();
@@ -107,6 +110,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
 }
 
 void HttpResponse::_makeErrorResponse(int error_code, HttpRequest& request, LocationInfo& location_info) {
+  (void)location_info;
   _httpVersion = request.httpVersion();
   _statusCode  = error_code;
   _message     = _getMessage(_statusCode);
@@ -115,6 +119,8 @@ void HttpResponse::_makeErrorResponse(int error_code, HttpRequest& request, Loca
 }
 
 void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info) {
+  (void)location_info;
+
   _httpVersion = request.httpVersion();
   _statusCode  = redir_code;
   _message     = _getMessage(_statusCode);
@@ -202,4 +208,7 @@ std::string HttpResponse::_getMessage(int status_code) {
   }
 }
 
-std::string HttpResponse::_getContentType(const std::string& file_name) { return "plain/text"; }
+std::string HttpResponse::_getContentType(const std::string& file_name) {
+  (void)file_name;
+  return "plain/text";
+}

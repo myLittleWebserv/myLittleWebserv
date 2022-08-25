@@ -1,5 +1,6 @@
 #include "HttpRequest.hpp"
 
+#include <cstdlib>
 #include <sstream>
 
 #include "Log.hpp"
