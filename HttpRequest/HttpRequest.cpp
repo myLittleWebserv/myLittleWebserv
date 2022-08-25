@@ -40,6 +40,7 @@ void HttpRequest::initialize() {
   _bodyTimeStamp   = _headerTimeStamp;
   _isBodyExisted   = false;
   _isChunked       = false;
+  // clear Storage
 }
 
 // Method
