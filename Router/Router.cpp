@@ -11,7 +11,7 @@
 #define BACKLOG 1024
 
 Router::Router(const std::string& confFile) : _config(confFile), _virtualServers(), _eventHandler(*this) {
-  for (int id = 0; id < _config.getServerInfos().size(); ++id) {
+  for (std::vector<VirtualServer>::size_type id = 0; id < _config.getServerInfos().size(); ++id) {
     _virtualServers.push_back(VirtualServer(id, _config.getServerInfos()[id], _eventHandler));
   }
 }
@@ -20,7 +20,7 @@ void Router::start() {
   _serverSocketsInit();
   while (1) {
     _eventHandler.routeEvents();
-    for (int i = 0; i < _virtualServers.size(); ++i) {
+    for (std::vector<VirtualServer>::size_type i = 0; i < _virtualServers.size(); ++i) {
       _virtualServers[i].start();
     }
   }
@@ -39,10 +39,18 @@ void Router::_serverSocketsInit() {
     Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) setsockopt error", ALL);
     Log::log().mark(ret == -1);
 
-    sockaddr_in server_addr     = {0};
-    server_addr.sin_family      = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port        = htons(*port);
+    sockaddr_in server_addr = {
+        .sin_family = AF_INET,
+        .sin_port   = htons(*port),
+        .sin_addr =
+            {
+                .s_addr = htonl(INADDR_ANY),
+            },
+        .sin_zero =
+            {
+                0,
+            },
+    };
 
     ret = bind(server_socket, (sockaddr*)&server_addr, sizeof(server_addr));
     Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) bind error", ALL);
@@ -67,13 +75,14 @@ void Router::_serverSocketsInit() {
 }
 
 int Router::findServerId(HttpRequest& request) const {
-  for (int i = 0; i < _virtualServers.size(); ++i) {
+  for (std::vector<VirtualServer>::size_type i = 0; i < _virtualServers.size(); ++i) {
     if (_virtualServers[i].getServerInfo().hostPort == request.hostPort() &&
         _virtualServers[i].getServerInfo().serverName == request.hostName()) {
       return i;
     }
   }
-  for (int i = 0; i < _virtualServers.size(); ++i) {  // default server if no matching host:port
+  for (std::vector<VirtualServer>::size_type i = 0; i < _virtualServers.size();
+       ++i) {  // default server if no matching host:port
     if (_virtualServers[i].getServerInfo().hostPort == request.hostPort()) {
       return i;
     }
