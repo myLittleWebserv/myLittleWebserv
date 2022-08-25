@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Log.cpp                                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: mypark <mypark@student.42seoul.kr>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/08/18 18:41:24 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/24 01:44:50 by mypark           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "Log.hpp"
 
 #include <cstdlib>
@@ -40,7 +28,9 @@ const std::string currentTimestamp(TimestampType type) {
   return timestamp.str();
 }
 
-Log::Log() { _logFile.open(LOG_DIR + currentTimestamp(LOG_TITLE) + ".log", std::ofstream::out | std::ofstream::app); }
+Log::Log() {
+  _logFile.open((LOG_DIR + currentTimestamp(LOG_TITLE) + ".log").c_str(), std::ofstream::out | std::ofstream::app);
+}
 
 Log::~Log() { _logFile.close(); }
 

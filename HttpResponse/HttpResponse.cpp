@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <fstream>
 #include <istream>
+#include <iterator>
 #include <sstream>
 
 #include "Config.hpp"

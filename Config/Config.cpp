@@ -3,6 +3,8 @@
 
 #include "Config.hpp"
 
+#include <cstdlib>
+
 Config::Config(const std::string& confFile) {
   _readConfigFile(confFile);
   _startParse();
@@ -13,7 +15,7 @@ Config::Config(const std::string& confFile) {
 Config::~Config() {}
 
 void Config::_readConfigFile(const std::string& confFile) {
-  std::ifstream _file(confFile);
+  std::ifstream _file(confFile.c_str());
 
   if (_file.is_open()) {
     std::string _buffer;
