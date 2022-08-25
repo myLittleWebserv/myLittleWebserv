@@ -3,16 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   Log.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jaemjung <jaemjung@student.42.fr>          +#+  +:+       +#+        */
+/*   By: mypark <mypark@student.42seoul.kr>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:41:24 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/20 12:46:27 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/24 01:44:50 by mypark           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Log.hpp"
 
 #include <cstdlib>
+#include <iomanip>
 
 const std::string currentTimestamp(TimestampType type) {
   time_t rawtime;
@@ -31,12 +32,12 @@ const std::string currentTimestamp(TimestampType type) {
               << timeinfo->tm_mon + 1 << "/" << std::setw(2) << timeinfo->tm_mday << " " << std::setw(2)
               << timeinfo->tm_hour << ":" << std::setw(2) << timeinfo->tm_min << ":" << std::setw(2) << timeinfo->tm_sec
               << "] ";
-  }<<<<<<< EventHandler
+  }
 
   return timestamp.str();
 }
 
-Log::Log() { _logFile.open(currentTimestamp(LOG_TITLE) + ".log", std::ofstream::out | std::ofstream::app); }
+Log::Log() { _logFile.open(LOG_DIR + currentTimestamp(LOG_TITLE) + ".log", std::ofstream::out | std::ofstream::app); }
 
 Log::~Log() { _logFile.close(); }
 
@@ -58,15 +59,34 @@ void Log::mark(const std::string& mark) {
   _logFile << std::endl;
 }
 
+void Log::mark(bool condition, const std::string& m) {
+  if (condition) {
+    mark(m);
+    throw _failure_message;
+  }
+}
 
-void Log::condition(bool condition, const char* file, int line, const char* function,
-                    const std::string& success_message, const std::string& failure_message, LogLocationType location) {
-  if (condition && !success_message.empty()) {
-    operator()(file, line, function, success_message, location);
-
-  } else {
+void Log::syscall(int ret, const char* file, int line, const char* function, const std::string& success_message,
+                  const std::string& failure_message, LogLocationType location) {
+  if (ret == -1) {
     operator()(file, line, function, failure_message, location);
-    exit(1);
+    operator()("errno", strerror(errno));
+    _failure_message = failure_message;
+  } else if (!success_message.empty()) {
+    operator()(file, line, function, success_message, location);
+  }
+}
+
+void Log::operator()(const std::string& message, LogLocationType location) {
+  std::stringstream logMessage;
+
+  logMessage << message;
+
+  if (location == ALL || location == CONSOLE) {
+    std::cerr << logMessage.str() << std::endl;
+  }
+  if (location == ALL || location == INFILE) {
+    _logFile << logMessage.str() << std::endl;
   }
 }
 
@@ -74,15 +94,14 @@ void Log::operator()(const char* file, int line, const char* function, const std
                      LogLocationType location) {
   std::stringstream logMessage;
 
-  logMessage << currentTimestamp(LOG_FILE) << std::endl
+  logMessage << currentTimestamp(LOG_FILE) << '\n'
              << "[Logged from : " << file << ":" << function << ":" << line << "] " << std::endl
-             << message << std::endl;
-
+             << message;
 
   if (location == ALL || location == CONSOLE) {
-    std::cout << logMessage.str();
+    std::cerr << logMessage.str() << std::endl;
   }
   if (location == ALL || location == INFILE) {
-    _logFile << logMessage.str();
+    _logFile << logMessage.str() << std::endl;
   }
 }

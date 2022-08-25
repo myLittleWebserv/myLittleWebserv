@@ -3,10 +3,9 @@
 
 #include <sys/types.h>
 
-#include "test/CgiResponse.hpp"
-#include "test/HttpRequest.hpp"
-
-class HttpResponse;
+#include "CgiResponse.hpp"
+#include "HttpRequest.hpp"
+#include "HttpResponse.hpp"
 
 enum EventType { CONNECTION_REQUEST, HTTP_REQUEST_READABLE, HTTP_RESPONSE_WRITABLE, CGI_RESPONSE_READABLE };
 
@@ -29,6 +28,7 @@ struct Event {
         httpRequest(),
         cgiResponse(),
         httpResponse(NULL) {}
+  ~Event() { delete httpResponse; }
 };
 
 #endif  // Event_hpp

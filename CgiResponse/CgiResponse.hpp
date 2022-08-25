@@ -8,7 +8,7 @@ class CgiResponse {
   // Interface
  public:
   bool isEnd() { return true; }
-  void add(int client_fd) { (void)client_fd; }
+  void storeChunk(int client_fd) { (void)client_fd; }
 };
 
 #endif

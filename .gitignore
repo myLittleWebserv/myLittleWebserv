@@ -1,5 +1,7 @@
-*.log
-*.out
+LogFiles
 objs
+*.out
 *.o
 *.json
+*.pseudo
+myLittleWebserv
