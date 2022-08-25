@@ -28,7 +28,7 @@ class EventHandler {
   EventHandler(const Router& router);
   // Interface
  public:
-  void                 addConnection(Event& listen_event, int listen_fd);
+  void                 addConnection(int listen_fd);
   void                 appendNewEventToChangeList(int ident, int filter, int flag, Event* event);
   void                 removeConnection(Event& event);
   void                 routeEvents();

@@ -15,7 +15,7 @@ SRC :=	main.cpp\
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
 
 
-CXXFALGS += -fsanitize=address -g -std=c++98
+CXXFALGS += -fsanitize=address -g -std=c++98 -Wall -Werror -Wextra
 LDFALGS += -fsanitize=address -g
 
 INCS := -I ./Router\

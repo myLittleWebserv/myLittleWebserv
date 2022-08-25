@@ -14,7 +14,7 @@ std::string VirtualServer::_findLocation(HttpRequest& httpReuest) {
 
 void VirtualServer::start() {
   std::vector<Event*> event_list = _eventHandler.getRoutedEvents(_serverId);
-  for (int i = 0; i < event_list.size(); i++) {
+  for (std::vector<Event*>::size_type i = 0; i < event_list.size(); i++) {
     Event&        event         = *event_list[i];
     std::string   location      = _findLocation(event.httpRequest);
     LocationInfo& location_info = _serverInfo.locations[location];
@@ -68,6 +68,7 @@ void VirtualServer::start() {
 #define WRITEEND 1
 
 void VirtualServer::_callCgi(Event& event) {
+  (void)event;
   // //  std::string cgi_path = getCgiPath(_serverInfo.locations); -> httpRequest에서 url 받아와서 찾아야 할 듯
   // int _pipe[2];  // pipe를 event에 넣어야 할 것 같다.
   //                // Waitpid Wnohang시 프로스세가 끝난지 한참 지나도 pid를 리턴 하는 것 확인
@@ -101,6 +102,7 @@ void VirtualServer::_callCgi(Event& event) {
 }
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
+  (void)response;
   send(fd, "hi\n", 3, 0);
   // std::string response_str = response.getResponse();
   // int         sent_length  = response.sentLength;  // httpResponse 내부에 sent_length 넣을 까 요?
