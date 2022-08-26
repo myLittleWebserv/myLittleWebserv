@@ -21,6 +21,7 @@ void VirtualServer::start() {
 
     switch (event.type) {
       case HTTP_REQUEST_READABLE:
+        Log::log().printHttpRequest(event.httpRequest, ALL);
         if (event.httpRequest.isCgi(location_info.cgiExtension)) {
           _callCgi(event);
           break;
@@ -44,12 +45,12 @@ void VirtualServer::start() {
         _sendResponse(event.clientFd, *event.httpResponse);
         if (event.httpRequest.isKeepAlive()) {
           event.type = HTTP_REQUEST_READABLE;
+          event.httpRequest.initialize();
           delete event.httpResponse;
           event.httpResponse = NULL;
           Log::log()(LOG_LOCATION, "(FREE) event.httpResponse removed", ALL);
           _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_DISABLE, &event);
           _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
-          event.httpRequest.isEnd() = false;
         } else {  // 조건문 추가
           _eventHandler.removeConnection(event);
           delete &event;

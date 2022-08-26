@@ -8,7 +8,9 @@ SRC :=	main.cpp\
 				VirtualServer.cpp\
 				Log.cpp\
 				Config.cpp\
-				EventHandler.cpp
+				EventHandler.cpp\
+				HttpRequest.cpp\
+				Storage.cpp
 
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
 
@@ -23,7 +25,7 @@ INCS := -I ./Router\
 				-I ./VirtualServer\
 				-I ./HttpRequest\
 				-I ./HttpResponse\
-				-I ./CgiResponse\
+				-I ./CgiResponse
 
 
 ifeq ($(shell uname), Linux)

@@ -20,6 +20,8 @@
 #include <sstream>
 #include <string>
 
+class HttpRequest;
+
 #define LOG_LOCATION __FILE__, __LINE__, __func__
 #define LOG_DIR "./LogFiles/"
 
@@ -49,19 +51,21 @@ class Log {
   void operator()(const std::string& tag, ARG arg, LogLocationType location = INFILE);
   template <typename ARG>
   void operator()(bool condition, const std::string& tag, ARG arg, LogLocationType location = INFILE);
+
+  void printHttpRequest(HttpRequest& request, LogLocationType location = INFILE);
 };
 
 template <typename ARG>
 void Log::operator()(const std::string& tag, ARG arg, LogLocationType location) {
   std::stringstream logMessage;
 
-  logMessage << tag << " : " << arg << std::endl;
+  logMessage << tag << " : " << arg;
 
   if (location == ALL || location == CONSOLE) {
-    std::cerr << logMessage.str();
+    std::cerr << logMessage.str() << std::endl;
   }
   if (location == ALL || location == INFILE) {
-    _logFile << logMessage.str();
+    _logFile << logMessage.str() << std::endl;
   }
 }
 
