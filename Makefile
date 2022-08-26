@@ -1,4 +1,5 @@
 NAME := myLittleWebserv
+CLIENT := client
 
 OBJ_DIR := objs
 LOG_DIR := LogFiles
@@ -10,6 +11,7 @@ SRC :=	main.cpp\
 				Config.cpp\
 				EventHandler.cpp\
 				HttpRequest.cpp\
+				HttpResponse.cpp\
 				Storage.cpp
 
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
@@ -35,7 +37,7 @@ endif
 
 VPATH := $(shell ls -R)
 
-all : directories $(NAME)
+all : directories $(NAME) $(CLIENT)
 
 directories : $(OBJ_DIR) $(LOG_DIR)
 
@@ -58,10 +60,17 @@ clean:
 	rm -rf $(OBJ_DIR)
 
 fclean: clean
+	rm -rf $(CLIENT)
 	rm -rf $(NAME)
 	rm -rf *.out
 	rm -rf *.dSYM
 
 re: fclean all
+
+$(CLIENT): test/Client.cpp
+	$(CXX) -o $@ $^
+
+
+
 
 

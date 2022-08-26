@@ -1,21 +1,10 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Log.cpp                                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: mypark <mypark@student.42seoul.kr>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/08/18 18:41:24 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/25 23:30:43 by mypark           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "Log.hpp"
 
 #include <cstdlib>
 #include <iomanip>
 
 #include "HttpRequest.hpp"
+#include "HttpResponse.hpp"
 
 const std::string currentTimestamp(TimestampType type) {
   time_t rawtime;
@@ -118,6 +107,19 @@ void Log::printHttpRequest(HttpRequest& request, LogLocationType location) {
              << "\nhttpVersion: " << request.httpVersion() << "\ncontentLength: " << request.contentLength()
              << "\ncontentType: " << request.contentType() << "\nhostPort: " << request.hostPort()
              << "\nhostName: " << request.hostName() << '\n';
+
+  if (location == ALL || location == CONSOLE) {
+    std::cerr << logMessage.str() << std::endl;
+  }
+  if (location == ALL || location == INFILE) {
+    _logFile << logMessage.str() << std::endl;
+  }
+}
+
+void Log::printHttpResponse(HttpResponse& response, LogLocationType location) {
+  std::stringstream logMessage;
+
+  logMessage << "HttpResponse:\n" << response.headerToString();  // body 추가..?
 
   if (location == ALL || location == CONSOLE) {
     std::cerr << logMessage.str() << std::endl;

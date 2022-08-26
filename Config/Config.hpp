@@ -32,7 +32,7 @@ struct LocationInfo {
   std::string                cgiPath;
   std::string                indexPagePath;
   bool                       isAutoIndexOn;
-  int                        redirStatus;
+  int                        redirStatus;  //  default = -1
   std::string                redirPath;
   struct in_addr             hostIp;
   int                        hostPort;
