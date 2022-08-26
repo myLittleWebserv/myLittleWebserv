@@ -104,9 +104,13 @@ void VirtualServer::_callCgi(Event& event) {
 }
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
-  (void)response;
-  send(fd, "hi\n", 3, 0);
+  //(void)response;
+  //send(fd, "hi\n", 3, 0);
+  send(fd, response.headerToString().c_str(), response.headerToString().size(), 0);
+  send(fd, response.body().data(), response.body().size(), 0);
   Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", ALL);
+
+
   // std::string response_str = response.getResponse();
   // int         sent_length  = response.sentLength;  // httpResponse 내부에 sent_length 넣을 까 요?
   // if (response_str.length() == sent_length) {

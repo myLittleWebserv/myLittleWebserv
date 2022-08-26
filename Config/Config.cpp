@@ -152,6 +152,7 @@ LocationInfo Config::_init_locationInfo(const ServerInfo& serverInfo) {
   _location_info.hostIp            = serverInfo.hostIp;
   _location_info.hostPort          = serverInfo.hostPort;
   _location_info.serverName        = serverInfo.serverName;
+  _location_info.redirStatus       = -1;
   return _location_info;
 }
 

@@ -120,6 +120,10 @@ void Log::printHttpResponse(HttpResponse& response, LogLocationType location) {
   std::stringstream logMessage;
 
   logMessage << "HttpResponse:\n" << response.headerToString();  // body 추가..?
+  for(std::vector<unsigned char>::const_iterator it = response.body().begin(); it != response.body().end(); it++) {
+    logMessage << *it;
+  }
+
 
   if (location == ALL || location == CONSOLE) {
     std::cerr << logMessage.str() << std::endl;

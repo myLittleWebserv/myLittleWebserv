@@ -5,7 +5,7 @@
 
 class HttpRequest;
 class CgiResponse;
-class LocationInfo;
+struct LocationInfo;
 
 class HttpResponse {
   // Member Variable
