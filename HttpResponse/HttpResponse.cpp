@@ -29,9 +29,17 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : 
     return;
   }
 
+  if (location_info.redirStatus != -1) {
+    _makeRedirResponse(location_info.redirStatus, request, location_info);
+    return;
+  }
+
   switch (request.method()) {
     case GET:
       _processGetRequest(request, location_info);
+      break;
+    case HEAD:
+      _processHeadRequest(request, location_info);
       break;
     case POST:
       _processPostRequest(request, location_info);
@@ -59,6 +67,9 @@ std::string HttpResponse::headerToString() {
   if (!_contentType.empty()) {
     response_stream << "Content-Type: " << _contentType << "\r\n";
   }
+  if (!_location.empty()) {
+    response_stream << "Location: " << _location << "\r\n";
+  }
   response_stream << "\r\n";
   return response_stream.str();
 }
@@ -66,12 +77,11 @@ std::string HttpResponse::headerToString() {
 // Method
 
 void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& location_info) {
-  if (location_info.redirStatus != -1) {
-    _makeRedirResponse(location_info.redirStatus, request, location_info);
-    return;
-  }
+  std::string file_pos = '/' + request.uri().substr(location_info.id.size());
+  if (file_pos.empty())
+    file_pos = location_info.indexPagePath;
 
-  std::string   file_name = location_info.root + request.uri();
+  std::string   file_name = location_info.root + file_pos;
   std::ifstream file(file_name.c_str());
 
   if (!file.is_open()) {
@@ -82,17 +92,26 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
   _httpVersion = request.httpVersion();
   _statusCode  = 200;
   _message     = _getMessage(_statusCode);
-  _body.insert(_body.begin(), std::istream_iterator<unsigned char>(file), std::istream_iterator<unsigned char>());
+
+  while (!file.eof()) {
+    std::string line;
+    std::getline(file, line);
+    _body.insert(_body.end(), line.c_str(), line.c_str() + line.size());
+    _body.insert(_body.end(), '\n');
+  }
+
   _contentLength = _body.size();
   _contentType   = _getContentType(file_name);
 }
 
-void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& location_info) {
-  if (location_info.redirStatus != -1) {
-    _makeRedirResponse(location_info.redirStatus, request, location_info);
-    return;
-  }
+void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {
+  (void)location_info;
+  _httpVersion = request.httpVersion();
+  _statusCode  = 200;
+  _message     = _getMessage(_statusCode);
+}
 
+void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& location_info) {
   std::string   file_name = location_info.root + request.uri();
   std::ifstream ifile(file_name.c_str());
 
@@ -125,6 +144,7 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
   _statusCode  = redir_code;
   _message     = _getMessage(_statusCode);
 
+  _location = "helloWorld.html";  // ?
   // add other field ?
 }
 
