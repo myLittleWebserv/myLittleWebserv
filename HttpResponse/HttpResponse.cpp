@@ -78,7 +78,7 @@ std::string HttpResponse::headerToString() {
 
 void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& location_info) {
   std::string file_pos = '/' + request.uri().substr(location_info.id.size());
-  if (file_pos.empty())
+  if (file_pos == "/")
     file_pos = location_info.indexPagePath;
 
   std::string   file_name = location_info.root + file_pos;
@@ -112,7 +112,8 @@ void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& locat
 }
 
 void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& location_info) {
-  std::string   file_name = location_info.root + request.uri();
+  std::string   file_pos  = '/' + request.uri().substr(location_info.id.size());
+  std::string   file_name = location_info.root + file_pos;
   std::ifstream ifile(file_name.c_str());
 
   if (ifile.is_open()) {
@@ -144,7 +145,7 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
   _statusCode  = redir_code;
   _message     = _getMessage(_statusCode);
 
-  _location = "helloWorld.html";  // ?
+  _location = location_info.redirPath;
   // add other field ?
 }
 
