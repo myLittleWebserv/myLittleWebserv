@@ -24,6 +24,7 @@
 #include "Log.hpp"
 
 struct LocationInfo {
+  std::string                id;
   int                        maxBodySize;
   std::string                root;
   std::map<int, std::string> defaultErrorPages;
@@ -68,7 +69,7 @@ class Config {
   void         _printConfigContent();
   void         _startParse();
   ServerInfo   _parseServer(configIterator& it, const configIterator& end);
-  LocationInfo _parseLocation(configIterator& it, const ServerInfo& serverInfo);
+  LocationInfo _parseLocation(configIterator& it, const ServerInfo& serverInfo, const std::string& id);
   void         _parseLocationInfoToken(LocationInfo& info, const std::string& identifier, const std::string& value);
   std::map<int, std::string>  _parseDefaultErrorPage(const std::string& pages);
   std::vector<std::string>    _parseAllowedMethod(const std::string& value);
