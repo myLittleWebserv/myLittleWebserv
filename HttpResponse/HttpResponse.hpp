@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#define DEFAULT_ERROR_PAGE_DIR "ErrorPages"
+
 class HttpRequest;
 class CgiResponse;
 struct LocationInfo;
@@ -24,7 +26,8 @@ class HttpResponse {
   void        _processHeadRequest(HttpRequest& request, LocationInfo& location_info);
   void        _processPostRequest(HttpRequest& request, LocationInfo& location_info);
   void        _makeErrorResponse(int error_code, HttpRequest& request, LocationInfo& location_info);
-  void        _makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info);
+  void        _makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info,
+                                 const std::string& location_field = "");
   bool        _allowedMethod(int method, std::vector<std::string>& allowed_method);
   std::string _getMessage(int status_code);
   std::string _getContentType(const std::string& file_name);

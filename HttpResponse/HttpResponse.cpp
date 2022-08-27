@@ -78,8 +78,9 @@ std::string HttpResponse::headerToString() {
 
 void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& location_info) {
   std::string file_pos = '/' + request.uri().substr(location_info.id.size());
-  if (file_pos == "/")
-    file_pos = location_info.indexPagePath;
+  if (file_pos == "/") {
+    file_pos += location_info.indexPagePath;
+  }
 
   std::string   file_name = location_info.root + file_pos;
   std::ifstream file(file_name.c_str());
@@ -89,10 +90,6 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
     return;
   }
 
-  _httpVersion = request.httpVersion();
-  _statusCode  = 200;
-  _message     = _getMessage(_statusCode);
-
   while (!file.eof()) {
     std::string line;
     std::getline(file, line);
@@ -100,15 +97,21 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
     _body.insert(_body.end(), '\n');
   }
 
+  _httpVersion   = request.httpVersion();
+  _statusCode    = 200;
+  _message       = _getMessage(_statusCode);
   _contentLength = _body.size();
   _contentType   = _getContentType(file_name);
+  Log::log()(LOG_LOCATION, "Get request processed.");
 }
 
-void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {
+void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
   (void)location_info;
   _httpVersion = request.httpVersion();
   _statusCode  = 200;
   _message     = _getMessage(_statusCode);
+  // add other fields ?
+  Log::log()(LOG_LOCATION, "Head request processed.");
 }
 
 void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& location_info) {
@@ -117,7 +120,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
   std::ifstream ifile(file_name.c_str());
 
   if (ifile.is_open()) {
-    _makeRedirResponse(303, request, location_info);
+    _makeRedirResponse(303, request, location_info, file_name);
     return;
   }
 
@@ -127,26 +130,51 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
   _httpVersion = request.httpVersion();
   _statusCode  = 201;
   _message     = _getMessage(_statusCode);
+  Log::log()(LOG_LOCATION, "Post request processed.");
 }
 
 void HttpResponse::_makeErrorResponse(int error_code, HttpRequest& request, LocationInfo& location_info) {
-  (void)location_info;
+  std::ifstream file;
+
+  if (location_info.defaultErrorPages.count(error_code)) {
+    std::stringstream file_name;
+    file_name << location_info.root << '/' << location_info.defaultErrorPages[error_code];
+    file.open(file_name.str().c_str());
+  }
+
+  if (!file.is_open()) {
+    std::stringstream default_error_page;
+    default_error_page << DEFAULT_ERROR_PAGE_DIR << '/' << error_code << ".html";
+    file.open(default_error_page.str().c_str());
+  }
+
+  while (!file.eof()) {
+    std::string line;
+    std::getline(file, line);
+    _body.insert(_body.end(), line.c_str(), line.c_str() + line.size());
+    _body.insert(_body.end(), '\n');
+  }
+
   _httpVersion = request.httpVersion();
   _statusCode  = error_code;
   _message     = _getMessage(_statusCode);
-
-  // add error page to body
+  Log::log()(LOG_LOCATION, "Error page returned.");
 }
 
-void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info) {
-  (void)location_info;
-
+void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info,
+                                      const std::string& location_field) {
   _httpVersion = request.httpVersion();
   _statusCode  = redir_code;
   _message     = _getMessage(_statusCode);
 
-  _location = location_info.redirPath;
+  if (location_field.empty()) {
+    _location = location_info.redirPath;  // ?
+  } else {
+    _location = location_field;
+  }
+
   // add other field ?
+  Log::log()(LOG_LOCATION, "Redirection address returned.");
 }
 
 bool HttpResponse::_allowedMethod(int method, std::vector<std::string>& allowed_methods) {
