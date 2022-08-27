@@ -5,7 +5,7 @@
 
 class HttpRequest;
 class CgiResponse;
-class LocationInfo;
+struct LocationInfo;
 
 class HttpResponse {
   // Member Variable
@@ -14,12 +14,14 @@ class HttpResponse {
   std::string                _httpVersion;
   int                        _statusCode;
   std::string                _message;
+  std::string                _location;
   int                        _contentLength;
   std::string                _contentType;  // default = plain/text;
 
   // Method
  private:
   void        _processGetRequest(HttpRequest& request, LocationInfo& location_info);
+  void        _processHeadRequest(HttpRequest& request, LocationInfo& location_info);
   void        _processPostRequest(HttpRequest& request, LocationInfo& location_info);
   void        _makeErrorResponse(int error_code, HttpRequest& request, LocationInfo& location_info);
   void        _makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info);
