@@ -7,17 +7,25 @@
 VirtualServer::VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler)
     : _serverId(id), _serverInfo(info), _eventHandler(eventHandler) {}
 
-std::string VirtualServer::_findLocation(HttpRequest& httpReuest) {
-  (void)httpReuest;
-  return "/";
+LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpReuest) {
+  std::string                                   key;
+  std::map<std::string, LocationInfo>::iterator found;
+
+  key = httpReuest.uri();
+  while (key != "/" && !key.empty()) {
+    found = _serverInfo.locations.find(key);
+    if (found != _serverInfo.locations.end())
+      return found->second;
+    key = key.substr(0, key.rfind("/"));
+  }
+  return _serverInfo.locations["/"];
 }
 
 void VirtualServer::start() {
   std::vector<Event*> event_list = _eventHandler.getRoutedEvents(_serverId);
   for (std::vector<Event*>::size_type i = 0; i < event_list.size(); i++) {
     Event&        event         = *event_list[i];
-    std::string   location      = _findLocation(event.httpRequest);
-    LocationInfo& location_info = _serverInfo.locations[location];
+    LocationInfo& location_info = _findLocationInfo(event.httpRequest);
 
     switch (event.type) {
       case HTTP_REQUEST_READABLE:
