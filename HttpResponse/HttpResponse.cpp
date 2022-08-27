@@ -1,9 +1,6 @@
 #include "HttpResponse.hpp"
 
 #include <algorithm>
-#include <fstream>
-#include <istream>
-#include <iterator>
 #include <sstream>
 
 #include "Config.hpp"
@@ -44,6 +41,12 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : 
     case POST:
       _processPostRequest(request, location_info);
       break;
+    case PUT:
+      _processPutRequest(request, location_info);
+      break;
+    case DELETE:
+      _processDeleteRequest(request, location_info);
+      break;
     default:
       break;
   }
@@ -76,7 +79,45 @@ std::string HttpResponse::headerToString() {
 
 // Method
 
+void HttpResponse::_fileToBody(std::ifstream& file) {
+  while (!file.eof()) {
+    std::string line;
+    std::getline(file, line);
+    _body.insert(_body.end(), line.c_str(), line.c_str() + line.size());
+    _body.insert(_body.end(), '\n');
+  }
+}
+
 void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& location_info) {
+  std::string file_pos = '/' + request.uri().substr(location_info.id.size());
+  if (file_pos == "/") {
+    file_pos += location_info.indexPagePath;
+  }
+
+  // autoindex ?
+
+  std::string   file_name = location_info.root + file_pos;
+  std::ifstream file(file_name.c_str());
+
+  if (!file.is_open()) {
+    _makeErrorResponse(404, request, location_info);  // 403 ?
+    return;
+  }
+
+  _fileToBody(file);
+  if (_body.size() > location_info.maxBodySize) {
+    _makeErrorResponse(413, request, location_info);
+  }
+
+  _httpVersion   = request.httpVersion();
+  _statusCode    = 200;
+  _message       = _getMessage(_statusCode);
+  _contentLength = _body.size();
+  _contentType   = _getContentType(file_name);
+  Log::log()(LOG_LOCATION, "Get request processed.");
+}
+
+void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
   std::string file_pos = '/' + request.uri().substr(location_info.id.size());
   if (file_pos == "/") {
     file_pos += location_info.indexPagePath;
@@ -90,31 +131,23 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
     return;
   }
 
-  while (!file.eof()) {
-    std::string line;
-    std::getline(file, line);
-    _body.insert(_body.end(), line.c_str(), line.c_str() + line.size());
-    _body.insert(_body.end(), '\n');
-  }
-
-  _httpVersion   = request.httpVersion();
-  _statusCode    = 200;
-  _message       = _getMessage(_statusCode);
-  _contentLength = _body.size();
-  _contentType   = _getContentType(file_name);
-  Log::log()(LOG_LOCATION, "Get request processed.");
-}
-
-void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
-  (void)location_info;
   _httpVersion = request.httpVersion();
   _statusCode  = 200;
   _message     = _getMessage(_statusCode);
-  // add other fields ?
+  _contentType = _getContentType(file_name);
   Log::log()(LOG_LOCATION, "Head request processed.");
 }
 
 void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& location_info) {
+  if (request.body().size() == 0) {
+    _makeErrorResponse(402, request, location_info);
+    return;
+  }
+  if (request.body().size() > location_info.maxBodySize) {
+    _makeErrorResponse(413, request, location_info);
+    return;
+  }
+
   std::string   file_pos  = '/' + request.uri().substr(location_info.id.size());
   std::string   file_name = location_info.root + file_pos;
   std::ifstream ifile(file_name.c_str());
@@ -133,6 +166,26 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
   Log::log()(LOG_LOCATION, "Post request processed.");
 }
 
+void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
+  if (request.body().size() == 0) {
+    _makeErrorResponse(402, request, location_info);
+    return;
+  }
+  if (request.body().size() > location_info.maxBodySize) {
+    _makeErrorResponse(413, request, location_info);
+    return;
+  }
+  // ?
+  Log::log()(LOG_LOCATION, "Put request processed.");
+}
+
+void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
+  (void)location_info;
+  (void)request;
+
+  Log::log()(LOG_LOCATION, "Delete request processed.");
+}
+
 void HttpResponse::_makeErrorResponse(int error_code, HttpRequest& request, LocationInfo& location_info) {
   std::ifstream file;
 
@@ -148,12 +201,7 @@ void HttpResponse::_makeErrorResponse(int error_code, HttpRequest& request, Loca
     file.open(default_error_page.str().c_str());
   }
 
-  while (!file.eof()) {
-    std::string line;
-    std::getline(file, line);
-    _body.insert(_body.end(), line.c_str(), line.c_str() + line.size());
-    _body.insert(_body.end(), '\n');
-  }
+  _fileToBody(file);
 
   _httpVersion = request.httpVersion();
   _statusCode  = error_code;
@@ -236,8 +284,10 @@ std::string HttpResponse::_getMessage(int status_code) {
       return "Not Found";
     case 405:
       return "Method Not Allowed";
+    case 413:
+      return "Payload Too Large";
     case 500:
-      return "Internal Server Error";
+      return "Internal Server Error";  // ?
     case 501:
       return "Not Implemented";
     case 502:
