@@ -40,7 +40,8 @@ void HttpRequest::initialize() {
   _bodyTimeStamp   = _headerTimeStamp;
   _isBodyExisted   = false;
   _isChunked       = false;
-  // clear Storage
+  _body.clear();
+  _storage.clear();
 }
 
 // Method
@@ -79,7 +80,7 @@ void HttpRequest::_parseHeader() {
 
 void HttpRequest::_parseStartLine(const std::string& line) {
   if (*line.rbegin() != '\r') {
-    _parsingState = BAD_REQUEST;
+    _parsingState = BAD_REQUEST;  // 사이 공백 확인.
     return;
   }
 

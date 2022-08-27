@@ -19,6 +19,7 @@ class Storage : private std::vector<unsigned char> {
 
   // Interface
  public:
+  void                                 clear() { this->clear(); }
   SocketReadingState                   state() { return _state; }
   std::vector<unsigned char>::iterator pos() { return begin() + _pos; }
   void                                 readSocket(int fd);
