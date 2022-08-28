@@ -51,6 +51,7 @@ void Config::_startParse() {
 ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
   ServerInfo _server_info;
 
+  _server_info.maxBodySize = DEFAULT_MAX_BODY_SIZE;
   while (it != end && *it != "server" && *it != "\n") {
     std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
     // if (_trimmed.first != 1) {

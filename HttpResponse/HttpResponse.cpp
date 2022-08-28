@@ -105,7 +105,7 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
   }
 
   _fileToBody(file);
-  if (_body.size() > location_info.maxBodySize) {
+  if (static_cast<int>(_body.size()) > location_info.maxBodySize) {
     _makeErrorResponse(413, request, location_info);
   }
 
@@ -143,7 +143,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
     _makeErrorResponse(402, request, location_info);
     return;
   }
-  if (request.body().size() > location_info.maxBodySize) {
+  if (static_cast<int>(request.body().size()) > location_info.maxBodySize) {
     _makeErrorResponse(413, request, location_info);
     return;
   }
@@ -171,7 +171,7 @@ void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& locati
     _makeErrorResponse(402, request, location_info);
     return;
   }
-  if (request.body().size() > location_info.maxBodySize) {
+  if (static_cast<int>(request.body().size()) > location_info.maxBodySize) {
     _makeErrorResponse(413, request, location_info);
     return;
   }
