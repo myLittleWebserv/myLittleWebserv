@@ -16,6 +16,7 @@ LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpReuest) {
     found = _serverInfo.locations.find(key);
     if (found != _serverInfo.locations.end()) {
       Log::log()(LOG_LOCATION, "LocationInfo found", ALL);
+      Log::log()(true, "key", found->first, ALL);
       return found->second;
     }
     key = key.substr(0, key.rfind('/'));

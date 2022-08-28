@@ -8,6 +8,7 @@
 
 class HttpRequest;
 class CgiResponse;
+class FileManager;
 struct LocationInfo;
 
 class HttpResponse {
@@ -29,6 +30,7 @@ class HttpResponse {
   void        _processPostRequest(HttpRequest& request, LocationInfo& location_info);
   void        _processPutRequest(HttpRequest& request, LocationInfo& location_info);
   void        _processDeleteRequest(HttpRequest& request, LocationInfo& location_info);
+  void        _makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info, FileManager& file_manager);
   void        _makeErrorResponse(int error_code, HttpRequest& request, LocationInfo& location_info);
   void        _makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info,
                                  const std::string& location_field = "");

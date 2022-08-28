@@ -2,11 +2,18 @@
 
 #include <string>
 #include <vector>
+
+#include "Log.hpp"
 #define READ_BUFFER_SIZE 8192
 
 enum SocketReadingState { RECEIVE_DONE = -1, CONNECTION_CLOSED = 0, RECEIVING };
 
 class Storage : private std::vector<unsigned char> {
+  // Types;
+ public:
+  typedef std::vector<unsigned char>           vector;
+  typedef std::vector<unsigned char>::iterator iterator;
+
   // Member Variable
  private:
   SocketReadingState _state;
@@ -19,10 +26,12 @@ class Storage : private std::vector<unsigned char> {
 
   // Interface
  public:
-  SocketReadingState                   state() { return _state; }
-  std::vector<unsigned char>::iterator pos() { return begin() + _pos; }
-  void                                 readSocket(int fd);
-  std::string                          getLine();
+  using vector::clear;
+  using vector::size;
+  SocketReadingState state() { return _state; }
+  iterator           pos() { return begin() + _pos; }
+  void               readSocket(int fd);
+  std::string        getLine();
 };
 
 #endif

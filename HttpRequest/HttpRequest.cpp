@@ -1,6 +1,5 @@
 #include "HttpRequest.hpp"
 
-#include <cstdlib>
 #include <sstream>
 
 #include "Log.hpp"
@@ -41,7 +40,8 @@ void HttpRequest::initialize() {
   _bodyTimeStamp   = _headerTimeStamp;
   _isBodyExisted   = false;
   _isChunked       = false;
-  // clear Storage
+  _body.clear();
+  _storage.clear();
 }
 
 // Method
@@ -80,10 +80,11 @@ void HttpRequest::_parseHeader() {
 
 void HttpRequest::_parseStartLine(const std::string& line) {
   if (*line.rbegin() != '\r') {
-    _parsingState = BAD_REQUEST;
+    _parsingState = BAD_REQUEST;  // 사이 공백 확인.
     return;
   }
 
+  _headerSize += line.size() + 1;
   _headerTimeStamp = clock();
 
   std::stringstream ss(line);
@@ -110,11 +111,12 @@ void HttpRequest::_parseStartLine(const std::string& line) {
 }
 
 void HttpRequest::_parseHeaderField(const std::string& line) {
-  if (*line.rbegin() != '\r' || line.size() + _headerSize > HTTP_MAX_HEADER_SIZE) {
+  if (*line.rbegin() != '\r' || line.size() + 1 + _headerSize > HTTP_MAX_HEADER_SIZE) {
     _parsingState = BAD_REQUEST;
     return;
   }
 
+  _headerSize += line.size() + 1;
   _headerTimeStamp = clock();
 
   std::stringstream ss(line);
@@ -165,7 +167,8 @@ void HttpRequest::_parseBody() {
 }
 
 void HttpRequest::_parseChunk() {
-  std::string line = _storage.getLine();
+  Storage::iterator record = _storage.pos();
+  std::string       line   = _storage.getLine();
 
   if (line.empty()) {
     _checkTimeOut(_bodyTimeStamp);
@@ -174,6 +177,7 @@ void HttpRequest::_parseChunk() {
 
   int chunk_size = _parseChunkSize(line);
   if (chunk_size != 0) {
+    chunk_size -= (_storage.pos() - record);
     _body.insert(_body.end(), _storage.pos(), _storage.pos() + chunk_size);
     _bodyTimeStamp = clock();
   } else {

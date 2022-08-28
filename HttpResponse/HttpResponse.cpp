@@ -1,9 +1,12 @@
 #include "HttpResponse.hpp"
 
+#include <dirent.h>
+
 #include <algorithm>
 #include <sstream>
 
 #include "Config.hpp"
+#include "FileManager.hpp"
 #include "HttpRequest.hpp"
 
 // Constructor
@@ -89,22 +92,29 @@ void HttpResponse::_fileToBody(std::ifstream& file) {
 }
 
 void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& location_info) {
-  std::string file_pos = '/' + request.uri().substr(location_info.id.size());
-  if (file_pos == "/") {
-    file_pos += location_info.indexPagePath;
+  FileManager file_manager(request.uri(), location_info);
+  bool        isAutoIndexOn = location_info.isAutoIndexOn;
+  std::string index_page    = location_info.indexPagePath;
+
+  if (file_manager.isDirectory()) {
+    if (index_page.empty() && isAutoIndexOn) {
+      _makeAutoIndexResponse(request, location_info, file_manager);
+      return;
+    } else if (index_page.empty()) {
+      _makeRedirResponse(301, request, location_info);
+      return;
+    } else {
+      file_manager.addIndexToName(location_info.indexPagePath);
+    }
   }
 
-  // autoindex ?
-
-  std::string   file_name = location_info.root + file_pos;
-  std::ifstream file(file_name.c_str());
-
-  if (!file.is_open()) {
+  if (!file_manager.isFileExist()) {
     _makeErrorResponse(404, request, location_info);  // 403 ?
     return;
   }
 
-  _fileToBody(file);
+  file_manager.openInfile();
+  _fileToBody(file_manager.inFile());
   if (static_cast<int>(_body.size()) > location_info.maxBodySize) {
     _makeErrorResponse(413, request, location_info);
   }
@@ -113,20 +123,42 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
   _statusCode    = 200;
   _message       = _getMessage(_statusCode);
   _contentLength = _body.size();
-  _contentType   = _getContentType(file_name);
+  _contentType   = _getContentType(file_manager.fileName());
   Log::log()(LOG_LOCATION, "Get request processed.");
 }
 
-void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
-  std::string file_pos = '/' + request.uri().substr(location_info.id.size());
-  if (file_pos == "/") {
-    file_pos += location_info.indexPagePath;
+void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info,
+                                          FileManager& file_manager) {
+  std::string body;
+
+  (void)location_info;
+
+  file_manager.openDirectoy();
+
+  body += "<html><head><title> Index of / " + file_manager.fileName() + " / </title></head>\n";
+  body += "<body><h1> Index of / " + file_manager.fileName() + " / </h1><hr>\n";
+
+  std::string file_name = file_manager.readDirectoryEntry();
+  while (!file_name.empty()) {
+    if (file_name != ".") {
+      body += "<pre><a href = \"";
+      body += file_name + "\">" + file_name + "/</a></pre>\n";
+    }
+    file_name = file_manager.readDirectoryEntry();
   }
+  body += "<hr></body></html>";
 
-  std::string   file_name = location_info.root + file_pos;
-  std::ifstream file(file_name.c_str());
+  _body.insert(_body.begin(), body.c_str(), body.c_str() + body.size());
 
-  if (!file.is_open()) {
+  _httpVersion = request.httpVersion();
+  _statusCode  = 200;
+  _message     = _getMessage(_statusCode);
+}
+
+void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
+  FileManager file_manager(request.uri(), location_info);
+
+  if (!file_manager.isFileExist()) {
     _makeErrorResponse(404, request, location_info);  // 403 ?
     return;
   }
@@ -134,7 +166,7 @@ void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& locat
   _httpVersion = request.httpVersion();
   _statusCode  = 200;
   _message     = _getMessage(_statusCode);
-  _contentType = _getContentType(file_name);
+  _contentType = _getContentType(file_manager.fileName());
   Log::log()(LOG_LOCATION, "Head request processed.");
 }
 
@@ -148,17 +180,15 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
     return;
   }
 
-  std::string   file_pos  = '/' + request.uri().substr(location_info.id.size());
-  std::string   file_name = location_info.root + file_pos;
-  std::ifstream ifile(file_name.c_str());
+  FileManager file_manager(request.uri(), location_info);
 
-  if (ifile.is_open()) {
-    _makeRedirResponse(303, request, location_info, file_name);
+  if (file_manager.isFileExist()) {
+    _makeRedirResponse(303, request, location_info, file_manager.fileName());
     return;
   }
 
-  std::ofstream ofile(file_name.c_str());
-  ofile.write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
+  file_manager.openOutfile();
+  file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
 
   _httpVersion = request.httpVersion();
   _statusCode  = 201;
@@ -201,7 +231,9 @@ void HttpResponse::_makeErrorResponse(int error_code, HttpRequest& request, Loca
     file.open(default_error_page.str().c_str());
   }
 
-  _fileToBody(file);
+  if (request.method() != HEAD) {
+    _fileToBody(file);
+  }
 
   _httpVersion = request.httpVersion();
   _statusCode  = error_code;
@@ -216,7 +248,12 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
   _message     = _getMessage(_statusCode);
 
   if (location_field.empty()) {
-    _location = location_info.redirPath;  // ?
+    // _location = location_info.redirPath;  // ?
+    if (location_info.redirPath.empty()) {
+      _location = "index.html";
+    } else {
+      _location = location_info.redirPath;
+    }
   } else {
     _location = location_field;
   }
