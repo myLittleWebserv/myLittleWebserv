@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mypark <mypark@student.42seoul.kr>         +#+  +:+       +#+        */
+/*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/23 23:16:42 by mypark           ###   ########.fr       */
+/*   Updated: 2022/08/28 20:56:01 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,8 @@
 #include <vector>
 
 #include "Log.hpp"
+
+#define HTTP_DEFAULT_PORT 80
 
 struct LocationInfo {
   std::string                id;
@@ -75,6 +77,8 @@ class Config {
   std::vector<std::string>    _parseAllowedMethod(const std::string& value);
   void                        _parseRedirection(const std::string& value, LocationInfo& info);
   LocationInfo                _init_locationInfo(const ServerInfo& serverInfo);
+  ServerInfo                  _init_serverInfo();
+  std::vector<std::string>    _defaultAllowedMethods();
   std::vector<std::string>    _split(const std::string& str, const std::string& delimiter);
   std::pair<int, std::string> _trimLeftTab(const std::string& str);
   std::string                 _trimLeftSpace(const std::string& str);

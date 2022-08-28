@@ -1,6 +1,3 @@
-// TODO : listen host:port의 host는 옵셔널임. 있으면 해당 ip의 해당 포트만 받겠다는 뜻이고, 없으면 해당 포트번호로
-// 들어오는 요청에 대해 모두 다 처리한다는 뜻.
-
 #include "Config.hpp"
 
 #include <cstdlib>
@@ -49,7 +46,7 @@ void Config::_startParse() {
 }
 
 ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
-  ServerInfo _server_info;
+  ServerInfo _server_info = _init_serverInfo();
 
   while (it != end && *it != "server" && *it != "\n") {
     std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
@@ -145,17 +142,44 @@ void Config::_parseLocationInfoToken(LocationInfo& info, const std::string& iden
   }
 }
 
+ServerInfo Config::_init_serverInfo() {
+  ServerInfo _server_info;
+  _server_info.serverName    = "";
+  _server_info.hostIp.s_addr = INADDR_ANY;
+  _server_info.hostPort      = HTTP_DEFAULT_PORT;
+  _server_info.maxBodySize   = 4096;
+  _server_info.root          = "";
+  return _server_info;
+}
+
 LocationInfo Config::_init_locationInfo(const ServerInfo& serverInfo) {
   LocationInfo _location_info;
-  _location_info.isAutoIndexOn     = false;
+
+  _location_info.id                = "/";
+  _location_info.maxBodySize       = serverInfo.maxBodySize;
   _location_info.root              = serverInfo.root;
   _location_info.defaultErrorPages = serverInfo.defaultErrorPages;
-  _location_info.maxBodySize       = serverInfo.maxBodySize;
+  _location_info.allowedMethods    = _defaultAllowedMethods();
+  _location_info.cgiExtension      = "";
+  _location_info.cgiPath           = "";
+  _location_info.indexPagePath     = "index.html";
+  _location_info.isAutoIndexOn     = false;
+  _location_info.redirStatus       = -1;
+  _location_info.redirPath         = "index";
   _location_info.hostIp            = serverInfo.hostIp;
   _location_info.hostPort          = serverInfo.hostPort;
   _location_info.serverName        = serverInfo.serverName;
-  _location_info.redirStatus       = -1;
   return _location_info;
+}
+
+std::vector<std::string> Config::_defaultAllowedMethods() {
+  std::vector<std::string> _allowed_methods;
+  _allowed_methods.push_back("GET");
+  _allowed_methods.push_back("POST");
+  _allowed_methods.push_back("HEAD");
+  _allowed_methods.push_back("PUT");
+  _allowed_methods.push_back("DELETE");
+  return _allowed_methods;
 }
 
 std::vector<std::string> Config::_split(const std::string& str, const std::string& delimiter) {
@@ -250,7 +274,6 @@ std::map<int, std::string> Config::_parseDefaultErrorPage(const std::string& pag
   return _result;
 }
 
-// TODO : autoindex 여부 추가
 void Config::_locatinInfoString(std::stringstream& _ss, const LocationInfo& info) {
   _ss << "\t"
       << "root: " << info.root << std::endl;
