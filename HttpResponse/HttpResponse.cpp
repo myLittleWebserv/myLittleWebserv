@@ -205,7 +205,20 @@ void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& locati
     _makeErrorResponse(413, request, location_info);
     return;
   }
-  // ?
+
+  FileManager file_manager(request.uri(), location_info);
+
+  if (file_manager.isFileExist()) {
+    file_manager.openOutfile(std::ofstream::trunc);
+    file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
+    _statusCode = 200;
+  } else {
+    file_manager.openOutfile();
+    file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
+    _statusCode = 201;
+  }
+  _httpVersion = request.httpVersion();
+  _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Put request processed.");
 }
 
@@ -248,9 +261,8 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
   _message     = _getMessage(_statusCode);
 
   if (location_field.empty()) {
-    // _location = location_info.redirPath;  // ?
     if (location_info.redirPath.empty()) {
-      _location = "index.html";
+      _location = "index.html";  // ?
     } else {
       _location = location_info.redirPath;
     }

@@ -31,10 +31,10 @@ class FileManager {
   std::ofstream&     outFile() { return _outFile; }
   const std::string& fileName() { return _fileName; }
   void               openInfile() { _inFile.open(_fileName.c_str()); }
-  void               openOutfile() { _outFile.open(_fileName.c_str()); }
-  void               openDirectoy();
-  void               addIndexToName(const std::string& indexFile);
-  std::string        readDirectoryEntry();
+  void        openOutfile(std::ofstream::openmode opt = std::ofstream::out) { _outFile.open(_fileName.c_str(), opt); }
+  void        openDirectoy();
+  void        addIndexToName(const std::string& indexFile);
+  std::string readDirectoryEntry();
 };
 
 FileManager::~FileManager() {
