@@ -21,7 +21,7 @@ void Storage::readSocket(int fd) {
 }
 
 std::string Storage::getLine() {
-  for (vector::size_type i = _pos; i != size(); ++i) {
+  for (vector::size_type i = _pos; i < size(); ++i) {
     if ((*this)[i] == '\n') {
       std::string line(begin() + _pos, begin() + i);
       _pos = i + 1;
@@ -29,4 +29,14 @@ std::string Storage::getLine() {
     }
   }
   return "";
+}
+
+bool Storage::toBody(vector& _body, int required_size) {
+  if (required_size > static_cast<int>(size()) - _pos) {
+    return false;
+  }
+  _body.insert(_body.end(), begin() + _pos, begin() + _pos + required_size);
+  _pos += required_size;
+  _pos += 2;  // jump "\r\n"
+  return true;
 }

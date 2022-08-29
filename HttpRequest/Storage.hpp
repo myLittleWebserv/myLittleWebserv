@@ -29,7 +29,7 @@ class Storage : private std::vector<unsigned char> {
   using vector::clear;
   using vector::size;
   SocketReadingState state() { return _state; }
-  iterator           pos() { return begin() + _pos; }
+  bool               toBody(vector& _body, int required_size);
   void               readSocket(int fd);
   std::string        getLine();
 };

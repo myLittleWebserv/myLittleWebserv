@@ -25,7 +25,9 @@ class HttpRequest {
   clock_t                    _bodyTimeStamp;    // 헤더 다 읽고 나서 초기화.
   bool                       _isBodyExisted;
   bool                       _isChunked;
+  int                        _chunkSize;
   bool                       _isKeepAlive;
+
   // HttpRequest Variable
   MethodType  _method;
   std::string _uri;
@@ -54,6 +56,7 @@ class HttpRequest {
         _bodyTimeStamp(_headerTimeStamp),
         _isBodyExisted(false),
         _isChunked(false),
+        _chunkSize(-1),
         _isKeepAlive(false),  //  default: close
         _hostPort(HTTP_DEFAULT_PORT) {}
 

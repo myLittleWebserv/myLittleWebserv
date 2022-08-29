@@ -23,7 +23,7 @@
 
 #include "Log.hpp"
 
-#define DEFAULT_MAX_BODY_SIZE 8192
+#define DEFAULT_MAX_BODY_SIZE 200000000
 
 struct LocationInfo {
   std::string                id;                 // default "/"
