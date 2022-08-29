@@ -10,7 +10,7 @@
 
 class FileManager {
  private:
-  std::string   _fileName;
+  std::string   _absolutePath;
   std::ifstream _inFile;
   std::ofstream _outFile;
   DIR*          _directory;
@@ -21,21 +21,25 @@ class FileManager {
   // Method
  private:
   void _updateFileInfo();
-  void _appendToFileName(std::string file);
+  void _appendFileName(std::string file);
 
+  // Constructor & Destructor
  public:
   FileManager(const std::string& uri, const LocationInfo& location_info);
   ~FileManager();
+
+  // Interface
+ public:
   bool               isFileExist() { return _isExist; }
   bool               isDirectory() { return _isDirectoy; }
   std::ifstream&     inFile() { return _inFile; }
   std::ofstream&     outFile() { return _outFile; }
-  const std::string& fileName() { return _fileName; }
-  void               openInFile() { _inFile.open(_fileName.c_str()); }
-  void        openOutFile(std::ofstream::openmode opt = std::ofstream::out) { _outFile.open(_fileName.c_str(), opt); }
-  void        openDirectoy();
-  void        removeFile();
-  void        addIndexToName(const std::string& indexFile);
+  const std::string& fileName() { return _absolutePath; }
+  void               openInFile() { _inFile.open(_absolutePath.c_str()); }
+  void openOutFile(std::ofstream::openmode opt = std::ofstream::out) { _outFile.open(_absolutePath.c_str(), opt); }
+  void openDirectoy();
+  void removeFile();
+  void addIndexToName(const std::string& indexFile);
   std::string readDirectoryEntry();
 };
 
