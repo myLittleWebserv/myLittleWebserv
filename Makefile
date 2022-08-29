@@ -12,7 +12,8 @@ SRC :=	main.cpp\
 				EventHandler.cpp\
 				HttpRequest.cpp\
 				HttpResponse.cpp\
-				Storage.cpp
+				Storage.cpp\
+				FileManager.cpp
 
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
 

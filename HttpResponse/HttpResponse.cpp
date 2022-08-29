@@ -109,11 +109,11 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
   }
 
   if (!file_manager.isFileExist()) {
-    _makeErrorResponse(404, request, location_info);  // 403 ?
+    _makeErrorResponse(404, request, location_info);  // ? 403
     return;
   }
 
-  file_manager.openInfile();
+  file_manager.openInFile();
   _fileToBody(file_manager.inFile());
   if (static_cast<int>(_body.size()) > location_info.maxBodySize) {
     _makeErrorResponse(413, request, location_info);
@@ -159,7 +159,7 @@ void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& locat
   FileManager file_manager(request.uri(), location_info);
 
   if (!file_manager.isFileExist()) {
-    _makeErrorResponse(404, request, location_info);  // 403 ?
+    _makeErrorResponse(404, request, location_info);  // ? 403
     return;
   }
 
@@ -187,7 +187,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
     return;
   }
 
-  file_manager.openOutfile();
+  file_manager.openOutFile();
   file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
 
   _httpVersion = request.httpVersion();
@@ -209,11 +209,11 @@ void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& locati
   FileManager file_manager(request.uri(), location_info);
 
   if (file_manager.isFileExist()) {
-    file_manager.openOutfile(std::ofstream::trunc);
+    file_manager.openOutFile(std::ofstream::trunc);
     file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
     _statusCode = 200;
   } else {
-    file_manager.openOutfile();
+    file_manager.openOutFile();
     file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
     _statusCode = 201;
   }
@@ -223,8 +223,14 @@ void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& locati
 }
 
 void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
-  (void)location_info;
-  (void)request;
+  FileManager file_manager(request.uri(), location_info);
+
+  if (!file_manager.isFileExist()) {
+    _makeErrorResponse(404, request, location_info);
+    return;
+  }
+
+  file_manager.removeFile();
 
   Log::log()(LOG_LOCATION, "Delete request processed.");
 }
