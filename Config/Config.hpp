@@ -33,7 +33,7 @@ struct LocationInfo {
   std::vector<std::string>   allowedMethods;     // default GET HEAD POST PUT DELETE // set으로 바꾸는게..?
   std::string                cgiExtension;       // default ""
   std::string                cgiPath;            // default ""
-  std::string                indexPagePath;      // default index.html
+  std::string                indexPagePath;      // default ""
   bool                       isAutoIndexOn;      // default false
   int                        redirStatus;        // default = -1
   std::string                redirPath;          // default index
