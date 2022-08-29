@@ -2,6 +2,7 @@
 
 #include <string>
 #include <sstream>
+#include <fcntl.h>
 
 class CgiResponse {
 
@@ -12,11 +13,11 @@ class CgiResponse {
     std::string _contentType;
     std::string _body;
 
-    void _parseCgiResponse(std::string& cgi_results);
+    void _parseCgiResponse(std::string& cgi_result);
 
   // Constructor
  public:
-  CgiResponse() {}
+  CgiResponse();
 
   // Interface
  public:
