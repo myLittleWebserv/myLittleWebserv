@@ -31,8 +31,8 @@ void HttpRequest::storeChunk(int fd) {
 
   Log::log()(LOG_LOCATION, "(STATE) CURRENT PARSING STATE", ALL);
   Log::log()("_parsingState", _parsingState, ALL);
-  Log::log()(true, "_body.size", _body.size());
-  Log::log()(true, "_storage.size", _storage.size());
+  Log::log()(true, "_body.size", _body.size(), ALL);
+  Log::log()(true, "_storage.size", _storage.size(), ALL);
 }
 
 void HttpRequest::initialize() {

@@ -6,3 +6,4 @@ objs
 *.pseudo
 myLittleWebserv
 myLittleClient
+file_should_exist_after

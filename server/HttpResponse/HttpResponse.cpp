@@ -24,11 +24,11 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : 
     _makeErrorResponse(501, request, location_info);
     return;
   }
+
   if (!_allowedMethod(request.method(), location_info.allowedMethods)) {
     _makeErrorResponse(405, request, location_info);
     return;
   }
-
   if (location_info.redirStatus != -1) {
     _makeRedirResponse(location_info.redirStatus, request, location_info);
     return;
@@ -157,6 +157,20 @@ void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& lo
 
 void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
   FileManager file_manager(request.uri(), location_info);
+  bool        isAutoIndexOn = location_info.isAutoIndexOn;
+  std::string index_page    = location_info.indexPagePath;
+
+  if (file_manager.isDirectory()) {
+    if (index_page.empty() && isAutoIndexOn) {
+      _makeAutoIndexResponse(request, location_info, file_manager);
+      return;
+    } else if (index_page.empty()) {
+      _makeRedirResponse(301, request, location_info);
+      return;
+    } else {
+      file_manager.addIndexToName(location_info.indexPagePath);
+    }
+  }
 
   if (!file_manager.isFileExist()) {
     _makeErrorResponse(404, request, location_info);  // ? 403

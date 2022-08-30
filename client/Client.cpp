@@ -15,6 +15,7 @@
 #define SERVER_NAME "myLittleWebserv"
 
 void atexit() {
+  std::cout << '\n';
   std::cout << "-----------------------------------------------------------------------------------------------"
             << std::endl;
   std::cout << "[leak check]\n";
@@ -70,7 +71,7 @@ int main(int argc, char **argv) {
   std::stringstream storage;
   readFile(storage, argv[2]);
 
-  std::cout << "<input>\n" << storage.str() << std::endl;
+  std::cout << "[input]\n" << storage.str() << std::endl;
 
   int fd = connectWithServer(std::atoi(argv[1]));
 
@@ -79,6 +80,6 @@ int main(int argc, char **argv) {
   unsigned char buf[BUFFER_SIZE];
 
   int recv_size = recv(fd, buf, BUFFER_SIZE, 0);
-  std::cout << "\n<output>" << std::endl;
+  std::cout << "\n[output]" << std::endl;
   write(1, buf, recv_size);
 }

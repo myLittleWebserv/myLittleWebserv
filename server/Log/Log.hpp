@@ -24,7 +24,7 @@ class HttpRequest;
 class HttpResponse;
 
 #define LOG_LOCATION __FILE__, __LINE__, __func__
-#define LOG_DIR "./LogFiles/"
+#define LOG_DIR "./log_files/"
 
 enum TimestampType { LOG_TITLE, LOG_FILE };
 enum LogLocationType { ALL, INFILE, CONSOLE };

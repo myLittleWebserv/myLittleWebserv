@@ -3,18 +3,18 @@ CLIENT := myLittleClient
 
 OBJ_DIR := objs
 SRC_DIR := server
-LOG_DIR := LogFiles
+LOG_DIR := log_files
 
 SRC :=	main.cpp\
-				Router.cpp\
-				VirtualServer.cpp\
-				Log.cpp\
-				Config.cpp\
-				EventHandler.cpp\
-				HttpRequest.cpp\
-				HttpResponse.cpp\
-				Storage.cpp\
-				FileManager.cpp
+		Router.cpp\
+		VirtualServer.cpp\
+		Log.cpp\
+		Config.cpp\
+		EventHandler.cpp\
+		HttpRequest.cpp\
+		HttpResponse.cpp\
+		Storage.cpp\
+		FileManager.cpp
 
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
 
@@ -23,13 +23,13 @@ CXXFALGS += -std=c++98 -Wall -Werror -Wextra #-fsanitize=address -g
 LDFALGS  += #-fsanitize=address -g
 
 INCS := -I ./$(SRC_DIR)/Router\
-				-I ./$(SRC_DIR)/Log\
-				-I ./$(SRC_DIR)/Config\
-				-I ./$(SRC_DIR)/EventHandler\
-				-I ./$(SRC_DIR)/VirtualServer\
-				-I ./$(SRC_DIR)/HttpRequest\
-				-I ./$(SRC_DIR)/HttpResponse\
-				-I ./$(SRC_DIR)/CgiResponse
+		-I ./$(SRC_DIR)/Log\
+		-I ./$(SRC_DIR)/Config\
+		-I ./$(SRC_DIR)/EventHandler\
+		-I ./$(SRC_DIR)/VirtualServer\
+		-I ./$(SRC_DIR)/HttpRequest\
+		-I ./$(SRC_DIR)/HttpResponse\
+		-I ./$(SRC_DIR)/CgiResponse
 
 
 ifeq ($(shell uname), Linux)
@@ -60,6 +60,7 @@ clean-log:
 
 clean:
 	rm -rf $(OBJ_DIR)
+	rm -rf $(LOG_DIR)/*
 
 fclean: clean
 	rm -rf $(CLIENT)
