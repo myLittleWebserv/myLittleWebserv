@@ -127,34 +127,6 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
   Log::log()(LOG_LOCATION, "Get request processed.");
 }
 
-void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info,
-                                          FileManager& file_manager) {
-  std::string body;
-
-  (void)location_info;
-
-  file_manager.openDirectoy();
-
-  body += "<html><head><title> Index of / " + file_manager.fileName() + " / </title></head>\n";
-  body += "<body><h1> Index of / " + file_manager.fileName() + " / </h1><hr>\n";
-
-  std::string file_name = file_manager.readDirectoryEntry();
-  while (!file_name.empty()) {
-    if (file_name != ".") {
-      body += "<pre><a href = \"";
-      body += file_name + "\">" + file_name + "/</a></pre>\n";
-    }
-    file_name = file_manager.readDirectoryEntry();
-  }
-  body += "<hr></body></html>";
-
-  _body.insert(_body.begin(), body.c_str(), body.c_str() + body.size());
-
-  _httpVersion = request.httpVersion();
-  _statusCode  = 200;
-  _message     = _getMessage(_statusCode);
-}
-
 void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
   FileManager file_manager(request.uri(), location_info);
 
@@ -278,6 +250,34 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
 
   // add other field ?
   Log::log()(LOG_LOCATION, "Redirection address returned.");
+}
+
+void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info,
+                                          FileManager& file_manager) {
+  std::string body;
+
+  (void)location_info;
+
+  file_manager.openDirectoy();
+
+  body += "<html><head><title> Index of / " + file_manager.fileName() + " / </title></head>\n";
+  body += "<body><h1> Index of / " + file_manager.fileName() + " / </h1><hr>\n";
+
+  std::string file_name = file_manager.readDirectoryEntry();
+  while (!file_name.empty()) {
+    if (file_name != ".") {
+      body += "<pre><a href = \"";
+      body += file_name + "\">" + file_name + "/</a></pre>\n";
+    }
+    file_name = file_manager.readDirectoryEntry();
+  }
+  body += "<hr></body></html>";
+
+  _body.insert(_body.begin(), body.c_str(), body.c_str() + body.size());
+
+  _httpVersion = request.httpVersion();
+  _statusCode  = 200;
+  _message     = _getMessage(_statusCode);
 }
 
 bool HttpResponse::_allowedMethod(int method, std::vector<std::string>& allowed_methods) {
