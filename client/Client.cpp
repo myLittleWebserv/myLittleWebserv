@@ -14,7 +14,7 @@
 #define BUFFER_SIZE 8000
 
 void readFile(std::stringstream &storage) {
-  std::ifstream infile("test/HttpRequest.infile");
+  std::ifstream infile("client/HttpRequest.infile");
   if (!infile.is_open()) {
     std::cerr << "file open failed" << std::endl;
     std::exit(1);
