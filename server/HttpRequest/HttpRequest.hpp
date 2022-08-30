@@ -39,13 +39,13 @@ class HttpRequest {
 
   // Method
  private:
-  void     _parseStartLine(const std::string& line);
-  void     _parseHeaderField(const std::string& line);
-  void     _parseHeader();
-  void     _parseBody();
-  void     _parseChunk();
-  void     _checkTimeOut(clock_t timestamp);
-  long int _parseChunkSize(const std::string& line);
+  void   _parseStartLine(const std::string& line);
+  void   _parseHeaderField(const std::string& line);
+  void   _parseHeader();
+  void   _parseBody();
+  void   _parseChunk();
+  void   _checkTimeOut(clock_t timestamp);
+  size_t _parseChunkSize(const std::string& line);
 
   // Constructor
  public:

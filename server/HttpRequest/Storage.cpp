@@ -31,12 +31,7 @@ std::string Storage::getLine() {
   return "";
 }
 
-bool Storage::toBody(vector& _body, int required_size) {
-  if (required_size > static_cast<int>(size()) - _pos) {
-    return false;
-  }
+void Storage::dataToBody(vector& _body, int required_size) {
   _body.insert(_body.end(), begin() + _pos, begin() + _pos + required_size);
-  _pos += required_size;
-  _pos += 2;  // jump "\r\n"
-  return true;
+  _pos += (required_size + 2);  // jump "\r\n"
 }
