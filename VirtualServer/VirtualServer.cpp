@@ -7,17 +7,29 @@
 VirtualServer::VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler)
     : _serverId(id), _serverInfo(info), _eventHandler(eventHandler) {}
 
-std::string VirtualServer::_findLocation(HttpRequest& httpReuest) {
-  (void)httpReuest;
-  return "/";
+LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpReuest) {
+  std::string                                   key;
+  std::map<std::string, LocationInfo>::iterator found;
+
+  key = httpReuest.uri();
+  while (key != "/" && !key.empty()) {
+    found = _serverInfo.locations.find(key);
+    if (found != _serverInfo.locations.end()) {
+      Log::log()(LOG_LOCATION, "LocationInfo found", ALL);
+      Log::log()(true, "key", found->first, ALL);
+      return found->second;
+    }
+    key = key.substr(0, key.rfind('/'));
+  }
+  Log::log()(LOG_LOCATION, "LocationInfo is default", ALL);
+  return _serverInfo.locations["/"];
 }
 
 void VirtualServer::start() {
   std::vector<Event*> event_list = _eventHandler.getRoutedEvents(_serverId);
   for (std::vector<Event*>::size_type i = 0; i < event_list.size(); i++) {
     Event&        event         = *event_list[i];
-    std::string   location      = _findLocation(event.httpRequest);
-    LocationInfo& location_info = _serverInfo.locations[location];
+    LocationInfo& location_info = _findLocationInfo(event.httpRequest);
 
     switch (event.type) {
       case HTTP_REQUEST_READABLE:
@@ -105,11 +117,10 @@ void VirtualServer::_callCgi(Event& event) {
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
   //(void)response;
-  //send(fd, "hi\n", 3, 0);
+  // send(fd, "hi\n", 3, 0);
   send(fd, response.headerToString().c_str(), response.headerToString().size(), 0);
   send(fd, response.body().data(), response.body().size(), 0);
   Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", ALL);
-
 
   // std::string response_str = response.getResponse();
   // int         sent_length  = response.sentLength;  // httpResponse 내부에 sent_length 넣을 까 요?

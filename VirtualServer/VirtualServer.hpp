@@ -12,9 +12,9 @@ class VirtualServer {
   ServerInfo&   _serverInfo;
   EventHandler& _eventHandler;
 
-  void        _callCgi(Event& event);
-  void        _sendResponse(int fd, HttpResponse& response);
-  std::string _findLocation(HttpRequest& httpRequest);
+  void          _callCgi(Event& event);
+  void          _sendResponse(int fd, HttpResponse& response);
+  LocationInfo& _findLocationInfo(HttpRequest& httpRequest);
 
  public:
   VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler);

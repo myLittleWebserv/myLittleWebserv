@@ -1,6 +1,5 @@
 #include "HttpRequest.hpp"
 
-#include <cstdlib>
 #include <sstream>
 
 #include "Log.hpp"
@@ -32,6 +31,8 @@ void HttpRequest::storeChunk(int fd) {
 
   Log::log()(LOG_LOCATION, "(STATE) CURRENT PARSING STATE", ALL);
   Log::log()("_parsingState", _parsingState, ALL);
+  Log::log()(true, "_body.size", _body.size());
+  Log::log()(true, "_storage.size", _storage.size());
 }
 
 void HttpRequest::initialize() {
@@ -41,7 +42,9 @@ void HttpRequest::initialize() {
   _bodyTimeStamp   = _headerTimeStamp;
   _isBodyExisted   = false;
   _isChunked       = false;
-  // clear Storage
+  _chunkSize       = -1;
+  _body.clear();
+  _storage.clear();
 }
 
 // Method
@@ -80,10 +83,11 @@ void HttpRequest::_parseHeader() {
 
 void HttpRequest::_parseStartLine(const std::string& line) {
   if (*line.rbegin() != '\r') {
-    _parsingState = BAD_REQUEST;
+    _parsingState = BAD_REQUEST;  // 사이 공백 확인.
     return;
   }
 
+  _headerSize += line.size() + 1;
   _headerTimeStamp = clock();
 
   std::stringstream ss(line);
@@ -110,11 +114,12 @@ void HttpRequest::_parseStartLine(const std::string& line) {
 }
 
 void HttpRequest::_parseHeaderField(const std::string& line) {
-  if (*line.rbegin() != '\r' || line.size() + _headerSize > HTTP_MAX_HEADER_SIZE) {
+  if (*line.rbegin() != '\r' || line.size() + 1 + _headerSize > HTTP_MAX_HEADER_SIZE) {
     _parsingState = BAD_REQUEST;
     return;
   }
 
+  _headerSize += line.size() + 1;
   _headerTimeStamp = clock();
 
   std::stringstream ss(line);
@@ -158,26 +163,32 @@ void HttpRequest::_parseBody() {
 
   if (_isChunked) {
     _parseChunk();
-  } else {
-    _body.insert(_body.end(), _storage.pos(), _storage.pos() + _contentLength);
+  } else if (_storage.toBody(_body, _contentLength)) {
     _parsingState = PARSING_DONE;
   }
 }
 
 void HttpRequest::_parseChunk() {
-  std::string line = _storage.getLine();
-
-  if (line.empty()) {
-    _checkTimeOut(_bodyTimeStamp);
-    return;
+  if (_chunkSize == -1) {
+    std::string line = _storage.getLine();
+    if (line.empty()) {
+      _checkTimeOut(_bodyTimeStamp);
+      return;
+    }
+    _chunkSize = _parseChunkSize(line);
+    Log::log()(true, "line.size", line.size());
+    Log::log()(true, "line", line);
+    Log::log()(true, "chunkSize", _chunkSize);
+    Log::log()(true, "headerSize", _headerSize);
   }
 
-  int chunk_size = _parseChunkSize(line);
-  if (chunk_size != 0) {
-    _body.insert(_body.end(), _storage.pos(), _storage.pos() + chunk_size);
-    _bodyTimeStamp = clock();
-  } else {
+  if (_chunkSize == 0) {
     _parsingState = PARSING_DONE;
+    _chunkSize    = -1;
+  } else if (_chunkSize > 0 && _storage.toBody(_body, _chunkSize)) {
+    _bodyTimeStamp = clock();
+    _chunkSize     = -1;
+    _parseChunk();
   }
 }
 

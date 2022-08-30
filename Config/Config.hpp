@@ -6,7 +6,7 @@
 /*   By: mypark <mypark@student.42seoul.kr>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/23 23:16:42 by mypark           ###   ########.fr       */
+/*   Updated: 2022/08/28 02:23:49 by mypark           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,20 +23,23 @@
 
 #include "Log.hpp"
 
+#define DEFAULT_MAX_BODY_SIZE 200000000
+
 struct LocationInfo {
-  int                        maxBodySize;
-  std::string                root;
-  std::map<int, std::string> defaultErrorPages;
-  std::vector<std::string>   allowedMethods;
-  std::string                cgiExtension;
-  std::string                cgiPath;
-  std::string                indexPagePath;
-  bool                       isAutoIndexOn;
-  int                        redirStatus;  //  default = -1
-  std::string                redirPath;
-  struct in_addr             hostIp;
-  int                        hostPort;
-  std::string                serverName;
+  std::string                id;                 // default "/"
+  int                        maxBodySize;        // default ?
+  std::string                root;               // default ""
+  std::map<int, std::string> defaultErrorPages;  // default 50x ErrorPages/50x.html
+  std::vector<std::string>   allowedMethods;     // default GET HEAD POST PUT DELETE // set으로 바꾸는게..?
+  std::string                cgiExtension;       // default ""
+  std::string                cgiPath;            // default ""
+  std::string                indexPagePath;      // default ""
+  bool                       isAutoIndexOn;      // default false
+  int                        redirStatus;        // default = -1
+  std::string                redirPath;          // default index
+  struct in_addr             hostIp;             // default INADDR_ANY
+  int                        hostPort;           // default HTTP_DEFAULT_PORT -> 80
+  std::string                serverName;         // default ""
 };
 
 struct ServerInfo {
@@ -68,7 +71,7 @@ class Config {
   void         _printConfigContent();
   void         _startParse();
   ServerInfo   _parseServer(configIterator& it, const configIterator& end);
-  LocationInfo _parseLocation(configIterator& it, const ServerInfo& serverInfo);
+  LocationInfo _parseLocation(configIterator& it, const ServerInfo& serverInfo, const std::string& id);
   void         _parseLocationInfoToken(LocationInfo& info, const std::string& identifier, const std::string& value);
   std::map<int, std::string>  _parseDefaultErrorPage(const std::string& pages);
   std::vector<std::string>    _parseAllowedMethod(const std::string& value);

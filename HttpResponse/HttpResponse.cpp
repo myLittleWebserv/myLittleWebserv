@@ -1,12 +1,12 @@
 #include "HttpResponse.hpp"
 
+#include <dirent.h>
+
 #include <algorithm>
-#include <fstream>
-#include <istream>
-#include <iterator>
 #include <sstream>
 
 #include "Config.hpp"
+#include "FileManager.hpp"
 #include "HttpRequest.hpp"
 
 // Constructor
@@ -29,12 +29,26 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : 
     return;
   }
 
+  if (location_info.redirStatus != -1) {
+    _makeRedirResponse(location_info.redirStatus, request, location_info);
+    return;
+  }
+
   switch (request.method()) {
     case GET:
       _processGetRequest(request, location_info);
       break;
+    case HEAD:
+      _processHeadRequest(request, location_info);
+      break;
     case POST:
       _processPostRequest(request, location_info);
+      break;
+    case PUT:
+      _processPutRequest(request, location_info);
+      break;
+    case DELETE:
+      _processDeleteRequest(request, location_info);
       break;
     default:
       break;
@@ -59,73 +73,211 @@ std::string HttpResponse::headerToString() {
   if (!_contentType.empty()) {
     response_stream << "Content-Type: " << _contentType << "\r\n";
   }
+  if (!_location.empty()) {
+    response_stream << "Location: " << _location << "\r\n";
+  }
   response_stream << "\r\n";
   return response_stream.str();
 }
 
 // Method
 
+void HttpResponse::_fileToBody(std::ifstream& file) {
+  while (!file.eof()) {
+    std::string line;
+    std::getline(file, line);
+    _body.insert(_body.end(), line.c_str(), line.c_str() + line.size());
+    _body.insert(_body.end(), '\n');
+  }
+}
+
 void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& location_info) {
-  if (location_info.redirStatus != -1) {
-    _makeRedirResponse(location_info.redirStatus, request, location_info);
+  FileManager file_manager(request.uri(), location_info);
+  bool        isAutoIndexOn = location_info.isAutoIndexOn;
+  std::string index_page    = location_info.indexPagePath;
+
+  if (file_manager.isDirectory()) {
+    if (index_page.empty() && isAutoIndexOn) {
+      _makeAutoIndexResponse(request, location_info, file_manager);
+      return;
+    } else if (index_page.empty()) {
+      _makeRedirResponse(301, request, location_info);
+      return;
+    } else {
+      file_manager.addIndexToName(location_info.indexPagePath);
+    }
+  }
+
+  if (!file_manager.isFileExist()) {
+    _makeErrorResponse(404, request, location_info);  // ? 403
     return;
   }
 
-  std::string   file_name = location_info.root + request.uri();
-  std::ifstream file(file_name.c_str());
+  file_manager.openInFile();
+  _fileToBody(file_manager.inFile());
+  if (static_cast<int>(_body.size()) > location_info.maxBodySize) {
+    _makeErrorResponse(413, request, location_info);
+  }
 
-  if (!file.is_open()) {
-    _makeErrorResponse(404, request, location_info);  // 403 ?
+  _httpVersion   = request.httpVersion();
+  _statusCode    = 200;
+  _message       = _getMessage(_statusCode);
+  _contentLength = _body.size();
+  _contentType   = _getContentType(file_manager.fileName());
+  Log::log()(LOG_LOCATION, "Get request processed.");
+}
+
+void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info,
+                                          FileManager& file_manager) {
+  std::string body;
+
+  (void)location_info;
+
+  file_manager.openDirectoy();
+
+  body += "<html><head><title> Index of / " + file_manager.fileName() + " / </title></head>\n";
+  body += "<body><h1> Index of / " + file_manager.fileName() + " / </h1><hr>\n";
+
+  std::string file_name = file_manager.readDirectoryEntry();
+  while (!file_name.empty()) {
+    if (file_name != ".") {
+      body += "<pre><a href = \"";
+      body += file_name + "\">" + file_name + "/</a></pre>\n";
+    }
+    file_name = file_manager.readDirectoryEntry();
+  }
+  body += "<hr></body></html>";
+
+  _body.insert(_body.begin(), body.c_str(), body.c_str() + body.size());
+
+  _httpVersion = request.httpVersion();
+  _statusCode  = 200;
+  _message     = _getMessage(_statusCode);
+}
+
+void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
+  FileManager file_manager(request.uri(), location_info);
+
+  if (!file_manager.isFileExist()) {
+    _makeErrorResponse(404, request, location_info);  // ? 403
     return;
   }
 
   _httpVersion = request.httpVersion();
   _statusCode  = 200;
   _message     = _getMessage(_statusCode);
-  _body.insert(_body.begin(), std::istream_iterator<unsigned char>(file), std::istream_iterator<unsigned char>());
-  _contentLength = _body.size();
-  _contentType   = _getContentType(file_name);
+  _contentType = _getContentType(file_manager.fileName());
+  Log::log()(LOG_LOCATION, "Head request processed.");
 }
 
 void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& location_info) {
-  if (location_info.redirStatus != -1) {
-    _makeRedirResponse(location_info.redirStatus, request, location_info);
+  if (request.body().size() == 0) {
+    _makeErrorResponse(402, request, location_info);
+    return;
+  }
+  if (static_cast<int>(request.body().size()) > location_info.maxBodySize) {
+    _makeErrorResponse(413, request, location_info);
     return;
   }
 
-  std::string   file_name = location_info.root + request.uri();
-  std::ifstream ifile(file_name.c_str());
+  FileManager file_manager(request.uri(), location_info);
 
-  if (ifile.is_open()) {
-    _makeRedirResponse(303, request, location_info);
+  if (file_manager.isFileExist()) {
+    _makeRedirResponse(303, request, location_info, file_manager.fileName());
     return;
   }
 
-  std::ofstream ofile(file_name.c_str());
-  ofile.write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
+  file_manager.openOutFile();
+  file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
 
   _httpVersion = request.httpVersion();
   _statusCode  = 201;
   _message     = _getMessage(_statusCode);
+  Log::log()(LOG_LOCATION, "Post request processed.");
+}
+
+void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
+  if (request.body().size() == 0) {
+    _makeErrorResponse(402, request, location_info);
+    return;
+  }
+  if (static_cast<int>(request.body().size()) > location_info.maxBodySize) {
+    _makeErrorResponse(413, request, location_info);
+    return;
+  }
+
+  FileManager file_manager(request.uri(), location_info);
+
+  if (file_manager.isFileExist()) {
+    file_manager.openOutFile(std::ofstream::trunc);
+    file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
+    _statusCode = 200;
+  } else {
+    file_manager.openOutFile();
+    file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
+    _statusCode = 201;
+  }
+  _httpVersion = request.httpVersion();
+  _message     = _getMessage(_statusCode);
+  Log::log()(LOG_LOCATION, "Put request processed.");
+}
+
+void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
+  FileManager file_manager(request.uri(), location_info);
+
+  if (!file_manager.isFileExist()) {
+    _makeErrorResponse(404, request, location_info);
+    return;
+  }
+
+  file_manager.removeFile();
+
+  Log::log()(LOG_LOCATION, "Delete request processed.");
 }
 
 void HttpResponse::_makeErrorResponse(int error_code, HttpRequest& request, LocationInfo& location_info) {
-  (void)location_info;
+  std::ifstream file;
+
+  if (location_info.defaultErrorPages.count(error_code)) {
+    std::stringstream file_name;
+    file_name << location_info.root << '/' << location_info.defaultErrorPages[error_code];
+    file.open(file_name.str().c_str());
+  }
+
+  if (!file.is_open()) {
+    std::stringstream default_error_page;
+    default_error_page << DEFAULT_ERROR_PAGE_DIR << '/' << error_code << ".html";
+    file.open(default_error_page.str().c_str());
+  }
+
+  if (request.method() != HEAD) {
+    _fileToBody(file);
+  }
+
   _httpVersion = request.httpVersion();
   _statusCode  = error_code;
   _message     = _getMessage(_statusCode);
-
-  // add error page to body
+  Log::log()(LOG_LOCATION, "Error page returned.");
 }
 
-void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info) {
-  (void)location_info;
-
+void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info,
+                                      const std::string& location_field) {
   _httpVersion = request.httpVersion();
   _statusCode  = redir_code;
   _message     = _getMessage(_statusCode);
 
+  if (location_field.empty()) {
+    if (location_info.redirPath.empty()) {
+      _location = "index.html";  // ?
+    } else {
+      _location = location_info.redirPath;
+    }
+  } else {
+    _location = location_field;
+  }
+
   // add other field ?
+  Log::log()(LOG_LOCATION, "Redirection address returned.");
 }
 
 bool HttpResponse::_allowedMethod(int method, std::vector<std::string>& allowed_methods) {
@@ -187,8 +339,10 @@ std::string HttpResponse::_getMessage(int status_code) {
       return "Not Found";
     case 405:
       return "Method Not Allowed";
+    case 413:
+      return "Payload Too Large";
     case 500:
-      return "Internal Server Error";
+      return "Internal Server Error";  // ?
     case 501:
       return "Not Implemented";
     case 502:
