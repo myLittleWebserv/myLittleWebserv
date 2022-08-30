@@ -1,5 +1,7 @@
 #include "HttpRequest.hpp"
 
+#include <algorithm>
+#include <cstdlib>
 #include <sstream>
 
 #include "Log.hpp"
@@ -82,8 +84,8 @@ void HttpRequest::_parseHeader() {
 }
 
 void HttpRequest::_parseStartLine(const std::string& line) {
-  if (*line.rbegin() != '\r') {
-    _parsingState = BAD_REQUEST;  // 사이 공백 확인.
+  if (*line.rbegin() != '\r' || std::count(line.begin(), line.end(), ' ') != 2) {
+    _parsingState = BAD_REQUEST;
     return;
   }
 
@@ -108,9 +110,14 @@ void HttpRequest::_parseStartLine(const std::string& line) {
     _method = NOT_IMPL;
   }
 
-  ss >> _uri;
+  ss >> _uri;  // 유효성 검사
   ss >> _httpVersion;
-  _parsingState = PARSING_HEADER;
+
+  if (ss.bad()) {
+    _parsingState = BAD_REQUEST;
+  } else {
+    _parsingState = PARSING_HEADER;
+  }
 }
 
 void HttpRequest::_parseHeaderField(const std::string& line) {
