@@ -25,7 +25,7 @@ int main(int argc, char *argv[], char *env[]) {
   int _pipe[2];
   pipe(_pipe);
   int pid = fork();
-  int fd  = open("cgi_input", O_RDONLY);
+  int fd  = open("cgi_input_empty", O_RDONLY);
   if (pid == 0) {
     dup2(fd, 0);
     dup2(_pipe[1], 1);
@@ -37,7 +37,7 @@ int main(int argc, char *argv[], char *env[]) {
     int  red;
     char buf[1024];
     red         = read(_pipe[0], buf, 1024);
-    int outfile = open("cgi_output", O_WRONLY | O_CREAT, 0644);
+    int outfile = open("cgi_output_empty", O_WRONLY | O_CREAT, 0644);
     write(outfile, buf, red);
   }
 }

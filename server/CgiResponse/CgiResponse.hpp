@@ -1,4 +1,5 @@
 #ifndef CGIRESPONSE_HPP
+#define CGIRESPONSE_HPP
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -8,16 +9,19 @@
 #include <string>
 #include <vector>
 
+#include "CgiStorage.hpp"
+
 class CgiResponse {
  private:
-  bool        _isEnd;
+  CgiStorage  _storage;
+  bool        _isParsingEnd;
   int         _statusCode;
   std::string _statusMessage;
   std::string _contentType;
   std::string _body;
 
   std::vector<std::string> _split(const std::string& str, const std::string& delimiter);
-  void                     _printCgiResponse();
+  void                     _parseCgiResponse();
 
   // Constructor
  public:
@@ -25,15 +29,13 @@ class CgiResponse {
 
   // Interface
  public:
-  bool        isEnd();
+  bool        isParsingEnd();
   void        readCgiResult(int fd);
-  void        setCgiEnd();
   int         getStatusCode();
   std::string getStatusMessage();
   std::string getContentType();
   std::string getBody();
-
-  void _parseCgiResponse(std::string& cgi_result);
+  std::string CgiResponseResultString();
 };
 
 #endif

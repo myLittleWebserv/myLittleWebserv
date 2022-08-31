@@ -1,48 +1,54 @@
 #include "CgiResponse.hpp"
 
-void CgiResponse::_parseCgiResponse(std::string& cgi_result) {
-  std::stringstream buffer(cgi_result);
-  std::string       line;
+CgiResponse::CgiResponse() {
+  _storage       = CgiStorage();
+  _isParsingEnd  = false;
+  _statusCode    = 0;
+  _statusMessage = "";
+  _contentType   = "";
+  _body          = "";
+}
 
-  while (std::getline(buffer, line)) {
-    if (line.find("Status:") != std::string::npos) {
-      std::string status_line = line.substr(8);
-      status_line[status_line.size() - 1] = '\0';
-      std::vector<std::string> status_line_split = _split(status_line, " ");
-      _statusCode = atoi(status_line_split[0].c_str());
-      _statusMessage = status_line_split[1];
-    }
-    else if (line.find("Content-Type:") != std::string::npos) {
-      std::string content_type_line = line.substr(14);
-      content_type_line[content_type_line.size() - 1] = '\0';
-      _contentType = content_type_line;
-    }
-    else if (line.find("\r") != std::string::npos) {
-      continue;
-    }
-    else {
-      _body += (line + "\n");
-    }
+void CgiResponse::readCgiResult(int fd) {
+  while (_storage.isReadingEnd() == false) {
+    _storage.readFd(fd);
   }
-  _printCgiResponse();
+  if (_storage.isReadingEnd() && !_isParsingEnd) {
+    _parseCgiResponse();
+  }
 }
 
-void CgiResponse::_printCgiResponse() {
-  std::cout << "Status-Code: [" << _statusCode << "]" << std::endl;
-  std::cout << "Status-Message: [" << _statusMessage << "]" << std::endl;
-  std::cout << "Content-Type: [" << _contentType << "]" << std::endl;
-  std::cout << "----Body---" << std::endl <<_body;
+void CgiResponse::_parseCgiResponse() {
+  std::string line = _storage.getLine();
+
+  while (line != "") {
+    if (line.find("Status:") != std::string::npos) {
+      std::string status_line                    = line.substr(8);
+      status_line[status_line.size() - 1]        = '\0';
+      std::vector<std::string> status_line_split = _split(status_line, " ");
+      _statusCode                                = atoi(status_line_split[0].c_str());
+      _statusMessage                             = status_line_split[1];
+    } else if (line.find("Content-Type:") != std::string::npos) {
+      std::string content_type_line                   = line.substr(14);
+      content_type_line[content_type_line.size() - 1] = '\0';
+      _contentType                                    = content_type_line;
+    } else if (line.find("\r") != std::string::npos) {
+      _body = _storage.remainder();
+      break;
+    }
+    line = _storage.getLine();
+  }
+  _isParsingEnd = true;
 }
 
-bool CgiResponse::isEnd() { return _isEnd; }
-
-void CgiResponse::readCgiResult(int pipe_fd) {
-  // open a filestream from pipe_fd
-  // read the filestream into cgi_result
-  // parse the cgi_result
+std::string CgiResponse::CgiResponseResultString() {
+  std::stringstream ss;
+  ss << "Status-Code: [" << _statusCode << "]" << std::endl;
+  ss << "Status-Message: [" << _statusMessage << "]" << std::endl;
+  ss << "Content-Type: [" << _contentType << "]" << std::endl;
+  ss << "----Body---" << std::endl << _body << std::endl << "-----------" << std::endl;
+  return ss.str();
 }
-
-void CgiResponse::setCgiEnd() { _isEnd = true; }
 
 int CgiResponse::getStatusCode() { return _statusCode; }
 
@@ -51,14 +57,6 @@ std::string CgiResponse::getStatusMessage() { return _statusMessage; }
 std::string CgiResponse::getContentType() { return _contentType; }
 
 std::string CgiResponse::getBody() { return _body; }
-
-CgiResponse::CgiResponse() {
-  _isEnd         = false;
-  _statusCode    = 0;
-  _statusMessage = "";
-  _contentType   = "";
-  _body          = "";
-}
 
 std::vector<std::string> CgiResponse::_split(const std::string& str, const std::string& delimiter) {
   std::vector<std::string> _result;
