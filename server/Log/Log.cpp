@@ -119,8 +119,9 @@ void Log::printHttpRequest(HttpRequest& request, LogLocationType location) {
 void Log::printHttpResponse(HttpResponse& response, LogLocationType location) {
   std::stringstream logMessage;
 
-  logMessage << "HttpResponse:\n" << response.headerToString();  // body 추가..?
-  for (std::vector<unsigned char>::const_iterator it = response.body().begin(); it != response.body().end(); ++it) {
+  logMessage << "HttpResponse:\n";  // body 추가..?
+  for (std::vector<unsigned char>::const_iterator it = response.storage().begin(); it != response.storage().end();
+       ++it) {
     logMessage << *it;
   }
 

@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-#include "Storage.hpp"
-
 #define DEFAULT_ERROR_PAGE_DIR "error_pages"
+
+#include "Storage.hpp"
 
 class HttpRequest;
 class CgiResponse;
