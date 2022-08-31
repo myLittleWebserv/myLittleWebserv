@@ -6,7 +6,7 @@
 /*   By: mypark <mypark@student.42seoul.kr>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/23 23:16:42 by mypark           ###   ########.fr       */
+/*   Updated: 2022/08/25 23:18:00 by mypark           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,8 +77,13 @@ class Config {
   std::vector<std::string>    _split(const std::string& str, const std::string& delimiter);
   std::pair<int, std::string> _trimLeftTab(const std::string& str);
   std::string                 _trimLeftSpace(const std::string& str);
+<<<<<<< HEAD
   std::stringstream           _serverInfoString(const ServerInfo& info);
   std::stringstream           _locatinInfoString(const LocationInfo& info);
+=======
+  void                        _serverInfoString(std::stringstream& _ss, const ServerInfo& info);
+  void                        _locatinInfoString(std::stringstream& _ss, const LocationInfo& info);
+>>>>>>> 69f2869637d049c7333ad2d57b8388d1adbcbf52
   void                        _parsedConfigResult();
   void                        _setPorts();
 
