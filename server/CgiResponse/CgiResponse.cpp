@@ -9,14 +9,19 @@ CgiResponse::CgiResponse() {
   _body          = "";
 }
 
-void CgiResponse::readCgiResult(int fd) {
+void CgiResponse::readCgiResult(int fd, int pid) {
 
-  //_storage.readFd(fd);
+  // CgiResponse 내부에 파일에 Cgi의 실행이 완료되었는지 확인하는 변수가 필요할 듯?
+  int waitpid_result = waitpid(pid, NULL, WNOHANG);
+  if (waitpid_result != pid) {
+    return;
+  }
+  _storage.readFd(fd);
 
   //for test
-  while (_storage.isReadingEnd() == false) {
-    _storage.readFd(fd);
-  }
+  // while (_storage.isReadingEnd() == false) {
+  //   _storage.readFd(fd);
+  // }
   if (_storage.isReadingEnd() && !_isParsingEnd) {
     _parseCgiResponse();
   }

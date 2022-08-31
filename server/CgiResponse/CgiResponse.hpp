@@ -30,7 +30,7 @@ class CgiResponse {
   // Interface
  public:
   bool        isParsingEnd();
-  void        readCgiResult(int fd);
+  void        readCgiResult(int fd, int pid);
   int         getStatusCode();
   std::string getStatusMessage();
   std::string getContentType();
