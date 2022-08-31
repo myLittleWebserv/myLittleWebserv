@@ -27,11 +27,16 @@ class Storage : private std::vector<unsigned char> {
   // Interface
  public:
   using vector::clear;
+  using vector::data;
+  using vector::end;
+  using vector::insert;
   using vector::size;
   SocketReadingState state() { return _state; }
   int                remains() { return static_cast<int>(size()) - _pos; }
+  bool               empty() { return static_cast<int>(size()) == _pos; }
   void               dataToBody(vector& _body, int required_size);
   void               readSocket(int fd);
+  void               movePos(int move) { _pos += move; }
   std::string        getLine();
 };
 
