@@ -5,4 +5,4 @@ objs
 *.json
 *.pseudo
 myLittleWebserv
-client
+myLittleClient
