@@ -1,8 +1,9 @@
-LogFiles
+log_files
 objs
 *.out
 *.o
 *.json
 *.pseudo
 myLittleWebserv
-client
+myLittleClient
+file_should_exist_after
