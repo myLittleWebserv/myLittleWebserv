@@ -1,6 +1,8 @@
 NAME := myLittleWebserv
+CLIENT := myLittleClient
 
 OBJ_DIR := objs
+SRC_DIR := server
 LOG_DIR := LogFiles
 
 SRC :=	main.cpp\
@@ -8,22 +10,26 @@ SRC :=	main.cpp\
 				VirtualServer.cpp\
 				Log.cpp\
 				Config.cpp\
-				EventHandler.cpp
+				EventHandler.cpp\
+				HttpRequest.cpp\
+				HttpResponse.cpp\
+				Storage.cpp\
+				FileManager.cpp
 
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
 
 
-CXXFALGS += -fsanitize=address -g -std=c++98 -Wall -Werror -Wextra
-LDFALGS += -fsanitize=address -g
+CXXFALGS += -std=c++98 -Wall -Werror -Wextra #-fsanitize=address -g 
+LDFALGS  += #-fsanitize=address -g
 
-INCS := -I ./Router\
-				-I ./Log\
-				-I ./Config\
-				-I ./EventHandler\
-				-I ./VirtualServer\
-				-I ./HttpRequest\
-				-I ./HttpResponse\
-				-I ./CgiResponse\
+INCS := -I ./$(SRC_DIR)/Router\
+				-I ./$(SRC_DIR)/Log\
+				-I ./$(SRC_DIR)/Config\
+				-I ./$(SRC_DIR)/EventHandler\
+				-I ./$(SRC_DIR)/VirtualServer\
+				-I ./$(SRC_DIR)/HttpRequest\
+				-I ./$(SRC_DIR)/HttpResponse\
+				-I ./$(SRC_DIR)/CgiResponse
 
 
 ifeq ($(shell uname), Linux)
@@ -33,7 +39,7 @@ endif
 
 VPATH := $(shell ls -R)
 
-all : directories $(NAME)
+all : directories $(NAME) $(CLIENT)
 
 directories : $(OBJ_DIR) $(LOG_DIR)
 
@@ -56,10 +62,17 @@ clean:
 	rm -rf $(OBJ_DIR)
 
 fclean: clean
+	rm -rf $(CLIENT)
 	rm -rf $(NAME)
 	rm -rf *.out
 	rm -rf *.dSYM
 
 re: fclean all
+
+$(CLIENT): client/Client.cpp
+	$(CXX) -o $@ $^
+
+
+
 
 
