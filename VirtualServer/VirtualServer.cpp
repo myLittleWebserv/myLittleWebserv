@@ -7,11 +7,11 @@
 VirtualServer::VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler)
     : _serverId(id), _serverInfo(info), _eventHandler(eventHandler) {}
 
-LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpReuest) {
+LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpRequest) {
   std::string                                   key;
   std::map<std::string, LocationInfo>::iterator found;
 
-  key = httpReuest.uri();
+  key = httpRequest.uri();
   while (key != "/" && !key.empty()) {
     found = _serverInfo.locations.find(key);
     if (found != _serverInfo.locations.end()) {
@@ -82,38 +82,60 @@ void VirtualServer::start() {
 #define WRITEEND 1
 
 void VirtualServer::_callCgi(Event& event) {
-  (void)event;
-  // //  std::string cgi_path = getCgiPath(_serverInfo.locations); -> httpRequest에서 url 받아와서 찾아야 할 듯
-  // int _pipe[2];  // pipe를 event에 넣어야 할 것 같다.
-  //                // Waitpid Wnohang시 프로스세가 끝난지 한참 지나도 pid를 리턴 하는 것 확인
-  //                // eventHandler에서 WNOHANG으로 pid를 확인해,
-  // if (pipe(_pipe) == -1) {
-  //   throw "error";
-  // }
-  // int env = 0;
-  // env += setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
-  // env += setenv("REQUEST_METHOD", event.httpRequest.getMethod().c_str(), 1);
-  // env += setenv("PATH_INFO", cgiPath.c_str(), 1);
-  // if (env != 0) {
-  //   throw "error";
-  // }
-  // fcntl(_pipe[WRITEEND], F_SETFL, O_NONBLOCK);
-  // fcntl(_pipe[READEND], F_SETFL, O_NONBLOCK);
-  // event.pid = fork();
-  // if (event.pid == -1) {
-  //   throw "500";                // 500번대 에러
-  // } else if (event.pid == 0) {  // child
-  //   int temp = open("temp/temp.txt", O_RDWR | O_CREAT, 0644);
-  //   if (temp == -1) {
-  //     exit(EXIT_FAILURE);
-  //   }
-  //   dup2(temp, STDIN_FILENO);
-  //   dup2(_pipe[WRITEEND], STDOUT_FILENO);
-  //   close(_pipe[READEND]);
-  //   execve(cgi_path.c_str(), cgi_path.c_str(), NULL);
-  //   exit(EXIT_FAILURE);
-  // }
+  std::string cgi_path = _findLocationInfo(event.httpRequest).cgiPath;
+  if (event.pid == waitpid(event.pid, NULL, WNOHANG)) {
+    std::stringstream ss;
+    ss << event.pid;
+    std::string pid      = ss.str();
+    std::string filepath = "temp/" + pid;
+    unlink(filepath.c_str());
+    //Make cgi response
+    event.type = CGI_RESPONSE_READABLE;
+    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, &event);
+//    _eventHandler.appendNewEventToChangeList(event.pipe[READEND], EVFILT_READ, EV_ENABLE, &event);
+    return;
+  }
+  if (waitpid(event.pid, NULL, WNOHANG) == -1)
+    throw "error";
+  int env = 0;
+  env += setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
+  env += setenv("REQUEST_METHOD", "POST", 1); // 현재 httpRequest에서 method()가 enum을 리턴해서 케이스별로 문자열로 넣어줘야함
+  env += setenv("PATH_INFO", cgi_path.c_str(), 1);
+  if (env != 0) {
+    throw "error";
+  }
+//  fcntl(event.pipe[WRITEEND], F_SETFL, O_NONBLOCK);
+//  fcntl(event.pipe[READEND], F_SETFL, O_NONBLOCK);
+  event.pid = fork();
+  if (event.pid == -1) {
+    throw "500";                // 500번대 에러
+  } else if (event.pid == 0) {  // child
+    std::stringstream ss;
+    ss << event.pid;
+    std::string pid      = ss.str();
+    std::string filepath = "temp/" + pid;
+    int         temp     = open(filepath.c_str(), O_RDWR | O_CREAT, 0644);
+    if (temp == -1) {
+      exit(EXIT_FAILURE);
+    }
+    dup2(temp, STDIN_FILENO);
+    char** argv = new char*[2];
+    argv[0]     = const_cast<char*>(cgi_path.c_str());
+    argv[1]     = NULL;
+    execve(cgi_path.c_str(), argv, NULL);
+    exit(EXIT_FAILURE);
+  } else {  // parent
+//    close(event.pipe[WRITEEND]);
+  }
 }
+//분기를 계속 나눠서 읽기 // 쓰기가 끝나지 않은 때, 끝난 때로 구분
+//해야하는 일 -> httpRequest를 cgi에 넣어서 cgiResponse를 만들어야함
+//httpRequest를 cgi에 넣는 방법 -> cgi에 넣을 수 있는 파일을 만들어야함
+//------
+//httpRequest 통째로 파일에 write
+//------
+//write가 끝나면 execve
+
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
   //(void)response;
