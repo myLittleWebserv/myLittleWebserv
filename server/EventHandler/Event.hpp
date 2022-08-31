@@ -3,6 +3,8 @@
 
 #include <sys/types.h>
 
+#include <ctime>
+
 #include "CgiResponse.hpp"
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
@@ -18,6 +20,7 @@ struct Event {
   HttpRequest    httpRequest;
   CgiResponse    cgiResponse;
   HttpResponse*  httpResponse;
+  time_t         timestamp;
 
   Event(enum EventType t, int kevent_id)
       : type(t),
@@ -27,7 +30,8 @@ struct Event {
         pid(-1),
         httpRequest(),
         cgiResponse(),
-        httpResponse(NULL) {}
+        httpResponse(NULL),
+        timestamp(time(NULL)) {}
   ~Event() { delete httpResponse; }
 };
 

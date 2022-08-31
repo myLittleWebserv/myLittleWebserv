@@ -29,6 +29,8 @@ void EventHandler::removeConnection(Event& event) {
   Log::log().syscall(ret, LOG_LOCATION, "(SYSCALL) close done", "(SYSCALL) close error", ALL);
   Log::log()("closed fd", event.clientFd);
   Log::log().mark(ret == -1);
+  _eventSet.erase(&event);
+  delete &event;
 }
 
 void EventHandler::addConnection(int listen_fd) {
@@ -48,9 +50,27 @@ void EventHandler::addConnection(int listen_fd) {
   appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD, event);
   appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD, event);
   appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_DISABLE, event);  // 따로 해야 제대로 적용됨.
+
+  _eventSet.insert(event);
+}
+
+void EventHandler::_checkClientTimeOut() {
+  std::vector<Event*> v;
+
+  for (std::set<Event*>::iterator it = _eventSet.begin(); it != _eventSet.end(); ++it) {
+    Event& event = **it;
+    if (time(NULL) - event.timestamp >= TIME_OUT_SEC) {
+      v.push_back(&event);
+    }
+  }
+  for (std::vector<Event*>::iterator it = v.begin(); it != v.end(); ++it) {
+    Event& event = **it;
+    removeConnection(event);
+  }
 }
 
 void EventHandler::routeEvents() {
+  _checkClientTimeOut();
   int num_kevents = kevent(_kQueue, _changeList.data(), _changeList.size(), _keventList, MAX_EVENTS, &_timeOut);
   _changeList.clear();
   _routedEvents.clear();
@@ -68,17 +88,18 @@ void EventHandler::routeEvents() {
 
     if (flags & EV_EOF) {
       removeConnection(event);
-      delete &event;
     } else if (filter == EVFILT_WRITE && event.type == HTTP_RESPONSE_WRITABLE) {
+      event.timestamp = time(NULL);
       _routedEvents[event.serverId].push_back(&event);
       Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", ALL);
     } else if (filter == EVFILT_READ && event.type == CONNECTION_REQUEST) {
       addConnection(event.keventId);
     } else if (filter == EVFILT_READ && event.type == HTTP_REQUEST_READABLE) {
+      event.timestamp = time(NULL);
       event.httpRequest.storeChunk(event.clientFd);
 
       if (event.httpRequest.isConnectionClosed()) {
-        appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_EOF, &event);
+        removeConnection(event);
       } else if (event.httpRequest.isEnd()) {
         event.serverId = _router.findServerId(event.httpRequest);
         _routedEvents[event.serverId].push_back(&event);
@@ -87,6 +108,7 @@ void EventHandler::routeEvents() {
       }
 
     } else if (filter == EVFILT_READ && event.type == CGI_RESPONSE_READABLE) {
+      event.timestamp = time(NULL);
       event.cgiResponse.storeChunk(event.keventId);
       if (event.cgiResponse.isEnd()) {
         _routedEvents[event.serverId].push_back(&event);

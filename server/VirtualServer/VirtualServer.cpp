@@ -67,7 +67,6 @@ void VirtualServer::start() {
           _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
         } else {  // 조건문 추가
           _eventHandler.removeConnection(event);
-          delete &event;
           Log::log()(LOG_LOCATION, "(FREE) event removed", ALL);
         }
         break;

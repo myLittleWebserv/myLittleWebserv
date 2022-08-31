@@ -6,7 +6,7 @@
 
 #include "Storage.hpp"
 
-#define PARSING_TIME_OUT 10000
+#define PARSING_TIME_OUT 10
 #define HTTP_DEFAULT_PORT 80
 #define HTTP_MAX_HEADER_SIZE 8192
 
