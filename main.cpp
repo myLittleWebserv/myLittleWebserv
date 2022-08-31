@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "Router/Router.hpp"
+#include "Router.hpp"
 
 int main(int argc, char** argv) {
   if (argc != 2) {
