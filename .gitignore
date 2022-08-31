@@ -1,6 +1,0 @@
-*.log
-*.out
-objs
-*.o
-*.json
-*.pseudo
