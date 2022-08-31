@@ -10,6 +10,10 @@ CgiResponse::CgiResponse() {
 }
 
 void CgiResponse::readCgiResult(int fd) {
+
+  //_storage.readFd(fd);
+
+  //for test
   while (_storage.isReadingEnd() == false) {
     _storage.readFd(fd);
   }
