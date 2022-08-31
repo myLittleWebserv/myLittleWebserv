@@ -15,6 +15,8 @@ class VirtualServer {
   void          _callCgi(Event& event);
   void          _sendResponse(int fd, HttpResponse& response);
   LocationInfo& _findLocationInfo(HttpRequest& httpRequest);
+  std::string   _pidToString(int pid);
+  void          _setEnv(Event& event, const std::string& cgi_path) const;
 
  public:
   VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler);

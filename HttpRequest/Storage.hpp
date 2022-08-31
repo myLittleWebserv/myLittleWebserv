@@ -32,6 +32,7 @@ class Storage : private std::vector<unsigned char> {
   bool               toBody(vector& _body, int required_size);
   void               readSocket(int fd);
   std::string        getLine();
+  unsigned char*     getData() { return vector::data(); }
 };
 
 #endif
