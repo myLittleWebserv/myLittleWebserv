@@ -6,7 +6,7 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/31 22:57:55 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/08/31 23:20:58 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@
 #include "Log.hpp"
 
 #define ERROR_PAGES_COUNT 11
-#define ERROR_PAGES_PATH "./error_pages/"
+#define ERROR_PAGES_PATH "/error_pages/"
 #define HTTP_DEFAULT_PORT 80
 #define DEFAULT_MAX_BODY_SIZE 200000000
 

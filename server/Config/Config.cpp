@@ -44,6 +44,10 @@ void Config::_startParse() {
       std::exit(1);
     }
   }
+  if (_serverInfos.empty()) {
+    _serverInfos.push_back(_init_serverInfo());
+    _serverInfos.back().locations["/"] = _init_locationInfo(_serverInfos.back());
+  }
 }
 
 ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
@@ -79,7 +83,6 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
       _server_info.serverName = _value.str();
     } else if (_identifier == "location") {
       _server_info.locations[_value.str()] = _parseLocation(++it, _server_info, _value.str());
-
       continue;
     } else {
       std::cout << "ERROR: invalid config file" << std::endl;
@@ -87,6 +90,9 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
       std::exit(1);
     }
     ++it;
+  }
+  if (_server_info.locations.empty()) {
+    _server_info.locations["/"] = _init_locationInfo(_server_info);
   }
   return _server_info;
 }
