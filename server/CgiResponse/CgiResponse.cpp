@@ -10,8 +10,7 @@ CgiResponse::CgiResponse() {
 }
 
 void CgiResponse::readCgiResult(int fd, int pid) {
-
-  // CgiResponse 내부에 파일에 Cgi의 실행이 완료되었는지 확인하는 변수가 필요할 듯?
+  // 프로세스 exit status 체크해서 Cgi Status를 결정해줘야할듯?
   int waitpid_result = waitpid(pid, NULL, WNOHANG);
   if (waitpid_result != pid) {
     return;
