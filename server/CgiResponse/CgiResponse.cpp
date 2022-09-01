@@ -11,6 +11,7 @@ CgiResponse::CgiResponse() {
 
 void CgiResponse::readCgiResult(int fd, int pid) {
   // 프로세스 exit status 체크해서 Cgi Status를 결정해줘야할듯?
+  // -> TODO: 객체 내부에 에러를 체크할 수 있는 인터페이스를 만들어 줄 것.  
   int waitpid_result = waitpid(pid, NULL, WNOHANG);
   if (waitpid_result != pid) {
     return;
@@ -64,6 +65,7 @@ std::string CgiResponse::getStatusMessage() { return _statusMessage; }
 
 std::string CgiResponse::getContentType() { return _contentType; }
 
+// TODO: body unsinged char 벡터로 바꾸고, 레퍼런스로 바꾸기/
 std::string CgiResponse::getBody() { return _body; }
 
 std::vector<std::string> CgiResponse::_split(const std::string& str, const std::string& delimiter) {
