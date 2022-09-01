@@ -82,18 +82,9 @@ void VirtualServer::start() {
 }
 
 void VirtualServer::_callCgi(Event& event) {
-  _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
-  if (event.pid == waitpid(event.pid, NULL, WNOHANG)) {
-    std::string pid        = _pidToString(event.pid);
-    std::string req_unlink = "temp/request" + pid;
-    unlink(req_unlink.c_str());
-
-    event.type = CGI_RESPONSE_READABLE;
-    return;
-  }
   if (event.pid != -1) {
     return;
-  }
+  } // fd로 파일 이름 관리 keventId
   event.pid = fork();
   if (event.pid == -1) {
     throw "500";  // 500번대 에러
@@ -130,9 +121,10 @@ void VirtualServer::_callCgi(Event& event) {
     if (response == -1) {
       exit(EXIT_FAILURE);
     }
-    event.clientFd = response;
-    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, &event);
-    _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_ENABLE, &event);
+    event.keventId = response;
+    event.type = CGI_RESPONSE_READABLE;
+    _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DISABLE, &event);
+    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
   }
 }
 
