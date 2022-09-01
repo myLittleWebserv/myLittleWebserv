@@ -29,7 +29,8 @@ class Storage : private std::vector<unsigned char> {
   using vector::clear;
   using vector::size;
   SocketReadingState state() { return _state; }
-  bool               toBody(vector& _body, int required_size);
+  int                remains() { return static_cast<int>(size()) - _pos; }
+  void               dataToBody(vector& _body, int required_size);
   void               readSocket(int fd);
   std::string        getLine();
   unsigned char*     getData() { return vector::data(); }

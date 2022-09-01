@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#define DEFAULT_ERROR_PAGE_DIR "ErrorPages"
+#define DEFAULT_ERROR_PAGE_DIR "error_pages"
 
 class HttpRequest;
 class CgiResponse;
