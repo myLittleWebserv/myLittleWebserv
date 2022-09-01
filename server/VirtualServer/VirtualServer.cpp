@@ -84,7 +84,19 @@ void VirtualServer::start() {
 void VirtualServer::_callCgi(Event& event) {
   if (event.pid != -1) {
     return;
-  } // fd로 파일 이름 관리 keventId
+  }
+  std::string fd           = _intToString(event.clientFd);
+  std::string res_filepath = "temp/response" + fd;
+  int         response     = open(res_filepath.c_str(), O_RDWR | O_CREAT, 0644);
+  if (response == -1) {
+    exit(EXIT_FAILURE);
+  }
+  std::string req_filepath = "temp/request" + fd;
+  int         request      = open(req_filepath.c_str(), O_RDWR | O_CREAT, 0644);
+  if (request == -1) {
+    unlink(res_filepath.c_str());
+    exit(EXIT_FAILURE);
+  }
   event.pid = fork();
   if (event.pid == -1) {
     throw "500";  // 500번대 에러
@@ -92,19 +104,7 @@ void VirtualServer::_callCgi(Event& event) {
   if (event.pid == 0) {  // child
     std::string cgi_path = _findLocationInfo(event.httpRequest).cgiPath;
     _setEnv(event, cgi_path);
-    std::string pid          = _pidToString(getpid());
-    std::string res_filepath = "temp/response" + pid;
-    int         response     = open(res_filepath.c_str(), O_RDWR | O_CREAT, 0644);
-    if (response == -1) {
-      exit(EXIT_FAILURE);
-    }
-    std::string req_filepath = "temp/request" + pid;
-    int         request      = open(req_filepath.c_str(), O_RDWR | O_CREAT, 0644);
-    if (request == -1) {
-      unlink(res_filepath.c_str());
-      exit(EXIT_FAILURE);
-    }
-    write(request, event.httpRequest.storage().getData(), event.httpRequest.storage().size());
+    write(request, event.httpRequest.body().data(), event.httpRequest.body().size());
     dup2(request, STDIN_FILENO);
     close(request);
     dup2(response, STDOUT_FILENO);
@@ -114,13 +114,8 @@ void VirtualServer::_callCgi(Event& event) {
     argv[1]     = NULL;
     execve(cgi_path.c_str(), argv, NULL);
     exit(EXIT_FAILURE);
-  } else {  // Open을 위해 pid를 알아야 해서 그냥 두번 여는게 낫겠다 싶었습니다.
-    std::string pid          = _pidToString(event.pid);
-    std::string res_filepath = "temp/response" + pid;
-    int         response     = open(res_filepath.c_str(), O_RDWR | O_CREAT, 0644);
-    if (response == -1) {
-      exit(EXIT_FAILURE);
-    }
+  } else {
+    close(request);
     event.keventId = response;
     event.type = CGI_RESPONSE_READABLE;
     _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DISABLE, &event);
@@ -152,11 +147,11 @@ void VirtualServer::_setEnv(Event& event, const std::string& cgi_path) const {
   }
 }
 
-std::string VirtualServer::_pidToString(int pid) {
+std::string VirtualServer::_intToString(int integer) {
   std::stringstream ss;
-  ss << pid;
-  std::string pidstr = ss.str();
-  return pidstr;
+  ss << integer;
+  std::string intstr = ss.str();
+  return intstr;
 }
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
