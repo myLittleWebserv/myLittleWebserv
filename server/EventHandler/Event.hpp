@@ -33,6 +33,7 @@ struct Event {
         httpResponse(NULL),
         timestamp(time(NULL)) {}
   ~Event() { delete httpResponse; }
+  void initialize();
 };
 
 #endif  // Event_hpp

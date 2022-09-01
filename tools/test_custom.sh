@@ -57,3 +57,12 @@ read input
 ./myLittleClient $PORT1 $POST_TEST/PostRequest_4.infile
 echo $NEXT_TEST_MSG
 read input
+
+
+./myLittleClient $PORT1 $POST_TEST/PostRequest_5.infile
+echo $NEXT_TEST_MSG
+read input
+
+./myLittleClient $PORT1 $POST_TEST/PostRequest_6.infile
+echo $NEXT_TEST_MSG
+read input
