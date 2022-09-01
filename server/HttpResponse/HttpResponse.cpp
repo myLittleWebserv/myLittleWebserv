@@ -24,9 +24,12 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : 
     _makeErrorResponse(501, request, location_info);
     return;
   }
-
   if (!_isAllowedMethod(request.method(), location_info.allowedMethods)) {
     _makeErrorResponse(405, request, location_info);
+    return;
+  }
+  if (request.isInternalServerError()) {
+    _makeErrorResponse(500, request, location_info);
     return;
   }
   if (location_info.redirStatus != -1) {
