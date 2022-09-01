@@ -373,6 +373,18 @@ std::string HttpResponse::_getMessage(int status_code) {
 }
 
 std::string HttpResponse::_getContentType(const std::string& file_name) {
-  (void)file_name;
+  std::string::size_type ext_delim = file_name.rfind('.');
+  std::string            ext       = file_name.substr(ext_delim + 1);
+
+  if (ext == "html" || ext == "htm" || ext == "shtml") {
+    return "text/html";
+  } else if (ext == "css") {
+    return "text/css";
+  } else if (ext == "js") {
+    return "text/css";
+  } else if (ext == "css") {
+    return "text/css";
+  }
+
   return "plain/text";
 }
