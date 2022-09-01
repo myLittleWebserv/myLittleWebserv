@@ -27,6 +27,7 @@ class HttpRequest {
   bool                       _isChunked;
   int                        _chunkSize;
   bool                       _isKeepAlive;
+  bool                       _serverError;
 
   // HttpRequest Variable
   MethodType  _method;
@@ -58,6 +59,7 @@ class HttpRequest {
         _isChunked(false),
         _chunkSize(-1),
         _isKeepAlive(false),  //  default: close
+        _serverError(false),
         _hostPort(HTTP_DEFAULT_PORT) {}
 
   // Interface
@@ -66,6 +68,8 @@ class HttpRequest {
   bool isTimeOut() { return _parsingState == TIME_OUT; }
   bool isConnectionClosed() { return _storage.state() == CONNECTION_CLOSED; }
   bool isBadRequest() { return _parsingState == BAD_REQUEST; }
+  bool isInternalServerError() { return _serverError; }
+  void setServerError(bool state) { _serverError = state; }
   bool isKeepAlive() { return _isKeepAlive; }
   bool isCgi(const std::string& ext);
   void storeChunk(int fd);

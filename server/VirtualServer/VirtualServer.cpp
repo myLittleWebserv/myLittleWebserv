@@ -4,8 +4,72 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <cstring>
+
 VirtualServer::VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler)
     : _serverId(id), _serverInfo(info), _eventHandler(eventHandler) {}
+
+void VirtualServer::start() {
+  std::vector<Event*> event_list = _eventHandler.getRoutedEvents(_serverId);
+  for (std::vector<Event*>::size_type i = 0; i < event_list.size(); i++) {
+    Event&        event         = *event_list[i];
+    LocationInfo& location_info = _findLocationInfo(event.httpRequest);
+
+    switch (event.type) {
+      case HTTP_REQUEST_READABLE:
+        _processHttpRequestReadable(event, location_info);
+        break;
+
+      case CGI_RESPONSE_READABLE:
+        _processCgiResponseReadable(event, location_info);
+        break;
+
+      case HTTP_RESPONSE_WRITABLE:
+        Log::log().printHttpResponse(*event.httpResponse, ALL);
+        _sendResponse(event.clientFd, *event.httpResponse);
+        if (event.httpResponse->storage().empty()) {
+          _processSendingEnd(event);
+        }
+        break;
+
+      default:
+        break;
+    }
+  }
+}
+
+void VirtualServer::_processSendingEnd(Event& event) {
+  if (event.httpRequest.isKeepAlive()) {
+    event.initialize();
+    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_DISABLE, &event);
+    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
+  } else {
+    _eventHandler.removeConnection(event);
+  }
+  Log::log()(LOG_LOCATION, "(DONE) sending Http Response", ALL);
+}
+
+void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& location_info) {
+  Log::log().printHttpRequest(event.httpRequest, ALL);
+  if (event.httpRequest.isCgi(location_info.cgiExtension) && _callCgi(event)) {
+    return;
+  }
+  event.httpResponse = new HttpResponse(event.httpRequest, location_info);
+  event.type         = HTTP_RESPONSE_WRITABLE;
+  _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, &event);
+  _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ENABLE, &event);
+  Log::log()(LOG_LOCATION, "(DONE) making Http Response", ALL);
+}
+
+void VirtualServer::_processCgiResponseReadable(Event& event, LocationInfo& location_info) {
+  event.httpResponse = new HttpResponse(event.cgiResponse, location_info);
+  event.type         = HTTP_RESPONSE_WRITABLE;
+  if (close(event.keventId) == -1)
+    throw "close error";
+  event.keventId = event.clientFd;
+  _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ENABLE, &event);
+  Log::log()(LOG_LOCATION, "(DONE) making Http Response", ALL);
+}
 
 LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpRequest) {
   std::string                                   key;
@@ -25,101 +89,50 @@ LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpRequest) {
   return _serverInfo.locations["/"];
 }
 
-void VirtualServer::start() {
-  std::vector<Event*> event_list = _eventHandler.getRoutedEvents(_serverId);
-  for (std::vector<Event*>::size_type i = 0; i < event_list.size(); i++) {
-    Event&        event         = *event_list[i];
-    LocationInfo& location_info = _findLocationInfo(event.httpRequest);
-
-    switch (event.type) {
-      case HTTP_REQUEST_READABLE:
-        Log::log().printHttpRequest(event.httpRequest, ALL);
-        if (event.httpRequest.isCgi(location_info.cgiExtension)) {
-          _callCgi(event);
-          break;
-        }
-        event.httpResponse = new HttpResponse(event.httpRequest, location_info);
-        event.type         = HTTP_RESPONSE_WRITABLE;
-        _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, &event);
-        _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ENABLE, &event);
-        Log::log()(LOG_LOCATION, "(DONE) making Http Response", ALL);
-        break;
-
-      case CGI_RESPONSE_READABLE:
-        event.httpResponse = new HttpResponse(event.cgiResponse, location_info);
-        event.type         = HTTP_RESPONSE_WRITABLE;
-        _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, &event);
-        _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_ENABLE, &event);
-        Log::log()(LOG_LOCATION, "(DONE) making Http Response", ALL);
-        break;
-
-      case HTTP_RESPONSE_WRITABLE:
-        Log::log().printHttpResponse(*event.httpResponse, ALL);
-        _sendResponse(event.clientFd, *event.httpResponse);
-        if (event.httpResponse->storage().empty()) {
-          if (event.httpRequest.isKeepAlive()) {
-            event.initialize();
-            _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_DISABLE, &event);
-            _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
-            Log::log()(LOG_LOCATION, "(DONE) sending Http Response", ALL);
-          } else {
-            _eventHandler.removeConnection(event);
-            Log::log()(LOG_LOCATION, "(DONE) sending Http Response", ALL);
-          }
-        }
-        break;
-
-      default:
-        break;
-    }
-  }
-}
-
-void VirtualServer::_callCgi(Event& event) {
-  if (event.pid != -1) {
-    return;
-  }
+bool VirtualServer::_callCgi(Event& event) {
   std::string fd           = _intToString(event.clientFd);
-  std::string res_filepath = "temp/response" + fd;
-  int         response     = open(res_filepath.c_str(), O_RDWR | O_CREAT, 0644);
-  if (response == -1) {
-    exit(EXIT_FAILURE);
-  }
   std::string req_filepath = "temp/request" + fd;
+  std::string res_filepath = "temp/response" + fd;
   int         request      = open(req_filepath.c_str(), O_RDWR | O_CREAT, 0644);
-  if (request == -1) {
+  int         response     = open(res_filepath.c_str(), O_RDWR | O_CREAT, 0644);
+
+  if (request == -1 || response == -1) {
     unlink(res_filepath.c_str());
-    exit(EXIT_FAILURE);
+    unlink(req_filepath.c_str());
+    event.httpRequest.setServerError(true);
+    return false;
   }
+
   event.pid = fork();
   if (event.pid == -1) {
-    throw "500";  // 500번대 에러
-  }
-  if (event.pid == 0) {  // child
+    event.httpRequest.setServerError(true);
+    return false;
+  } else if (event.pid == 0) {  // child
+    if (write(request, event.httpRequest.body().data(), event.httpRequest.body().size()) == -1)
+      std::exit(EXIT_FAILURE);
+
     std::string cgi_path = _findLocationInfo(event.httpRequest).cgiPath;
-    _setEnv(event, cgi_path);
-    write(request, event.httpRequest.body().data(), event.httpRequest.body().size());
-    dup2(request, STDIN_FILENO);
-    close(request);
-    dup2(response, STDOUT_FILENO);
-    close(response);
-    char** argv = new char*[2];
-    argv[0]     = const_cast<char*>(cgi_path.c_str());
-    argv[1]     = NULL;
+    char*       argv[2]  = {0, 0};
+    argv[0]              = strdup(cgi_path.c_str());
+
+    _setEnv(event.httpRequest.method(), cgi_path);
+    _setFd(request, response);
+
     execve(cgi_path.c_str(), argv, NULL);
-    exit(EXIT_FAILURE);
-  } else {
+    std::exit(EXIT_FAILURE);
+  } else {  // parent
     close(request);
     event.keventId = response;
     event.type     = CGI_RESPONSE_READABLE;
     _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DISABLE, &event);
-    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
+    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ADD, &event);
+    return true;
   }
 }
 
-void VirtualServer::_setEnv(Event& event, const std::string& cgi_path) const {
+void VirtualServer::_setEnv(int request_method, const std::string& cgi_path) const {
   std::string method;
-  switch (event.httpRequest.method()) {
+  switch (request_method) {
     case GET:
       method = "GET";
       break;
@@ -130,22 +143,32 @@ void VirtualServer::_setEnv(Event& event, const std::string& cgi_path) const {
       method = "HEAD";
       break;
     default:
-      throw "500";
+      std::exit(EXIT_FAILURE);
   }
   int env = 0;
   env += setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
   env += setenv("REQUEST_METHOD", method.c_str(), 1);
   env += setenv("PATH_INFO", cgi_path.c_str(), 1);
   if (env != 0) {
-    throw "500";
+    std::exit(EXIT_FAILURE);
   }
+}
+
+void VirtualServer::_setFd(int request, int response) const {
+  if (dup2(request, STDIN_FILENO) == -1)
+    std::exit(EXIT_FAILURE);
+  if (dup2(response, STDOUT_FILENO) == -1)
+    std::exit(EXIT_FAILURE);
+  if (close(request) == -1)
+    std::exit(EXIT_FAILURE);
+  if (close(response) == -1)
+    std::exit(EXIT_FAILURE);
 }
 
 std::string VirtualServer::_intToString(int integer) {
   std::stringstream ss;
   ss << integer;
-  std::string intstr = ss.str();
-  return intstr;
+  return ss.str();
 }
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
