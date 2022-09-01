@@ -149,8 +149,10 @@ std::string VirtualServer::_intToString(int integer) {
 }
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
-  send(fd, response.storage().data(), response.storage().size(), 0);
+  int send_size = send(fd, response.storage().data(), response.storage().size(), 0);
   Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", ALL);
+
+  response.storage().movePos(send_size);
   //  storage 사용 예정
   //  if (!response.headerSent()) {
   //    send(fd, response.headerToString().c_str(), response.headerToString().size(), 0);

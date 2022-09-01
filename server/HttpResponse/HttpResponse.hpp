@@ -28,6 +28,7 @@ class HttpResponse {
   // Method
  private:
   void        _responseToStorage();
+  void        _headerToStorage();
   void        _fileToBody(std::ifstream& file);
   void        _processGetRequest(HttpRequest& request, LocationInfo& location_info);
   void        _processHeadRequest(HttpRequest& request, LocationInfo& location_info);
@@ -48,7 +49,7 @@ class HttpResponse {
   HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info);
   // Interface
  public:
-  const Storage& storage() { return _storage; }
+  Storage& storage() { return _storage; }
 };
 
 #endif

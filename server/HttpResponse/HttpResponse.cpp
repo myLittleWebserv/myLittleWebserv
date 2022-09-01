@@ -53,7 +53,6 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : 
     default:
       break;
   }
-  _responseToStorage();
 }
 
 HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info) {
@@ -62,8 +61,7 @@ HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_inf
 }
 
 // Method
-
-void HttpResponse::_responseToStorage() {
+void HttpResponse::_headerToStorage() {
   std::stringstream response_stream;
 
   response_stream << _httpVersion << ' ' << _statusCode << ' ' << _message << "\r\n";
@@ -78,7 +76,12 @@ void HttpResponse::_responseToStorage() {
     response_stream << "Location: " << _location << "\r\n";
   }
   response_stream << "\r\n";
-  _storage.insert(_storage.end(), response_stream.str().begin(), response_stream.str().end());
+  std::string response_header = response_stream.str();
+  _storage.insert(_storage.end(), response_header.begin(), response_header.end());
+}
+
+void HttpResponse::_responseToStorage() {
+  _headerToStorage();
   _storage.insert(_storage.end(), _body.begin(), _body.end());
 }
 
@@ -125,6 +128,7 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
   _contentLength = _body.size();
   _contentType   = _getContentType(file_manager.fileName());
   Log::log()(LOG_LOCATION, "Get request processed.");
+  _responseToStorage();
 }
 
 void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info,
@@ -184,6 +188,7 @@ void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& locat
   _message     = _getMessage(_statusCode);
   _contentType = _getContentType(file_manager.fileName());
   Log::log()(LOG_LOCATION, "Head request processed.");
+  _headerToStorage();
 }
 
 void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& location_info) {
@@ -210,6 +215,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
   _statusCode  = 201;
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Post request processed.");
+  _responseToStorage();
 }
 
 void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
@@ -236,6 +242,7 @@ void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& locati
   _httpVersion = request.httpVersion();
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Put request processed.");
+  _responseToStorage();
 }
 
 void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
@@ -249,6 +256,7 @@ void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& loc
   file_manager.removeFile();
 
   Log::log()(LOG_LOCATION, "Delete request processed.");
+  _responseToStorage();
 }
 
 void HttpResponse::_makeErrorResponse(int error_code, HttpRequest& request, LocationInfo& location_info) {
@@ -296,7 +304,6 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
 
   // add other field ?
   Log::log()(LOG_LOCATION, "Redirection address returned.");
-
   _responseToStorage();
 }
 
@@ -384,13 +391,22 @@ std::string HttpResponse::_getContentType(const std::string& file_name) {
 
   if (ext == "html" || ext == "htm" || ext == "shtml") {
     return "text/html";
+  } else if (ext == "xml" || ext == "rss") {
+    return "text/xml";
   } else if (ext == "css") {
     return "text/css";
   } else if (ext == "js") {
-    return "text/css";
-  } else if (ext == "css") {
-    return "text/css";
+    return "application/x-javasciprt";
+  } else if (ext == "gif") {
+    return "image/gif";
+  } else if (ext == "jpg" | ext == "jpeg") {
+    return "image/jpeg";
+  } else if (ext == "png") {
+    return "image/png";
+  } else if (ext == "ico") {
+    return "image/x-icon";
+  } else if (ext == "mp3") {
+    return "audio/mpeg";
   }
-
-  return "plain/text";
+  return "text/plain";
 }
