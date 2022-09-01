@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mypark <mypark@student.42seoul.kr>         +#+  +:+       +#+        */
+/*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/28 02:23:49 by mypark           ###   ########.fr       */
+/*   Updated: 2022/08/31 23:20:58 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,9 @@
 
 #include "Log.hpp"
 
+#define ERROR_PAGES_COUNT 11
+#define ERROR_PAGES_PATH "/error_pages/"
+#define HTTP_DEFAULT_PORT 80
 #define DEFAULT_MAX_BODY_SIZE 200000000
 
 struct LocationInfo {
@@ -30,7 +33,7 @@ struct LocationInfo {
   int                        maxBodySize;        // default ?
   std::string                root;               // default ""
   std::map<int, std::string> defaultErrorPages;  // default 50x ErrorPages/50x.html
-  std::vector<std::string>   allowedMethods;     // default GET HEAD POST PUT DELETE // set으로 바꾸는게..?
+  std::vector<std::string>   allowedMethods;     // default GET HEAD POST PUT DELETE
   std::string                cgiExtension;       // default ""
   std::string                cgiPath;            // default ""
   std::string                indexPagePath;      // default ""
@@ -64,6 +67,7 @@ class Config {
   std::vector<std::string> _configContent;
   std::vector<ServerInfo>  _serverInfos;
   std::vector<int>         _ports;
+  static int               _error_codes[ERROR_PAGES_COUNT];
 
   // Method
  private:
@@ -73,10 +77,13 @@ class Config {
   ServerInfo   _parseServer(configIterator& it, const configIterator& end);
   LocationInfo _parseLocation(configIterator& it, const ServerInfo& serverInfo, const std::string& id);
   void         _parseLocationInfoToken(LocationInfo& info, const std::string& identifier, const std::string& value);
-  std::map<int, std::string>  _parseDefaultErrorPage(const std::string& pages);
+  void         _parseDefaultErrorPage(const std::string& pages, std::map<int, std::string>& defaultErrorPages);
   std::vector<std::string>    _parseAllowedMethod(const std::string& value);
   void                        _parseRedirection(const std::string& value, LocationInfo& info);
   LocationInfo                _init_locationInfo(const ServerInfo& serverInfo);
+  ServerInfo                  _init_serverInfo();
+  std::map<int, std::string>  _init_defaultErrorPages();
+  std::vector<std::string>    _defaultAllowedMethods();
   std::vector<std::string>    _split(const std::string& str, const std::string& delimiter);
   std::pair<int, std::string> _trimLeftTab(const std::string& str);
   std::string                 _trimLeftSpace(const std::string& str);
@@ -84,6 +91,7 @@ class Config {
   void                        _locatinInfoString(std::stringstream& _ss, const LocationInfo& info);
   void                        _parsedConfigResult();
   void                        _setPorts();
+  std::string                 _itoa(int i);
 
   // Constructor
  public:
