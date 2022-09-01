@@ -56,22 +56,16 @@ void VirtualServer::start() {
       case HTTP_RESPONSE_WRITABLE:
         Log::log().printHttpResponse(*event.httpResponse, ALL);
         _sendResponse(event.clientFd, *event.httpResponse);
-        if (event.httpResponse->sentLength() != (int)event.httpResponse->body().size()) {
-          return;
-        }
-        if (event.httpRequest.isKeepAlive()) {
-          event.type = HTTP_REQUEST_READABLE;
-          event.httpRequest.initialize();
-          // event.cgiResponse.initialize();
-          delete event.httpResponse;
-          event.httpResponse = NULL;
-          Log::log()(LOG_LOCATION, "(FREE) event.httpResponse removed", ALL);
-          _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_DISABLE, &event);
-          _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
-        } else {  // 조건문 추가
-          _eventHandler.removeConnection(event);
-          delete &event;
-          Log::log()(LOG_LOCATION, "(FREE) event removed", ALL);
+        if (event.httpResponse->storage().empty()) {
+          if (event.httpRequest.isKeepAlive()) {
+            event.initialize();
+            _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_DISABLE, &event);
+            _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
+            Log::log()(LOG_LOCATION, "(DONE) sending Http Response", ALL);
+          } else {
+            _eventHandler.removeConnection(event);
+            Log::log()(LOG_LOCATION, "(DONE) sending Http Response", ALL);
+          }
         }
         break;
 
@@ -155,6 +149,8 @@ std::string VirtualServer::_intToString(int integer) {
 }
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
+  send(fd, response.storage().data(), response.storage().size(), 0);
+  Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", ALL);
   //  storage 사용 예정
   //  if (!response.headerSent()) {
   //    send(fd, response.headerToString().c_str(), response.headerToString().size(), 0);
