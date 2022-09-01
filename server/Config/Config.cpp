@@ -1,10 +1,8 @@
-// TODO : listen host:port의 host는 옵셔널임. 있으면 해당 ip의 해당 포트만 받겠다는 뜻이고, 없으면 해당 포트번호로
-// 들어오는 요청에 대해 모두 다 처리한다는 뜻.
-
 #include "Config.hpp"
 
 #include <cstdlib>
 #include <sstream>
+
 Config::Config(const std::string& confFile) {
   _readConfigFile(confFile);
   _startParse();
@@ -46,12 +44,15 @@ void Config::_startParse() {
       std::exit(1);
     }
   }
+  if (_serverInfos.empty()) {
+    _serverInfos.push_back(_init_serverInfo());
+    _serverInfos.back().locations["/"] = _init_locationInfo(_serverInfos.back());
+  }
 }
 
 ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
-  ServerInfo _server_info;
+  ServerInfo _server_info = _init_serverInfo();
 
-  _server_info.maxBodySize = DEFAULT_MAX_BODY_SIZE;
   while (it != end && *it != "server" && *it != "\n") {
     std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
     // if (_trimmed.first != 1) {
@@ -72,7 +73,7 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
     } else if (_identifier == "root") {
       _server_info.root = _value.str();
     } else if (_identifier == "default_error_page") {
-      _server_info.defaultErrorPages = _parseDefaultErrorPage(_value.str());
+      _parseDefaultErrorPage(_value.str(), _server_info.defaultErrorPages);
     } else if (_identifier == "host") {
       inet_aton(_value.str().c_str(), &_server_info.hostIp);  // TODO: ip 주소 잘못됐을 때 에러처리
     } else if (_identifier == "port") {
@@ -82,7 +83,6 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
       _server_info.serverName = _value.str();
     } else if (_identifier == "location") {
       _server_info.locations[_value.str()] = _parseLocation(++it, _server_info, _value.str());
-
       continue;
     } else {
       std::cout << "ERROR: invalid config file" << std::endl;
@@ -90,6 +90,9 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
       std::exit(1);
     }
     ++it;
+  }
+  if (_server_info.locations.empty()) {
+    _server_info.locations["/"] = _init_locationInfo(_server_info);
   }
   return _server_info;
 }
@@ -128,7 +131,7 @@ void Config::_parseLocationInfoToken(LocationInfo& info, const std::string& iden
   } else if (identifier == "root") {
     info.root = value_stream.str();
   } else if (identifier == "default_error_page") {
-    info.defaultErrorPages = _parseDefaultErrorPage(value_stream.str());
+    _parseDefaultErrorPage(value_stream.str(), info.defaultErrorPages);
   } else if (identifier == "allowed_method") {
     info.allowedMethods = _parseAllowedMethod(value_stream.str());
   } else if (identifier == "cgi_extension") {
@@ -146,17 +149,54 @@ void Config::_parseLocationInfoToken(LocationInfo& info, const std::string& iden
   }
 }
 
+ServerInfo Config::_init_serverInfo() {
+  ServerInfo _server_info;
+  _server_info.maxBodySize       = DEFAULT_MAX_BODY_SIZE;
+  _server_info.root              = "";
+  _server_info.defaultErrorPages = _init_defaultErrorPages();
+  _server_info.hostIp.s_addr     = INADDR_ANY;
+  _server_info.hostPort          = HTTP_DEFAULT_PORT;
+  _server_info.serverName        = "";
+  return _server_info;
+}
+
 LocationInfo Config::_init_locationInfo(const ServerInfo& serverInfo) {
   LocationInfo _location_info;
-  _location_info.isAutoIndexOn     = false;
+
+  _location_info.id                = "/";
+  _location_info.maxBodySize       = serverInfo.maxBodySize;
   _location_info.root              = serverInfo.root;
   _location_info.defaultErrorPages = serverInfo.defaultErrorPages;
-  _location_info.maxBodySize       = serverInfo.maxBodySize;
+  _location_info.allowedMethods    = _defaultAllowedMethods();
+  _location_info.cgiExtension      = "";
+  _location_info.cgiPath           = "";
+  _location_info.indexPagePath     = "";
+  _location_info.isAutoIndexOn     = false;
+  _location_info.redirStatus       = -1;
+  _location_info.redirPath         = "index";
   _location_info.hostIp            = serverInfo.hostIp;
   _location_info.hostPort          = serverInfo.hostPort;
   _location_info.serverName        = serverInfo.serverName;
   _location_info.redirStatus       = -1;
   return _location_info;
+}
+
+std::map<int, std::string> Config::_init_defaultErrorPages() {
+  std::map<int, std::string> _default_error_pages;
+  for (int i = 0; i < ERROR_PAGES_COUNT; i++) {
+    _default_error_pages[_error_codes[i]] = ERROR_PAGES_PATH + _itoa(_error_codes[i]) + ".html";
+  }
+  return _default_error_pages;
+}
+
+std::vector<std::string> Config::_defaultAllowedMethods() {
+  std::vector<std::string> _allowed_methods;
+  _allowed_methods.push_back("GET");
+  _allowed_methods.push_back("POST");
+  _allowed_methods.push_back("HEAD");
+  _allowed_methods.push_back("PUT");
+  _allowed_methods.push_back("DELETE");
+  return _allowed_methods;
 }
 
 std::vector<std::string> Config::_split(const std::string& str, const std::string& delimiter) {
@@ -199,7 +239,6 @@ void Config::_parseRedirection(const std::string& value, LocationInfo& info) {
     Log::log()(LOG_LOCATION, "ERROR: invalid config file" + value, ALL);
     std::exit(1);
   }
-
   try {
     std::stringstream ss(_splitted[0]);
     int               si;
@@ -228,9 +267,7 @@ std::vector<std::string> Config::_parseAllowedMethod(const std::string& value) {
   return _allowed_methods;
 }
 
-std::map<int, std::string> Config::_parseDefaultErrorPage(const std::string& pages) {
-  std::map<int, std::string> _result;
-
+void Config::_parseDefaultErrorPage(const std::string& pages, std::map<int, std::string>& defaultErrorPages) {
   std::vector<std::string> _splitted = _split(pages, " ");
   if (_splitted.size() % 2 != 0) {
     std::cout << "ERROR: invalid config file" << std::endl;
@@ -242,16 +279,14 @@ std::map<int, std::string> Config::_parseDefaultErrorPage(const std::string& pag
       int               si;
       ss >> si;
       int _error_code      = si;
-      _result[_error_code] = _splitted[i + 1];
+      defaultErrorPages[_error_code] = _splitted[i + 1];
     } catch (std::invalid_argument& e) {
       std::cout << "ERROR: invalid config file" << std::endl;
       std::exit(1);
     }
   }
-  return _result;
 }
 
-// TODO : autoindex 여부 추가
 void Config::_locatinInfoString(std::stringstream& _ss, const LocationInfo& info) {
   _ss << "\t"
       << "root: " << info.root << std::endl;
@@ -320,6 +355,14 @@ void Config::_setPorts() {
   //   std::cout << *it << " ";
   // }
 }
+
+std::string Config::_itoa(int i) {
+  std::stringstream ss;
+  ss << i;
+  return ss.str();
+}
+
+int Config::_error_codes[ERROR_PAGES_COUNT] = {400, 402, 404, 405, 413, 500, 501, 502, 503, 504, 505};
 
 std::vector<int>&        Config::getPorts() { return _ports; }
 std::vector<ServerInfo>& Config::getServerInfos() { return _serverInfos; }
