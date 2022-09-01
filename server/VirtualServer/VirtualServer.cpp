@@ -111,7 +111,7 @@ void VirtualServer::_callCgi(Event& event) {
   } else {
     close(request);
     event.keventId = response;
-    event.type = CGI_RESPONSE_READABLE;
+    event.type     = CGI_RESPONSE_READABLE;
     _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DISABLE, &event);
     _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
   }
