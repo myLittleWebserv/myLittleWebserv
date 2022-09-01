@@ -10,6 +10,7 @@ SRC :=	main.cpp\
 		VirtualServer.cpp\
 		Log.cpp\
 		Config.cpp\
+		Event.cpp\
 		EventHandler.cpp\
 		HttpRequest.cpp\
 		HttpResponse.cpp\
@@ -19,7 +20,7 @@ SRC :=	main.cpp\
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
 
 
-CXXFALGS += -std=c++98 -Wall -Werror -Wextra -fsanitize=address -g 
+CXXFALGS += -std=c++98 -Wall -Werror -Wextra -fsanitize=address -g
 LDFALGS  += -fsanitize=address -g
 
 INCS := -I ./$(SRC_DIR)/Router\

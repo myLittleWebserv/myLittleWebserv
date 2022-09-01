@@ -6,6 +6,8 @@
 
 #define DEFAULT_ERROR_PAGE_DIR "error_pages"
 
+#include "Storage.hpp"
+
 class HttpRequest;
 class CgiResponse;
 class FileManager;
@@ -15,6 +17,7 @@ class HttpResponse {
   // Member Variable
  private:
   std::vector<unsigned char> _body;
+  Storage                    _storage;
   std::string                _httpVersion;
   int                        _statusCode;
   std::string                _message;
@@ -24,6 +27,7 @@ class HttpResponse {
 
   // Method
  private:
+  void        _responseToStorage();
   void        _fileToBody(std::ifstream& file);
   void        _processGetRequest(HttpRequest& request, LocationInfo& location_info);
   void        _processHeadRequest(HttpRequest& request, LocationInfo& location_info);
@@ -34,7 +38,7 @@ class HttpResponse {
   void        _makeErrorResponse(int error_code, HttpRequest& request, LocationInfo& location_info);
   void        _makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info,
                                  const std::string& location_field = "");
-  bool        _allowedMethod(int method, std::vector<std::string>& allowed_method);
+  bool        _isAllowedMethod(int method, std::vector<std::string>& allowed_method);
   std::string _getMessage(int status_code);
   std::string _getContentType(const std::string& file_name);
 
@@ -44,8 +48,7 @@ class HttpResponse {
   HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info);
   // Interface
  public:
-  std::string                       headerToString();
-  const std::vector<unsigned char>& body() { return _body; }
+  const Storage& storage() { return _storage; }
 };
 
 #endif

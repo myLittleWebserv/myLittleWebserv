@@ -25,7 +25,7 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : 
     return;
   }
 
-  if (!_allowedMethod(request.method(), location_info.allowedMethods)) {
+  if (!_isAllowedMethod(request.method(), location_info.allowedMethods)) {
     _makeErrorResponse(405, request, location_info);
     return;
   }
@@ -53,6 +53,7 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : 
     default:
       break;
   }
+  _responseToStorage();
 }
 
 HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info) {
@@ -60,9 +61,9 @@ HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_inf
   (void)location_info;
 }
 
-// Interface
+// Method
 
-std::string HttpResponse::headerToString() {
+void HttpResponse::_responseToStorage() {
   std::stringstream response_stream;
 
   response_stream << _httpVersion << ' ' << _statusCode << ' ' << _message << "\r\n";
@@ -77,10 +78,9 @@ std::string HttpResponse::headerToString() {
     response_stream << "Location: " << _location << "\r\n";
   }
   response_stream << "\r\n";
-  return response_stream.str();
+  _storage.insert(_storage.end(), response_stream.str().begin(), response_stream.str().end());
+  _storage.insert(_storage.end(), _body.begin(), _body.end());
 }
-
-// Method
 
 void HttpResponse::_fileToBody(std::ifstream& file) {
   while (!file.eof()) {
@@ -153,6 +153,8 @@ void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& lo
   _httpVersion = request.httpVersion();
   _statusCode  = 200;
   _message     = _getMessage(_statusCode);
+
+  _responseToStorage();
 }
 
 void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
@@ -272,6 +274,8 @@ void HttpResponse::_makeErrorResponse(int error_code, HttpRequest& request, Loca
   _statusCode  = error_code;
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Error page returned.");
+
+  _responseToStorage();
 }
 
 void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info,
@@ -292,9 +296,11 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
 
   // add other field ?
   Log::log()(LOG_LOCATION, "Redirection address returned.");
+
+  _responseToStorage();
 }
 
-bool HttpResponse::_allowedMethod(int method, std::vector<std::string>& allowed_methods) {
+bool HttpResponse::_isAllowedMethod(int method, std::vector<std::string>& allowed_methods) {
   bool is_existed;
   switch (method) {
     case GET:
