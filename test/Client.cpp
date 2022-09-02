@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -46,11 +47,18 @@ int main(int argc, char **argv) {
       line += "\r\n";
     // line = "GET / HTTP/1.1\r\n\r\n";
     std::cout << "Client: send to server: '" << line << "' length: " << line.length() << std::endl;
-    send(client_fd, line.c_str(), line.length(), 0);
-    int recv_size = recv(client_fd, buffer, BUFFER_SIZE * 100, 0);
-    printf("ret : %d\n", recv_size);
+    int send_size = send(client_fd, line.c_str(), line.length(), 0);
+    if (send_size == -1) {
+      printf("%s\n", strerror(errno));
+    }
   }
   write(1, "Client: receive from server: ", strlen("Client: receive from server: "));
+  int recv_size = recv(client_fd, buffer, BUFFER_SIZE * 100, 0);
+  printf("ret : %d\n", recv_size);
+  if (recv_size == -1) {
+    printf("%s\n", strerror(errno));
+  }
   write(1, buffer, BUFFER_SIZE * 100);
   write(1, "\n", 1);
+  close(client_fd);
 }

@@ -12,9 +12,21 @@
 #include <sstream>
 
 #define BUFFER_SIZE 8000
+#define SERVER_NAME "myLittleWebserv"
 
-void readFile(std::stringstream &storage) {
-  std::ifstream infile("client/HttpRequest.infile");
+void atexit() {
+  std::cout << '\n';
+  std::cout << "-----------------------------------------------------------------------------------------------"
+            << std::endl;
+  std::cout << "[leak check]\n";
+  std::string cmd = std::string("leaks ") + std::string(SERVER_NAME) + std::string(" | grep Process");
+  system(cmd.c_str());
+  std::cout << "-----------------------------------------------------------------------------------------------"
+            << std::endl;
+}
+
+void readFile(std::stringstream &storage, const std::string &file_name) {
+  std::ifstream infile(file_name);
   if (!infile.is_open()) {
     std::cerr << "file open failed" << std::endl;
     std::exit(1);
@@ -49,15 +61,17 @@ int connectWithServer(int port) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    std::cerr << "plz input only port!" << std::endl;
+  if (argc != 3) {
+    std::cerr << "plz input only port and HttpRequest file" << std::endl;
     return 1;
   }
 
-  std::stringstream storage;
-  readFile(storage);
+  const int res = std::atexit(atexit);
 
-  std::cout << "input\n" << storage.str() << std::endl;
+  std::stringstream storage;
+  readFile(storage, argv[2]);
+
+  std::cout << "[input]\n" << storage.str() << std::endl;
 
   int fd = connectWithServer(std::atoi(argv[1]));
 
@@ -66,6 +80,6 @@ int main(int argc, char **argv) {
   unsigned char buf[BUFFER_SIZE];
 
   int recv_size = recv(fd, buf, BUFFER_SIZE, 0);
-  std::cout << "\noutput" << std::endl;
+  std::cout << "\n[output]" << std::endl;
   write(1, buf, recv_size);
 }

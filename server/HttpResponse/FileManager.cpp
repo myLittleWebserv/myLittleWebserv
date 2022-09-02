@@ -17,14 +17,11 @@ FileManager::FileManager(const std::string& uri, const LocationInfo& location_in
 }
 
 void FileManager::addIndexToName(const std::string& indexFile) {
-  if (*_absolutePath.rbegin() != '/') {
-    _absolutePath += "/";
-  }
-  _absolutePath += indexFile;
+  _appendFileName(indexFile);
   _updateFileInfo();
 }
 
-void FileManager::openDirectoy() { opendir(_absolutePath.c_str()); }
+void FileManager::openDirectoy() { _directory = opendir(_absolutePath.c_str()); }
 
 std::string FileManager::readDirectoryEntry() {
   _entry = readdir(_directory);

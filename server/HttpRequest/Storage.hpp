@@ -1,4 +1,5 @@
-#ifndef STORAGE_HPP
+// #ifndef STORAGE_HPP
+#pragma once
 
 #include <string>
 #include <vector>
@@ -26,12 +27,19 @@ class Storage : private std::vector<unsigned char> {
 
   // Interface
  public:
+  using vector::begin;
   using vector::clear;
+  using vector::data;
+  using vector::end;
+  using vector::insert;
   using vector::size;
   SocketReadingState state() { return _state; }
-  bool               toBody(vector& _body, int required_size);
+  int                remains() { return static_cast<int>(size()) - _pos; }
+  bool               empty() const { return static_cast<int>(size()) == _pos; }
+  void               dataToBody(vector& _body, int required_size);
   void               readSocket(int fd);
+  void               movePos(int move) { _pos += move; }
   std::string        getLine();
 };
 
-#endif
+// #endif

@@ -6,7 +6,7 @@
 
 #include "Storage.hpp"
 
-#define PARSING_TIME_OUT 10000
+#define PARSING_TIME_OUT 10
 #define HTTP_DEFAULT_PORT 80
 #define HTTP_MAX_HEADER_SIZE 8192
 
@@ -27,6 +27,7 @@ class HttpRequest {
   bool                       _isChunked;
   int                        _chunkSize;
   bool                       _isKeepAlive;
+  bool                       _serverError;
 
   // HttpRequest Variable
   MethodType  _method;
@@ -39,13 +40,13 @@ class HttpRequest {
 
   // Method
  private:
-  void     _parseStartLine(const std::string& line);
-  void     _parseHeaderField(const std::string& line);
-  void     _parseHeader();
-  void     _parseBody();
-  void     _parseChunk();
-  void     _checkTimeOut(clock_t timestamp);
-  long int _parseChunkSize(const std::string& line);
+  void   _parseStartLine(const std::string& line);
+  void   _parseHeaderField(const std::string& line);
+  void   _parseHeader();
+  void   _parseBody();
+  void   _parseChunk();
+  void   _checkTimeOut(clock_t timestamp);
+  size_t _parseChunkSize(const std::string& line);
 
   // Constructor
  public:
@@ -58,6 +59,7 @@ class HttpRequest {
         _isChunked(false),
         _chunkSize(-1),
         _isKeepAlive(false),  //  default: close
+        _serverError(false),
         _hostPort(HTTP_DEFAULT_PORT) {}
 
   // Interface
@@ -66,6 +68,8 @@ class HttpRequest {
   bool isTimeOut() { return _parsingState == TIME_OUT; }
   bool isConnectionClosed() { return _storage.state() == CONNECTION_CLOSED; }
   bool isBadRequest() { return _parsingState == BAD_REQUEST; }
+  bool isInternalServerError() { return _serverError; }
+  void setServerError(bool state) { _serverError = state; }
   bool isKeepAlive() { return _isKeepAlive; }
   bool isCgi(const std::string& ext);
   void storeChunk(int fd);
