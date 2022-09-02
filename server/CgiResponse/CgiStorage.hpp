@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -31,8 +32,10 @@ class CgiStorage : private std::vector<unsigned char> {
   bool        isReadingEnd() { return _isReadingEnd; }
   bool        toBody(vector& _body, int required_size);
   void        readFd(int fd);
-  std::string remainder();
+  vector      remainder();
   std::string getLine();
 };
+
+std::ostream& operator<<(std::ostream& os, const std::vector<unsigned char>& v);
 
 #endif
