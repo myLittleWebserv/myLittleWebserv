@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <sstream>
 
+#include "CgiResponse.hpp"
 #include "Config.hpp"
 #include "FileManager.hpp"
 #include "HttpRequest.hpp"
@@ -59,6 +60,8 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : 
 }
 
 HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info) {
+  Log::log()(LOG_LOCATION, "", ALL);
+  Log::log()(true, "cgi_response.error", cgi_response.isError(), ALL);
   (void)cgi_response;
   (void)location_info;
 }

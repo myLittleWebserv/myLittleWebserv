@@ -82,6 +82,7 @@ class HttpRequest {
   MethodType                        method() { return _method; }
   const std::string&                uri() { return _uri; }
   const std::vector<unsigned char>& body() { return _body; }
+  const Storage&                    storage() { return _storage; }
 };
 
 #endif

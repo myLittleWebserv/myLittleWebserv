@@ -41,34 +41,52 @@ void VirtualServer::start() {
 void VirtualServer::_processSendingEnd(Event& event) {
   if (event.httpRequest.isKeepAlive()) {
     event.initialize();
-    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_DISABLE, &event);
-    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
+    _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_DISABLE, &event);
+    _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_ENABLE, &event);
   } else {
     _eventHandler.removeConnection(event);
   }
   Log::log()(LOG_LOCATION, "(DONE) sending Http Response", ALL);
 }
 
+void VirtualServer::_deleteTempFile(int file_fd) {
+  std::string fd           = _intToString(file_fd);
+  std::string cgi_request  = "temp/request" + fd;
+  std::string cgi_response = "temp/response" + fd;
+
+  if (unlink(cgi_request.c_str()) == -1 || unlink(cgi_response.c_str()) == -1) {
+    throw "unlink error";
+  }
+}
+
 void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& location_info) {
   Log::log().printHttpRequest(event.httpRequest, ALL);
   if (event.httpRequest.isCgi(location_info.cgiExtension) && _callCgi(event)) {
+    Log::log()(LOG_LOCATION, "", ALL);
+    Log::log()(true, "event type", event.type, ALL);
     return;
   }
   event.httpResponse = new HttpResponse(event.httpRequest, location_info);
   event.type         = HTTP_RESPONSE_WRITABLE;
   _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, &event);
   _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ENABLE, &event);
-  Log::log()(LOG_LOCATION, "(DONE) making Http Response", ALL);
+  Log::log()(LOG_LOCATION, "(DONE) making Http Response using HTTP REQUEST", ALL);
 }
 
 void VirtualServer::_processCgiResponseReadable(Event& event, LocationInfo& location_info) {
   event.httpResponse = new HttpResponse(event.cgiResponse, location_info);
   event.type         = HTTP_RESPONSE_WRITABLE;
-  if (close(event.keventId) == -1)
+  if (close(event.keventId) == -1) {
     throw "close error";
+  }
+  _deleteTempFile(event.clientFd);
+  Log::log()(LOG_LOCATION, "(CLOSE) temporary file closed", ALL);
+  Log::log()(true, "event.clientFd", event.clientFd, ALL);
+  Log::log()(true, "event.keventId", event.keventId, ALL);
+  // _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DELETE, &event);
   event.keventId = event.clientFd;
   _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ENABLE, &event);
-  Log::log()(LOG_LOCATION, "(DONE) making Http Response", ALL);
+  Log::log()(LOG_LOCATION, "(DONE) making Http Response using CGI RESPONSE", ALL);
 }
 
 LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpRequest) {
@@ -93,63 +111,89 @@ bool VirtualServer::_callCgi(Event& event) {
   std::string fd           = _intToString(event.clientFd);
   std::string req_filepath = "temp/request" + fd;
   std::string res_filepath = "temp/response" + fd;
-  int         request      = open(req_filepath.c_str(), O_RDWR | O_CREAT, 0644);
-  int         response     = open(res_filepath.c_str(), O_RDWR | O_CREAT, 0644);
-
-  if (request == -1 || response == -1) {
-    unlink(res_filepath.c_str());
-    unlink(req_filepath.c_str());
-    event.httpRequest.setServerError(true);
-    return false;
-  }
 
   event.pid = fork();
   if (event.pid == -1) {
     event.httpRequest.setServerError(true);
+    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED", ALL);
     return false;
-  } else if (event.pid == 0) {  // child
-    if (write(request, event.httpRequest.body().data(), event.httpRequest.body().size()) == -1)
-      std::exit(EXIT_FAILURE);
-
-    std::string cgi_path = _findLocationInfo(event.httpRequest).cgiPath;
-    char*       argv[2]  = {0, 0};
-    argv[0]              = strdup(cgi_path.c_str());
-
-    _setEnv(event.httpRequest.method(), cgi_path);
-    _setFd(request, response);
-
-    execve(cgi_path.c_str(), argv, NULL);
-    std::exit(EXIT_FAILURE);
-  } else {  // parent
-    close(request);
-    event.keventId = response;
+  } else if (event.pid == 0) {
+    _execveCgi(event);  // child
+  } else {              // parent
+    int cgi_response = open(res_filepath.c_str(), O_RDONLY, 0644);
+    if (cgi_response == -1) {
+      unlink(res_filepath.c_str());
+      event.httpRequest.setServerError(true);
+      Log::log()(LOG_LOCATION, "(CGI) CALL FAILED", ALL);
+      return false;
+    }
+    fcntl(cgi_response, F_SETFL, O_NONBLOCK);
+    event.keventId = cgi_response;
     event.type     = CGI_RESPONSE_READABLE;
     _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DISABLE, &event);
     _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ADD, &event);
-    return true;
+    Log::log()(LOG_LOCATION, "(CGI) CALL SUCCESS", ALL);
   }
+  return true;
 }
 
-void VirtualServer::_setEnv(int request_method, const std::string& cgi_path) const {
-  std::string method;
-  switch (request_method) {
+void VirtualServer::_execveCgi(Event& event) {
+  std::string fd           = _intToString(event.clientFd);
+  std::string req_filepath = "temp/request" + fd;
+  std::string res_filepath = "temp/response" + fd;
+  int         cgi_request  = open(req_filepath.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
+  int         cgi_response = open(res_filepath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+
+  if (cgi_request == -1 || cgi_response == -1) {
+    unlink(res_filepath.c_str());
+    unlink(req_filepath.c_str());
+    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED", ALL);
+    std::exit(EXIT_FAILURE);
+  }
+
+  if (write(cgi_request, event.httpRequest.body().data(), event.httpRequest.body().size()) == -1) {
+    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after write", ALL);
+    std::exit(EXIT_FAILURE);
+  }
+
+  std::string cgi_path = _findLocationInfo(event.httpRequest).cgiPath;
+  char*       argv[2]  = {0, 0};
+  char*       envp[4]  = {0, 0, 0, 0};
+  argv[0]              = strdup(cgi_path.c_str());
+
+  _setEnv(event.httpRequest.method(), cgi_path, envp);
+  _setFd(cgi_request, cgi_response);
+
+  execve(cgi_path.c_str(), argv, envp);
+  Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after execve", ALL);
+  std::exit(EXIT_FAILURE);
+}
+
+void VirtualServer::_setEnv(int http_method, const std::string& cgi_path, char** envp) const {
+  std::string request_method("REQUEST_METHOD=");
+  std::string path_info("PATH_INFO=");
+
+  switch (http_method) {
     case GET:
-      method = "GET";
+      request_method += "GET";
       break;
     case POST:
-      method = "POST";
+      request_method += "POST";
       break;
     case HEAD:
-      method = "HEAD";
+      request_method += "HEAD";
       break;
     default:
       std::exit(EXIT_FAILURE);
   }
-  int env = 0;
-  env += setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
-  env += setenv("REQUEST_METHOD", method.c_str(), 1);
-  env += setenv("PATH_INFO", cgi_path.c_str(), 1);
-  if (env != 0) {
+
+  path_info += cgi_path;
+  envp[0] = strdup("SERVER_PROTOCOL=HTTP/1.1");
+  envp[1] = strdup(request_method.c_str());
+  envp[2] = strdup(path_info.c_str());
+
+  if (envp[0] == NULL || envp[1] == NULL || envp[2] == NULL) {
+    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after setenv", ALL);
     std::exit(EXIT_FAILURE);
   }
 }
