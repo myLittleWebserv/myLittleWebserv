@@ -111,7 +111,7 @@ void VirtualServer::_callCgi(Event& event) {
   } else {
     close(request);
     event.keventId = response;
-    event.type = CGI_RESPONSE_READABLE;
+    event.type     = CGI_RESPONSE_READABLE;
     _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DISABLE, &event);
     _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ENABLE, &event);
   }
@@ -150,23 +150,25 @@ std::string VirtualServer::_intToString(int integer) {
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
   send(fd, response.storage().data(), response.storage().size(), 0);
+
+  //!!!!!!!!!!!!!!!!!!!!!!!! REVIEW REQUIRED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // Storage &storage = response.storage();
+  // Log::log()(LOG_LOCATION, "storage.remains(): " + _intToString(storage.remains()), ALL);
+  // if (storage.empty()) {
+  //   Log::log()(LOG_LOCATION, "storage is empty", ALL);
+  //   return;
+  // }
+  // int sent_size;
+  // if ((sent_size = send(fd, storage.data() + storage.currentPos(), storage.remains(), 0)) == -1) {
+  //   throw "send() error!";
+  // }
+  // storage.movePos(sent_size);
+  // Log::log()(LOG_LOCATION, "sent_size: " + _intToString(sent_size), ALL);
+  // Log::log()(LOG_LOCATION, "storage.currentPos(): " + _intToString(storage.currentPos()), ALL);
+  // Log::log()(LOG_LOCATION, "storage.remains(): " + _intToString(storage.remains()), ALL);
+  // Log::log()(LOG_LOCATION, "isEmpty: " + _intToString(storage.empty()), ALL);
+  //!!!!!!!!!!!!!!!!!!!!!!!! REVIEW REQUIRED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", ALL);
-  //  storage 사용 예정
-  //  if (!response.headerSent()) {
-  //    send(fd, response.headerToString().c_str(), response.headerToString().size(), 0);
-  //    response.toggleHeaderSent();
-  //    Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse header to client ", ALL);
-  //  }
-  //  if ((int)response.body().size() == response.sentLength()) {
-  //    return;
-  //  }
-  //  int len;
-  //  if ((len = send(fd, response.body().data() + response.sentLength(), response.body().size() -
-  //  response.sentLength(),
-  //                  0)) == -1) {
-  //    throw "send() error!";
-  //  }
-  //  response.addSentLength(len);
 }
 
 ServerInfo& VirtualServer::getServerInfo() const { return _serverInfo; }

@@ -48,7 +48,7 @@ class HttpResponse {
   HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info);
   // Interface
  public:
-  const Storage& storage() { return _storage; }
+  Storage& storage() { return _storage; }
 };
 
 #endif

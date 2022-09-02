@@ -39,6 +39,7 @@ class Storage : private std::vector<unsigned char> {
   void               dataToBody(vector& _body, int required_size);
   void               readSocket(int fd);
   void               movePos(int move) { _pos += move; }
+  int                currentPos() { return _pos; }
   std::string        getLine();
 };
 
