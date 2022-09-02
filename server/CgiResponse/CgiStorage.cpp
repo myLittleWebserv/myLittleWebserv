@@ -11,10 +11,6 @@ void CgiStorage::readFd(int fd) {
   }
 }
 
-std::string CgiStorage::remainder() {
-  return std::string(begin() + _pos, end());
-}
-
 std::string CgiStorage::getLine() {
   for (vector::size_type i = _pos; i < size(); ++i) {
     if ((*this)[i] == '\n') {
@@ -34,4 +30,13 @@ bool CgiStorage::toBody(vector& _body, int required_size) {
   _pos += required_size;
   _pos += 2;  // jump "\r\n"
   return true;
+}
+
+CgiStorage::vector CgiStorage::remainder() { return vector(begin() + _pos, end()); }
+
+std::ostream& operator<<(std::ostream& os, const std::vector<unsigned char>& v) {
+  for (std::vector<unsigned char>::const_iterator it = v.begin(); it != v.end(); ++it) {
+    os << *it;
+  }
+  return os;
 }

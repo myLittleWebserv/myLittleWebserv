@@ -13,12 +13,13 @@
 
 class CgiResponse {
  private:
-  CgiStorage  _storage;
-  bool        _isParsingEnd;
-  int         _statusCode;
-  std::string _statusMessage;
-  std::string _contentType;
-  std::string _body;
+  CgiStorage                 _storage;
+  bool                       _isParsingEnd;
+  bool                       _isError;
+  int                        _statusCode;
+  std::string                _statusMessage;
+  std::string                _contentType;
+  std::vector<unsigned char> _body;
 
   std::vector<std::string> _split(const std::string& str, const std::string& delimiter);
   void                     _parseCgiResponse();
@@ -29,13 +30,14 @@ class CgiResponse {
 
   // Interface
  public:
-  bool        isParsingEnd();
-  void        readCgiResult(int fd, int pid);
-  int         getStatusCode();
-  std::string getStatusMessage();
-  std::string getContentType();
-  std::string getBody();
-  std::string CgiResponseResultString();
+  bool                              isParsingEnd();
+  bool                              isError();
+  void                              readCgiResult(int fd, int pid);
+  int                               getStatusCode();
+  std::string                       getStatusMessage();
+  std::string                       getContentType();
+  const std::vector<unsigned char>& getBody();
+  std::string                       CgiResponseResultString();
 };
 
 #endif
