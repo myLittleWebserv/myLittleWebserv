@@ -9,9 +9,9 @@ CGI_TEST="client/CGI_TEST"
 
 # # GET TEST
 
-# ./myLittleClient $PORT1 $GET_TEST/GetRequest_0.infile
-# echo $NEXT_TEST_MSG
-# read input
+./myLittleClient $PORT1 $GET_TEST/GetRequest_0.infile
+echo $NEXT_TEST_MSG
+read input
 
 # ./myLittleClient $PORT1 $GET_TEST/GetRequest_1.infile
 # echo $NEXT_TEST_MSG

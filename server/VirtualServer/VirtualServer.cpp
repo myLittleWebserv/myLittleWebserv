@@ -6,6 +6,8 @@
 
 #include <cstring>
 
+#include "FileManager.hpp"
+
 VirtualServer::VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler)
     : _serverId(id), _serverInfo(info), _eventHandler(eventHandler) {}
 
@@ -17,18 +19,19 @@ void VirtualServer::start() {
 
     switch (event.type) {
       case HTTP_REQUEST_READABLE:
+        Log::log().printHttpRequest(event.httpRequest, ALL);
         _processHttpRequestReadable(event, location_info);
         break;
 
       case CGI_RESPONSE_READABLE:
-        _processCgiResponseReadable(event, location_info);
+        _cgiResponseToHttpResponse(event, location_info);
         break;
 
       case HTTP_RESPONSE_WRITABLE:
         Log::log().printHttpResponse(*event.httpResponse, ALL);
         _sendResponse(event.clientFd, *event.httpResponse);
         if (event.httpResponse->storage().empty()) {
-          _processSendingEnd(event);
+          _finishResponse(event);
         }
         break;
 
@@ -38,7 +41,7 @@ void VirtualServer::start() {
   }
 }
 
-void VirtualServer::_processSendingEnd(Event& event) {
+void VirtualServer::_finishResponse(Event& event) {
   if (event.httpRequest.isKeepAlive()) {
     event.initialize();
     _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_DISABLE, &event);
@@ -49,21 +52,8 @@ void VirtualServer::_processSendingEnd(Event& event) {
   Log::log()(LOG_LOCATION, "(DONE) sending Http Response", ALL);
 }
 
-void VirtualServer::_deleteTempFile(int file_fd) {
-  std::string fd           = _intToString(file_fd);
-  std::string cgi_request  = "temp/request" + fd;
-  std::string cgi_response = "temp/response" + fd;
-
-  if (unlink(cgi_request.c_str()) == -1 || unlink(cgi_response.c_str()) == -1) {
-    throw "unlink error";
-  }
-}
-
 void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& location_info) {
-  Log::log().printHttpRequest(event.httpRequest, ALL);
   if (event.httpRequest.isCgi(location_info.cgiExtension) && _callCgi(event)) {
-    Log::log()(LOG_LOCATION, "", ALL);
-    Log::log()(true, "event type", event.type, ALL);
     return;
   }
   event.httpResponse = new HttpResponse(event.httpRequest, location_info);
@@ -73,19 +63,15 @@ void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& loca
   Log::log()(LOG_LOCATION, "(DONE) making Http Response using HTTP REQUEST", ALL);
 }
 
-void VirtualServer::_processCgiResponseReadable(Event& event, LocationInfo& location_info) {
+void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& location_info) {
+  FileManager file_manager;
   event.httpResponse = new HttpResponse(event.cgiResponse, location_info);
   event.type         = HTTP_RESPONSE_WRITABLE;
-  if (close(event.keventId) == -1) {
-    throw "close error";
-  }
-  _deleteTempFile(event.clientFd);
-  Log::log()(LOG_LOCATION, "(CLOSE) temporary file closed", ALL);
-  Log::log()(true, "event.clientFd", event.clientFd, ALL);
-  Log::log()(true, "event.keventId", event.keventId, ALL);
-  // _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DELETE, &event);
-  event.keventId = event.clientFd;
-  _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ENABLE, &event);
+
+  file_manager.removeFile(event.clientFd);
+  _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DELETE, NULL);
+  _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_ENABLE, &event);
+  // event.keventId = event.clientFd; ?
   Log::log()(LOG_LOCATION, "(DONE) making Http Response using CGI RESPONSE", ALL);
 }
 
@@ -109,7 +95,6 @@ LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpRequest) {
 
 bool VirtualServer::_callCgi(Event& event) {
   std::string fd           = _intToString(event.clientFd);
-  std::string req_filepath = "temp/request" + fd;
   std::string res_filepath = "temp/response" + fd;
 
   event.pid = fork();
@@ -120,9 +105,9 @@ bool VirtualServer::_callCgi(Event& event) {
   } else if (event.pid == 0) {
     _execveCgi(event);  // child
   } else {              // parent
-    int cgi_response = open(res_filepath.c_str(), O_RDONLY, 0644);
+    FileManager file_manager;
+    int         cgi_response = file_manager.openFile(res_filepath.c_str(), O_RDONLY | O_CREAT, 0644);
     if (cgi_response == -1) {
-      unlink(res_filepath.c_str());
       event.httpRequest.setServerError(true);
       Log::log()(LOG_LOCATION, "(CGI) CALL FAILED", ALL);
       return false;
@@ -132,8 +117,9 @@ bool VirtualServer::_callCgi(Event& event) {
     event.type     = CGI_RESPONSE_READABLE;
     _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DISABLE, &event);
     _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ADD, &event);
-    Log::log()(LOG_LOCATION, "(CGI) CALL SUCCESS", ALL);
   }
+  Log::log()(LOG_LOCATION, "(CGI) CALL SUCCESS", ALL);
+  event.cgiResponse.setInfo(event.httpRequest);
   return true;
 }
 
@@ -142,7 +128,7 @@ void VirtualServer::_execveCgi(Event& event) {
   std::string req_filepath = "temp/request" + fd;
   std::string res_filepath = "temp/response" + fd;
   int         cgi_request  = open(req_filepath.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
-  int         cgi_response = open(res_filepath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  int         cgi_response = open(res_filepath.c_str(), O_WRONLY | O_CREAT, 0644);
 
   if (cgi_request == -1 || cgi_response == -1) {
     unlink(res_filepath.c_str());
@@ -153,6 +139,13 @@ void VirtualServer::_execveCgi(Event& event) {
 
   if (write(cgi_request, event.httpRequest.body().data(), event.httpRequest.body().size()) == -1) {
     Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after write", ALL);
+    std::exit(EXIT_FAILURE);
+  }
+
+  // int ret = lseek(cgi_request, 0, SEEK_SET);
+  cgi_request = open(req_filepath.c_str(), O_RDONLY, 0644);
+  if (cgi_request == -1) {
+    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED", ALL);
     std::exit(EXIT_FAILURE);
   }
 
@@ -218,6 +211,9 @@ std::string VirtualServer::_intToString(int integer) {
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
   int send_size = send(fd, response.storage().data(), response.storage().size(), 0);
   Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", ALL);
+  Log::log()(true, "send fd", fd, ALL);
+  Log::log()(true, "send_size", send_size, ALL);
+  Log::log()(true, "errno", strerror(errno), ALL);
 
   response.storage().movePos(send_size);
   //  storage 사용 예정

@@ -60,10 +60,23 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : 
 }
 
 HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info) {
-  Log::log()(LOG_LOCATION, "", ALL);
-  Log::log()(true, "cgi_response.error", cgi_response.isError(), ALL);
-  (void)cgi_response;
-  (void)location_info;
+  if (cgi_response.isError()) {
+    _makeErrorResponse(500, cgi_response, location_info);
+  }
+
+  if (cgi_response.httpVersion() != "HTTP/1.1") {
+    _makeErrorResponse(505, cgi_response, location_info);
+    return;
+  }
+
+  _body.insert(_body.end(), cgi_response.body().begin(), cgi_response.body().end());
+
+  _httpVersion   = cgi_response.httpVersion();
+  _statusCode    = cgi_response.statusCode();
+  _message       = cgi_response.statusMessage();
+  _contentLength = _body.size();
+  _contentType   = cgi_response.contentType();
+  _responseToStorage();
 }
 
 // Method
@@ -265,7 +278,7 @@ void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& loc
   _responseToStorage();
 }
 
-void HttpResponse::_makeErrorResponse(int error_code, HttpRequest& request, LocationInfo& location_info) {
+void HttpResponse::_makeErrorResponse(int error_code, Request& request, LocationInfo& location_info) {
   std::ifstream file;
 
   if (location_info.defaultErrorPages.count(error_code)) {

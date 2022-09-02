@@ -1,38 +1,57 @@
 #include "CgiResponse.hpp"
 
-CgiResponse::CgiResponse() {
-  _storage       = CgiStorage();
-  _isParsingEnd  = false;
-  _isError       = false;
-  _statusCode    = 0;
-  _statusMessage = "";
-  _contentType   = "";
+#include "HttpRequest.hpp"
+#include "Log.hpp"
+
+CgiResponse::CgiResponse()
+    : _parsingState(CGI_RUNNING),
+      _storage(),
+      // _isParsingEnd(false),
+      // _isError(false),
+      _httpVersion(),
+      _statusCode(0),
+      _statusMessage(),
+      _contentType() {}
+
+void CgiResponse::setInfo(const HttpRequest& http_requset) {
+  _httpVersion = http_requset.httpVersion();
+  _method      = http_requset.method();
+}
+
+void CgiResponse::_checkWaitPid(int pid) {
+  int status;
+  int result = waitpid(pid, &status, WNOHANG);
+  Log::log()(true, "pid", pid, ALL);
+  Log::log()(true, "result", result, ALL);
+
+  if (result == pid) {
+    _parsingState = CGI_READING;
+  } else if (result == -1) {
+    Log::log()(LOG_LOCATION, "CGI_ERROR", ALL);
+    _parsingState = CGI_ERROR;
+  }
 }
 
 void CgiResponse::readCgiResult(int fd, int pid) {
-  int status         = 0;
-  int waitpid_result = waitpid(pid, &status, WNOHANG);
-  if (waitpid_result != pid) {
-    return;
+  if (_parsingState == CGI_RUNNING) {
+    _checkWaitPid(pid);
   }
-  if (WIFEXITED(status)) {
-    if (WEXITSTATUS(status) != 0) {
-      _isError = true;
-      return;
-    }
-  } else {
-    _isError = true;
-    return;
-  }
-  _storage.readFd(fd);
 
-  // for test
-  //  while (_storage.isReadingEnd() == false) {
-  //    _storage.readFd(fd);
-  //  }
-  if (_storage.isReadingEnd() && !_isParsingEnd) {
+  if (_parsingState == CGI_READING) {
+    _storage.readFile(fd);
+    if (_storage.isReadingEnd()) {
+      _parsingState = CGI_PARSING;
+      Log::log()(LOG_LOCATION, "(DONE) CGI RESULT READING", ALL);
+    }
+  }
+
+  if (_parsingState == CGI_PARSING) {
     _parseCgiResponse();
   }
+  Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", ALL);
+  Log::log()("_parsingState", _parsingState, ALL);
+  Log::log()(true, "_body.size", _body.size(), ALL);
+  Log::log()(true, "_storage.size", _storage.size(), ALL);
 }
 
 void CgiResponse::_parseCgiResponse() {
@@ -50,12 +69,12 @@ void CgiResponse::_parseCgiResponse() {
       content_type_line[content_type_line.size() - 1] = '\0';
       _contentType                                    = content_type_line;
     } else if (line.find("\r") != std::string::npos) {
-      _body = _storage.remainder();
+      _storage.dataToBody(_body, _storage.remains());
       break;
     }
     line = _storage.getLine();
   }
-  _isParsingEnd = true;
+  _parsingState = CGI_PARSING_DONE;
 }
 
 std::string CgiResponse::CgiResponseResultString() {
@@ -67,17 +86,9 @@ std::string CgiResponse::CgiResponseResultString() {
   return ss.str();
 }
 
-int CgiResponse::getStatusCode() { return _statusCode; }
+bool CgiResponse::isError() { return _parsingState == CGI_ERROR; }
 
-std::string CgiResponse::getStatusMessage() { return _statusMessage; }
-
-std::string CgiResponse::getContentType() { return _contentType; }
-
-const std::vector<unsigned char>& CgiResponse::getBody() { return _body; }
-
-bool CgiResponse::isError() { return _isError; }
-
-bool CgiResponse::isParsingEnd() { return _isParsingEnd; }
+bool CgiResponse::isParsingEnd() { return _parsingState == CGI_ERROR || _parsingState == CGI_PARSING_DONE; }
 
 std::vector<std::string> CgiResponse::_split(const std::string& str, const std::string& delimiter) {
   std::vector<std::string> _result;

@@ -19,10 +19,9 @@ class VirtualServer {
   std::string   _intToString(int integer);
   void          _setEnv(int request_method, const std::string& cgi_path, char** envp) const;
   void          _setFd(int request, int response) const;
-  void          _deleteTempFile(int fd);
-  void          _processSendingEnd(Event& event);
+  void          _finishResponse(Event& event);
   void          _processHttpRequestReadable(Event& event, LocationInfo& location_info);
-  void          _processCgiResponseReadable(Event& event, LocationInfo& location_info);
+  void          _cgiResponseToHttpResponse(Event& event, LocationInfo& location_info);
 
  public:
   VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler);

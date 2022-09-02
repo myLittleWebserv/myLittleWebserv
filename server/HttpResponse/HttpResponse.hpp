@@ -8,6 +8,7 @@
 
 #include "Storage.hpp"
 
+class Request;
 class HttpRequest;
 class CgiResponse;
 class FileManager;
@@ -36,7 +37,7 @@ class HttpResponse {
   void        _processPutRequest(HttpRequest& request, LocationInfo& location_info);
   void        _processDeleteRequest(HttpRequest& request, LocationInfo& location_info);
   void        _makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info, FileManager& file_manager);
-  void        _makeErrorResponse(int error_code, HttpRequest& request, LocationInfo& location_info);
+  void        _makeErrorResponse(int error_code, Request& request, LocationInfo& location_info);
   void        _makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info,
                                  const std::string& location_field = "");
   bool        _isAllowedMethod(int method, std::vector<std::string>& allowed_method);

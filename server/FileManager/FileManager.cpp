@@ -1,5 +1,9 @@
 #include "FileManager.hpp"
 
+#include <exception>
+
+FileManager::TempFileFds FileManager::_tempFileFd;
+
 FileManager::~FileManager() {
   if (_directory)
     closedir(_directory);
@@ -46,6 +50,34 @@ void FileManager::removeFile() {
       file_name = readDirectoryEntry();
     }
   }
+}
+
+int FileManager::openFile(const char* file_path, int oflag, mode_t mode = 0644) {
+  int fd = open(file_path, oflag, mode);
+  _tempFileFd.push_back(fd);
+  return fd;
+}
+
+void FileManager::clearTempFd() {
+  for (TempFileFds::iterator it = _tempFileFd.begin(); it != _tempFileFd.end(); ++it) {
+    close(*it);
+  }
+  if (_tempFileFd.size() > 0) {
+    Log::log()(LOG_LOCATION, "(DONE) fds of temporary file closed", ALL);
+  }
+  _tempFileFd.clear();
+}
+
+void FileManager::removeFile(int key_fd) {
+  std::stringstream key;
+  key << key_fd;
+  std::string temp_request  = TEMP_REQUEST_PREFIX + key.str();
+  std::string temp_response = TEMP_RESPONSE_PREFIX + key.str();
+
+  if (unlink(temp_request.c_str()) == -1 || unlink(temp_response.c_str()) == -1) {
+    throw "unlink error";
+  }
+  Log::log()(LOG_LOCATION, "(DONE) temporary file removed", ALL);
 }
 
 void FileManager::_appendFileName(std::string back) {

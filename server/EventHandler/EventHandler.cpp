@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "FileManager.hpp"
 #include "Log.hpp"
 #include "Router.hpp"
 
@@ -57,7 +58,11 @@ void EventHandler::addConnection(int listen_fd) {
   _eventSet.insert(event);
 }
 
-void EventHandler::_checkClientTimeOut() {
+void EventHandler::_checkUnusedFd() {
+  FileManager file_manager;
+
+  file_manager.clearTempFd();
+
   std::vector<Event*> v;
 
   for (std::set<Event*>::iterator it = _eventSet.begin(); it != _eventSet.end(); ++it) {
@@ -81,6 +86,7 @@ void EventHandler::routeEvents() {
 
   if (num_kevents == 0) {
     Log::log()("Wating event...", CONSOLE);
+    _checkUnusedFd();
   }
 
   for (int i = 0; i < num_kevents; ++i) {
@@ -88,8 +94,8 @@ void EventHandler::routeEvents() {
     int    filter = _keventList[i].filter;
     int    flags  = _keventList[i].flags;
 
-    Log::log()(true, "kevent.ident", _keventList[i].ident, ALL);
-    Log::log()(true, "kevent.data", _keventList[i].data, ALL);
+    // Log::log()(true, "kevent.ident", _keventList[i].ident, ALL);
+    // Log::log()(true, "kevent.data", _keventList[i].data, ALL);
 
     if (flags & EV_EOF) {
       removeConnection(event);
@@ -98,6 +104,7 @@ void EventHandler::routeEvents() {
       _routedEvents[event.serverId].push_back(&event);
       Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", ALL);
     } else if (filter == EVFILT_READ && event.type == CONNECTION_REQUEST) {
+      _checkUnusedFd();
       addConnection(event.keventId);
     } else if (filter == EVFILT_READ && event.type == HTTP_REQUEST_READABLE) {
       event.timestamp = time(NULL);
@@ -105,7 +112,7 @@ void EventHandler::routeEvents() {
 
       if (event.httpRequest.isConnectionClosed()) {
         removeConnection(event);
-      } else if (event.httpRequest.isEnd()) {
+      } else if (event.httpRequest.isParsingEnd()) {
         event.serverId = _router.findServerId(event.httpRequest);
         _routedEvents[event.serverId].push_back(&event);
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, NULL);

@@ -36,7 +36,7 @@ class EventHandler {
   void                 appendNewEventToChangeList(int ident, int filter, int flag, Event* event);
   void                 removeConnection(Event& event);
   void                 routeEvents();
-  void                 _checkClientTimeOut();
+  void                 _checkUnusedFd();
   std::vector<Event*>& getRoutedEvents(int server_id);
 };
 
