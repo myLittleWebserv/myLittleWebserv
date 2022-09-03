@@ -28,6 +28,7 @@ class CgiResponse : public Request {
   enum MethodType            _method;
   std::string                _contentType;
   std::vector<unsigned char> _body;
+  int                        _secretHeaderForTest;
 
   std::vector<std::string> _split(const std::string& str, const std::string& delimiter);
   void                     _parseCgiResponse();
@@ -48,6 +49,7 @@ class CgiResponse : public Request {
   int                         statusCode() const { return _statusCode; }
   const std::string&          statusMessage() const { return _statusMessage; }
   const std::string&          contentType() const { return _contentType; }
+  int                         secretHeaderForTest() const { return _secretHeaderForTest; }
   std::vector<unsigned char>& body() { return _body; }
   std::string                 CgiResponseResultString();
 };

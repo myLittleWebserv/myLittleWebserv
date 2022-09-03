@@ -79,6 +79,26 @@ HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_inf
   _responseToStorage();
 }
 
+// Interface
+
+std::string HttpResponse::headerToString() {
+  std::stringstream response_stream;
+
+  response_stream << _httpVersion << ' ' << _statusCode << ' ' << _message << "\r\n";
+
+  if (_contentLength != 0) {
+    response_stream << "Content-Legnth: " << _contentLength << "\r\n";
+  }
+  if (!_contentType.empty()) {
+    response_stream << "Content-Type: " << _contentType << "\r\n";
+  }
+  if (!_location.empty()) {
+    response_stream << "Location: " << _location << "\r\n";
+  }
+  response_stream << "\r\n";
+  return response_stream.str();
+}
+
 // Method
 void HttpResponse::_headerToStorage() {
   std::stringstream response_stream;

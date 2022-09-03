@@ -156,6 +156,8 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
     ss >> word;
     if (word == "keep-alive") {
       _isKeepAlive = true;
+    } else {
+      _isKeepAlive = false;
     }
   } else if (word == "Transfer-Encoding:") {
     ss >> word;
@@ -163,6 +165,13 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
       _isChunked     = true;
       _isBodyExisted = true;
     }
+  } else if (word == "X-Secret-Header-For-Test:") {
+    ss >> _secretHeaderForTest;
+  } else {
+    Log::log()(LOG_LOCATION, "", ALL);
+    Log::log()(true, "header-field", word, ALL);
+    ss >> word;
+    Log::log()(true, "header-value", word, ALL);
   }
 }
 

@@ -14,8 +14,9 @@ CgiResponse::CgiResponse()
       _contentType() {}
 
 void CgiResponse::setInfo(const HttpRequest& http_requset) {
-  _httpVersion = http_requset.httpVersion();
-  _method      = http_requset.method();
+  _httpVersion         = http_requset.httpVersion();
+  _method              = http_requset.method();
+  _secretHeaderForTest = http_requset.secretHeaderForTest();  // ?
 }
 
 void CgiResponse::_checkWaitPid(int pid) {

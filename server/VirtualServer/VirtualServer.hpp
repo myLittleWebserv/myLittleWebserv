@@ -17,7 +17,7 @@ class VirtualServer {
   void          _sendResponse(int fd, HttpResponse& response);
   LocationInfo& _findLocationInfo(HttpRequest& httpRequest);
   std::string   _intToString(int integer);
-  void          _setEnv(int request_method, const std::string& cgi_path, char** envp) const;
+  void          _setEnv(const HttpRequest& http_request, const std::string& cgi_path, char** envp) const;
   void          _setFd(int request, int response) const;
   void          _finishResponse(Event& event);
   void          _processHttpRequestReadable(Event& event, LocationInfo& location_info);

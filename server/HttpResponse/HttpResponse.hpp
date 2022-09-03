@@ -50,7 +50,8 @@ class HttpResponse {
   HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info);
   // Interface
  public:
-  Storage& storage() { return _storage; }
+  Storage&    storage() { return _storage; }
+  std::string headerToString();
 };
 
 #endif

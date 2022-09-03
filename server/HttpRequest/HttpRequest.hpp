@@ -34,6 +34,7 @@ class HttpRequest : public Request {
   int                        _chunkSize;
   bool                       _isKeepAlive;
   bool                       _serverError;
+  int                        _secretHeaderForTest;
 
   // HttpRequest Variable
   MethodType  _method;
@@ -87,6 +88,7 @@ class HttpRequest : public Request {
   const std::string&                contentType() const { return _contentType; }
   MethodType                        method() const { return _method; }
   const std::string&                uri() const { return _uri; }
+  int                               secretHeaderForTest() const { return _secretHeaderForTest; }
   const std::vector<unsigned char>& body() { return _body; }
   const Storage&                    storage() { return _storage; }
 };

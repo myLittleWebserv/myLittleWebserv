@@ -119,11 +119,12 @@ void Log::printHttpRequest(HttpRequest& request, LogLocationType location) {
 void Log::printHttpResponse(HttpResponse& response, LogLocationType location) {
   std::stringstream logMessage;
 
-  logMessage << "HttpResponse:\n";  // body 추가..?
-  for (std::vector<unsigned char>::const_iterator it = response.storage().begin(); it != response.storage().end();
-       ++it) {
-    logMessage << *it;
-  }
+  logMessage << "HttpResponse:\n";
+  logMessage << response.headerToString();
+  // for (std::vector<unsigned char>::const_iterator it = response.storage().begin(); it != response.storage().end();
+  //      ++it) {
+  //   logMessage << *it;
+  // }
 
   if (location == ALL || location == CONSOLE) {
     std::cerr << logMessage.str() << std::endl;

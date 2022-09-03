@@ -31,10 +31,11 @@ class Storage : private std::vector<unsigned char> {
   using vector::end;
   using vector::insert;
   using vector::size;
-  void        movePos(int move) { _pos += move; }
-  int         remains() { return static_cast<int>(size()) - _pos; }
-  bool        empty() const { return static_cast<int>(size()) == _pos; }
-  std::string getLine();
+  void            movePos(int move) { _pos += move; }
+  int             remains() { return static_cast<int>(size()) - _pos; }
+  bool            empty() const { return static_cast<int>(size()) == _pos; }
+  vector::pointer currentPos() { return data() + _pos; }
+  std::string     getLine();
 };
 
 // #endif

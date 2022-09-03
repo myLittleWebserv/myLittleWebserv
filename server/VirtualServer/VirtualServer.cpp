@@ -151,10 +151,10 @@ void VirtualServer::_execveCgi(Event& event) {
 
   std::string cgi_path = _findLocationInfo(event.httpRequest).cgiPath;
   char*       argv[2]  = {0, 0};
-  char*       envp[4]  = {0, 0, 0, 0};
+  char*       envp[5]  = {0, 0, 0, 0, 0};
   argv[0]              = strdup(cgi_path.c_str());
 
-  _setEnv(event.httpRequest.method(), cgi_path, envp);
+  _setEnv(event.httpRequest, cgi_path, envp);
   _setFd(cgi_request, cgi_response);
 
   execve(cgi_path.c_str(), argv, envp);
@@ -162,11 +162,12 @@ void VirtualServer::_execveCgi(Event& event) {
   std::exit(EXIT_FAILURE);
 }
 
-void VirtualServer::_setEnv(int http_method, const std::string& cgi_path, char** envp) const {
-  std::string request_method("REQUEST_METHOD=");
-  std::string path_info("PATH_INFO=");
+void VirtualServer::_setEnv(const HttpRequest& http_request, const std::string& cgi_path, char** envp) const {
+  std::string       request_method("REQUEST_METHOD=");
+  std::string       path_info("PATH_INFO=");
+  std::stringstream secret_header_for_test("HTTP_X_SECRET_HEADER_FOR_TEST=");
 
-  switch (http_method) {
+  switch (http_request.method()) {
     case GET:
       request_method += "GET";
       break;
@@ -181,9 +182,12 @@ void VirtualServer::_setEnv(int http_method, const std::string& cgi_path, char**
   }
 
   path_info += cgi_path;
+  secret_header_for_test << http_request.secretHeaderForTest();
+  Log::log()(true, "secretHeaderForTest", http_request.secretHeaderForTest(), ALL);
   envp[0] = strdup("SERVER_PROTOCOL=HTTP/1.1");
   envp[1] = strdup(request_method.c_str());
   envp[2] = strdup(path_info.c_str());
+  envp[3] = strdup(secret_header_for_test.str().c_str());
 
   if (envp[0] == NULL || envp[1] == NULL || envp[2] == NULL) {
     Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after setenv", ALL);
@@ -209,29 +213,35 @@ std::string VirtualServer::_intToString(int integer) {
 }
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
-  int send_size = send(fd, response.storage().data(), response.storage().size(), 0);
-  Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", ALL);
+  int sent_size = send(fd, response.storage().currentPos(), response.storage().remains(), 0);
   Log::log()(true, "send fd", fd, ALL);
-  Log::log()(true, "send_size", send_size, ALL);
-  Log::log()(true, "errno", strerror(errno), ALL);
+  Log::log()(true, "sent_size", sent_size, ALL);
+  Log::log()(true, "currentPos", response.storage().currentPos() - response.storage().data(), ALL);
+  Log::log()(true, "remains", response.storage().remains(), ALL);
+  if (sent_size == -1) {
+    Log::log()(true, "errno", strerror(errno), ALL);
+    return;
+  }
+  Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", ALL);
 
-  response.storage().movePos(send_size);
-  //  storage 사용 예정
-  //  if (!response.headerSent()) {
-  //    send(fd, response.headerToString().c_str(), response.headerToString().size(), 0);
-  //    response.toggleHeaderSent();
-  //    Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse header to client ", ALL);
-  //  }
-  //  if ((int)response.body().size() == response.sentLength()) {
-  //    return;
-  //  }
-  //  int len;
-  //  if ((len = send(fd, response.body().data() + response.sentLength(), response.body().size() -
-  //  response.sentLength(),
-  //                  0)) == -1) {
-  //    throw "send() error!";
-  //  }
-  //  response.addSentLength(len);
+  response.storage().movePos(sent_size);
+  //!!!!!!!!!!!!!!!!!!!!!!!! REVIEW REQUIRED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // Storage &storage = response.storage();
+  // Log::log()(LOG_LOCATION, "storage.remains(): " + _intToString(storage.remains()), ALL);
+  // if (storage.empty()) {
+  //   Log::log()(LOG_LOCATION, "storage is empty", ALL);
+  //   return;
+  // }
+  // int sent_size;
+  // if ((sent_size = send(fd, storage.data() + storage.currentPos(), storage.remains(), 0)) == -1) {
+  //   throw "send() error!";
+  // }
+  // storage.movePos(sent_size);
+  // Log::log()(LOG_LOCATION, "sent_size: " + _intToString(sent_size), ALL);
+  // Log::log()(LOG_LOCATION, "storage.currentPos(): " + _intToString(storage.currentPos()), ALL);
+  // Log::log()(LOG_LOCATION, "storage.remains(): " + _intToString(storage.remains()), ALL);
+  // Log::log()(LOG_LOCATION, "isEmpty: " + _intToString(storage.empty()), ALL);
+  //!!!!!!!!!!!!!!!!!!!!!!!! REVIEW REQUIRED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 }
 
 ServerInfo& VirtualServer::getServerInfo() const { return _serverInfo; }
