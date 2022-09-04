@@ -139,6 +139,7 @@ void VirtualServer::_execveCgi(Event& event) {
 
   if (write(cgi_request, event.httpRequest.body().data(), event.httpRequest.body().size()) == -1) {
     Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after write", ALL);
+    Log::log()(true, "errno", strerror(errno), ALL);
     std::exit(EXIT_FAILURE);
   }
 

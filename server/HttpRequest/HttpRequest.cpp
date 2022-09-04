@@ -42,21 +42,28 @@ void HttpRequest::storeChunk(int fd) {
 }
 
 void HttpRequest::initialize() {
+  _method          = NOT_IMPL;
+  _uri             = "";
+  _contentLength   = 0;
+  _contentType     = "";
+  _hostName        = "";
+  _hostPort        = HTTP_DEFAULT_PORT;
   _parsingState    = HTTP_PARSING_INIT;
   _headerSize      = 0;
-  _headerTimeStamp = clock();
+  _headerTimeStamp = time(NULL);
   _bodyTimeStamp   = _headerTimeStamp;
   _isBodyExisted   = false;
   _isChunked       = false;
+  _isKeepAlive     = true;
   _chunkSize       = -1;
   _body.clear();
-  _storage.clear();
+  _storage.preserveRemains();
 }
 
 // Method
 
-void HttpRequest::_checkTimeOut(clock_t timestamp) {
-  if ((static_cast<double>(clock() - timestamp) / CLOCKS_PER_SEC) > HTTP_PARSING_TIME_OUT) {
+void HttpRequest::_checkTimeOut(time_t timestamp) {
+  if (time(NULL) - timestamp >= HTTP_PARSING_TIME_OUT) {
     _parsingState = TIME_OUT;
   }
 }
@@ -79,7 +86,7 @@ void HttpRequest::_parseHeader() {
       break;
     } else if (line == "\r") {
       _parsingState  = HTTP_PARSING_BODY;
-      _bodyTimeStamp = clock();
+      _bodyTimeStamp = time(NULL);
       break;
     } else {
       _parseHeaderField(line);
@@ -89,12 +96,13 @@ void HttpRequest::_parseHeader() {
 
 void HttpRequest::_parseStartLine(const std::string& line) {
   if (*line.rbegin() != '\r' || std::count(line.begin(), line.end(), ' ') != 2) {
+    Log::log()(true, "BAD_REQUEST: line", line, ALL);
     _parsingState = BAD_REQUEST;
     return;
   }
 
   _headerSize += line.size() + 1;
-  _headerTimeStamp = clock();
+  _headerTimeStamp = time(NULL);
 
   std::stringstream ss(line);
   std::string       word;
@@ -118,6 +126,7 @@ void HttpRequest::_parseStartLine(const std::string& line) {
   ss >> _httpVersion;
 
   if (ss.bad()) {
+    Log::log()(true, "BAD_REQUEST: line", line, ALL);
     _parsingState = BAD_REQUEST;
   } else {
     _parsingState = HTTP_PARSING_HEADER;
@@ -131,7 +140,7 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
   }
 
   _headerSize += line.size() + 1;
-  _headerTimeStamp = clock();
+  _headerTimeStamp = time(NULL);
 
   std::stringstream ss(line);
   std::string       word;
@@ -210,7 +219,7 @@ void HttpRequest::_parseChunk() {
 
     if (_storage.remains() > _chunkSize) {
       _storage.dataToBody(_body, _chunkSize);
-      _bodyTimeStamp = clock();
+      _bodyTimeStamp = time(NULL);
       _chunkSize     = -1;
     } else {
       break;

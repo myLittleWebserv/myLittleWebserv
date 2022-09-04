@@ -129,5 +129,4 @@ void EventHandler::routeEvents() {
       }
     }
   }
-  // _checkClientTimeOut();
 }

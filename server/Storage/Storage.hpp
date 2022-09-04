@@ -36,6 +36,7 @@ class Storage : private std::vector<unsigned char> {
   bool            empty() const { return static_cast<int>(size()) == _pos; }
   vector::pointer currentPos() { return data() + _pos; }
   std::string     getLine();
+  void            preserveRemains();
 };
 
 // #endif

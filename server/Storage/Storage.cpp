@@ -10,3 +10,16 @@ std::string Storage::getLine() {
   }
   return "";
 }
+
+void Storage::preserveRemains() {
+  vector::iterator b = begin();
+  int              i = 0;
+  for (vector::iterator it = b + _pos; it != end(); ++it, ++i) {
+    *(b + i) = *it;
+  }
+  Log::log()(LOG_LOCATION, "", ALL);
+  Log::log()(true, "pos", _pos);
+  Log::log()(true, "size", size());
+  resize(size() - _pos);
+  _pos = 0;
+}
