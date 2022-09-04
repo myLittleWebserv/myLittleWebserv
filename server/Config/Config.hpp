@@ -6,7 +6,7 @@
 /*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/31 23:20:58 by jaemjung         ###   ########.fr       */
+/*   Updated: 2022/09/04 14:22:00 by jaemjung         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,7 +75,8 @@ class Config {
   void         _printConfigContent();
   void         _startParse();
   ServerInfo   _parseServer(configIterator& it, const configIterator& end);
-  LocationInfo _parseLocation(configIterator& it, const ServerInfo& serverInfo, const std::string& id);
+  LocationInfo _parseLocation(configIterator& it, const configIterator& end, const ServerInfo& serverInfo,
+                              const std::string& id);
   void         _parseLocationInfoToken(LocationInfo& info, const std::string& identifier, const std::string& value);
   void         _parseDefaultErrorPage(const std::string& pages, std::map<int, std::string>& defaultErrorPages);
   std::vector<std::string>    _parseAllowedMethod(const std::string& value);
