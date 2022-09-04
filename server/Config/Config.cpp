@@ -173,7 +173,7 @@ LocationInfo Config::_init_locationInfo(const ServerInfo& serverInfo) {
   _location_info.indexPagePath     = "";
   _location_info.isAutoIndexOn     = false;
   _location_info.redirStatus       = -1;
-  _location_info.redirPath         = "index";
+  _location_info.redirPath         = "";
   _location_info.hostIp            = serverInfo.hostIp;
   _location_info.hostPort          = serverInfo.hostPort;
   _location_info.serverName        = serverInfo.serverName;
@@ -278,7 +278,7 @@ void Config::_parseDefaultErrorPage(const std::string& pages, std::map<int, std:
       std::stringstream ss(_splitted[i]);
       int               si;
       ss >> si;
-      int _error_code      = si;
+      int _error_code                = si;
       defaultErrorPages[_error_code] = _splitted[i + 1];
     } catch (std::invalid_argument& e) {
       std::cout << "ERROR: invalid config file" << std::endl;

@@ -4,21 +4,27 @@
 #include <string>
 #include <vector>
 
-#include "Storage.hpp"
+#include "Request.hpp"
+#include "RequestStorage.hpp"
 
-#define PARSING_TIME_OUT 10
+#define HTTP_PARSING_TIME_OUT 10
 #define HTTP_DEFAULT_PORT 80
 #define HTTP_MAX_HEADER_SIZE 8192
 
-enum HttpRequestParsingState { PARSING_INIT, PARSING_HEADER, PARSING_BODY, PARSING_DONE, BAD_REQUEST, TIME_OUT };
+enum HttpRequestParsingState {
+  HTTP_PARSING_INIT,
+  HTTP_PARSING_HEADER,
+  HTTP_PARSING_BODY,
+  HTTP_PARSING_DONE,
+  BAD_REQUEST,
+  TIME_OUT
+};
 
-enum MethodType { GET, HEAD, POST, PUT, DELETE, NOT_IMPL };
-
-class HttpRequest {
+class HttpRequest : public Request {
   // Member Variable
  private:
   HttpRequestParsingState    _parsingState;
-  Storage                    _storage;  // cgi 보낸 후 resize(0);
+  RequestStorage             _storage;  // cgi 보낸 후 resize(0);
   std::vector<unsigned char> _body;
   int                        _headerSize;
   clock_t                    _headerTimeStamp;  // 생성자에서 초기화
@@ -28,6 +34,7 @@ class HttpRequest {
   int                        _chunkSize;
   bool                       _isKeepAlive;
   bool                       _serverError;
+  int                        _secretHeaderForTest;
 
   // HttpRequest Variable
   MethodType  _method;
@@ -51,7 +58,7 @@ class HttpRequest {
   // Constructor
  public:
   HttpRequest()
-      : _parsingState(PARSING_INIT),
+      : _parsingState(HTTP_PARSING_INIT),
         _headerSize(0),
         _headerTimeStamp(clock()),
         _bodyTimeStamp(_headerTimeStamp),
@@ -64,24 +71,26 @@ class HttpRequest {
 
   // Interface
  public:
-  bool isEnd() { return _parsingState == PARSING_DONE || _parsingState == BAD_REQUEST || _parsingState == TIME_OUT; }
-  bool isTimeOut() { return _parsingState == TIME_OUT; }
-  bool isConnectionClosed() { return _storage.state() == CONNECTION_CLOSED; }
-  bool isBadRequest() { return _parsingState == BAD_REQUEST; }
-  bool isInternalServerError() { return _serverError; }
-  void setServerError(bool state) { _serverError = state; }
-  bool isKeepAlive() { return _isKeepAlive; }
-  bool isCgi(const std::string& ext);
-  void storeChunk(int fd);
-  void initialize();
-  int  hostPort() { return _hostPort; }
-  const std::string&                hostName() { return _hostName; }
-  const std::string&                httpVersion() { return _httpVersion; }
-  int                               contentLength() { return _contentLength; }
-  const std::string&                contentType() { return _contentType; }
-  MethodType                        method() { return _method; }
-  const std::string&                uri() { return _uri; }
+  bool                              isParsingEnd();
+  bool                              isTimeOut() { return _parsingState == TIME_OUT; }
+  bool                              isConnectionClosed() { return _storage.state() == CONNECTION_CLOSED; }
+  bool                              isBadRequest() { return _parsingState == BAD_REQUEST; }
+  bool                              isInternalServerError() { return _serverError; }
+  void                              setServerError(bool state) { _serverError = state; }
+  bool                              isKeepAlive() { return _isKeepAlive; }
+  bool                              isCgi(const std::string& ext);
+  void                              storeChunk(int fd);
+  void                              initialize();
+  int                               hostPort() const { return _hostPort; }
+  const std::string&                hostName() const { return _hostName; }
+  const std::string&                httpVersion() const { return _httpVersion; }
+  int                               contentLength() const { return _contentLength; }
+  const std::string&                contentType() const { return _contentType; }
+  MethodType                        method() const { return _method; }
+  const std::string&                uri() const { return _uri; }
+  int                               secretHeaderForTest() const { return _secretHeaderForTest; }
   const std::vector<unsigned char>& body() { return _body; }
+  const Storage&                    storage() { return _storage; }
 };
 
 #endif

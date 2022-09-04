@@ -1,3 +1,4 @@
+#include <exception>
 #include <iostream>
 
 #include "Router.hpp"
@@ -13,8 +14,8 @@ int main(int argc, char** argv) {
   // while (1) {
   try {
     router.start();
-  } catch (const std::string& error_message) {
-    std::cerr << "error : " << error_message << std::endl;
+  } catch (const char* msg) {
+    std::cerr << "error : " << msg << std::endl;
     std::cerr << "Server Reoot...!" << std::endl;
   }
   // }

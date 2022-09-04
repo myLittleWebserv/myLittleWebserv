@@ -14,8 +14,11 @@ SRC :=	main.cpp\
 		EventHandler.cpp\
 		HttpRequest.cpp\
 		HttpResponse.cpp\
+		CgiResponse.cpp\
+		FileManager.cpp\
 		Storage.cpp\
-		FileManager.cpp
+		RequestStorage.cpp\
+		CgiStorage.cpp\
 
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
 
@@ -25,12 +28,15 @@ LDFALGS  += -fsanitize=address -g
 
 INCS := -I ./$(SRC_DIR)/Router\
 		-I ./$(SRC_DIR)/Log\
+		-I ./$(SRC_DIR)/abstract\
 		-I ./$(SRC_DIR)/Config\
 		-I ./$(SRC_DIR)/EventHandler\
 		-I ./$(SRC_DIR)/VirtualServer\
 		-I ./$(SRC_DIR)/HttpRequest\
 		-I ./$(SRC_DIR)/HttpResponse\
-		-I ./$(SRC_DIR)/CgiResponse
+		-I ./$(SRC_DIR)/CgiResponse\
+		-I ./$(SRC_DIR)/FileManager\
+		-I ./$(SRC_DIR)/Storage
 
 
 ifeq ($(shell uname), Linux)

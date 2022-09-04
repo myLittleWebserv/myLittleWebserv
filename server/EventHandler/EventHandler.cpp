@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "FileManager.hpp"
 #include "Log.hpp"
 #include "Router.hpp"
 
@@ -26,9 +27,12 @@ void EventHandler::appendNewEventToChangeList(int ident, int filter, int flag, E
 
 void EventHandler::removeConnection(Event& event) {
   int ret = close(event.clientFd);
+  if (event.type == CGI_RESPONSE_READABLE) {
+    ret += close(event.keventId);
+  }
   Log::log().syscall(ret, LOG_LOCATION, "(SYSCALL) close done", "(SYSCALL) close error", ALL);
   Log::log()("closed fd", event.clientFd);
-  Log::log().mark(ret == -1);
+  Log::log().mark(ret != 0);
   _eventSet.erase(&event);
   delete &event;
 }
@@ -54,7 +58,11 @@ void EventHandler::addConnection(int listen_fd) {
   _eventSet.insert(event);
 }
 
-void EventHandler::_checkClientTimeOut() {
+void EventHandler::_checkUnusedFd() {
+  FileManager file_manager;
+
+  file_manager.clearTempFd();
+
   std::vector<Event*> v;
 
   for (std::set<Event*>::iterator it = _eventSet.begin(); it != _eventSet.end(); ++it) {
@@ -70,7 +78,6 @@ void EventHandler::_checkClientTimeOut() {
 }
 
 void EventHandler::routeEvents() {
-  _checkClientTimeOut();
   int num_kevents = kevent(_kQueue, _changeList.data(), _changeList.size(), _keventList, MAX_EVENTS, &_timeOut);
   _changeList.clear();
   _routedEvents.clear();
@@ -79,12 +86,16 @@ void EventHandler::routeEvents() {
 
   if (num_kevents == 0) {
     Log::log()("Wating event...", CONSOLE);
+    _checkUnusedFd();
   }
 
   for (int i = 0; i < num_kevents; ++i) {
     Event& event  = *(Event*)_keventList[i].udata;
     int    filter = _keventList[i].filter;
     int    flags  = _keventList[i].flags;
+
+    // Log::log()(true, "kevent.ident", _keventList[i].ident, ALL);
+    // Log::log()(true, "kevent.data", _keventList[i].data, ALL);
 
     if (flags & EV_EOF) {
       removeConnection(event);
@@ -93,6 +104,7 @@ void EventHandler::routeEvents() {
       _routedEvents[event.serverId].push_back(&event);
       Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", ALL);
     } else if (filter == EVFILT_READ && event.type == CONNECTION_REQUEST) {
+      _checkUnusedFd();
       addConnection(event.keventId);
     } else if (filter == EVFILT_READ && event.type == HTTP_REQUEST_READABLE) {
       event.timestamp = time(NULL);
@@ -100,7 +112,7 @@ void EventHandler::routeEvents() {
 
       if (event.httpRequest.isConnectionClosed()) {
         removeConnection(event);
-      } else if (event.httpRequest.isEnd()) {
+      } else if (event.httpRequest.isParsingEnd()) {
         event.serverId = _router.findServerId(event.httpRequest);
         _routedEvents[event.serverId].push_back(&event);
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, NULL);
@@ -109,12 +121,13 @@ void EventHandler::routeEvents() {
 
     } else if (filter == EVFILT_READ && event.type == CGI_RESPONSE_READABLE) {
       event.timestamp = time(NULL);
-      event.cgiResponse.storeChunk(event.keventId);
-      if (event.cgiResponse.isEnd()) {
+      event.cgiResponse.readCgiResult(event.keventId, event.pid);
+      if (event.cgiResponse.isParsingEnd()) {
         _routedEvents[event.serverId].push_back(&event);
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, NULL);
         Log::log()(LOG_LOCATION, "(event routed) Cgi Reponse Readable", ALL);
       }
     }
   }
+  // _checkClientTimeOut();
 }

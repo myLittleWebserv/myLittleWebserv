@@ -8,37 +8,41 @@
 
 // Interface
 
+bool HttpRequest::isParsingEnd() {
+  return _parsingState == HTTP_PARSING_DONE || _parsingState == BAD_REQUEST || _parsingState == TIME_OUT;
+}
+
 bool HttpRequest::isCgi(const std::string& ext) {
   std::string::size_type ext_delim = _uri.rfind('.');
-  if (std::string::npos == ext_delim || _uri.substr(ext_delim + 1) != ext) {
+  if (std::string::npos == ext_delim || _uri.substr(ext_delim) != ext) {
     return false;
   }
   return true;
 }
 
 void HttpRequest::storeChunk(int fd) {
-  _storage.readSocket(fd);
+  _storage.readFile(fd);
   if (_storage.state() != RECEIVE_DONE) {
     return;
   }
 
   Log::log()(LOG_LOCATION, "(TRANSFER) socket buffer to _storage done", ALL);
 
-  if (_parsingState == PARSING_INIT || _parsingState == PARSING_HEADER) {
+  if (_parsingState == HTTP_PARSING_INIT || _parsingState == HTTP_PARSING_HEADER) {
     _parseHeader();
   }
-  if (_parsingState == PARSING_BODY) {
+  if (_parsingState == HTTP_PARSING_BODY) {
     _parseBody();
   }
 
-  Log::log()(LOG_LOCATION, "(STATE) CURRENT PARSING STATE", ALL);
+  Log::log()(LOG_LOCATION, "(STATE) CURRENT HTTP_PARSING STATE", ALL);
   Log::log()("_parsingState", _parsingState, ALL);
   Log::log()(true, "_body.size", _body.size(), ALL);
   Log::log()(true, "_storage.size", _storage.size(), ALL);
 }
 
 void HttpRequest::initialize() {
-  _parsingState    = PARSING_INIT;
+  _parsingState    = HTTP_PARSING_INIT;
   _headerSize      = 0;
   _headerTimeStamp = clock();
   _bodyTimeStamp   = _headerTimeStamp;
@@ -52,13 +56,13 @@ void HttpRequest::initialize() {
 // Method
 
 void HttpRequest::_checkTimeOut(clock_t timestamp) {
-  if ((static_cast<double>(clock() - timestamp) / CLOCKS_PER_SEC) > PARSING_TIME_OUT) {
+  if ((static_cast<double>(clock() - timestamp) / CLOCKS_PER_SEC) > HTTP_PARSING_TIME_OUT) {
     _parsingState = TIME_OUT;
   }
 }
 
 void HttpRequest::_parseHeader() {
-  if (_parsingState == PARSING_INIT) {
+  if (_parsingState == HTTP_PARSING_INIT) {
     std::string line = _storage.getLine();  // 라인이 완성되어 있지 않으면 "" 리턴
 
     if (line.empty()) {
@@ -74,7 +78,7 @@ void HttpRequest::_parseHeader() {
       _checkTimeOut(_headerTimeStamp);
       break;
     } else if (line == "\r") {
-      _parsingState  = PARSING_BODY;
+      _parsingState  = HTTP_PARSING_BODY;
       _bodyTimeStamp = clock();
       break;
     } else {
@@ -116,7 +120,7 @@ void HttpRequest::_parseStartLine(const std::string& line) {
   if (ss.bad()) {
     _parsingState = BAD_REQUEST;
   } else {
-    _parsingState = PARSING_HEADER;
+    _parsingState = HTTP_PARSING_HEADER;
   }
 }
 
@@ -152,6 +156,8 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
     ss >> word;
     if (word == "keep-alive") {
       _isKeepAlive = true;
+    } else {
+      _isKeepAlive = false;
     }
   } else if (word == "Transfer-Encoding:") {
     ss >> word;
@@ -159,12 +165,19 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
       _isChunked     = true;
       _isBodyExisted = true;
     }
+  } else if (word == "X-Secret-Header-For-Test:") {
+    ss >> _secretHeaderForTest;
+  } else {
+    Log::log()(LOG_LOCATION, "", ALL);
+    Log::log()(true, "header-field", word, ALL);
+    ss >> word;
+    Log::log()(true, "header-value", word, ALL);
   }
 }
 
 void HttpRequest::_parseBody() {
   if (!_isBodyExisted || _parsingState == BAD_REQUEST || _parsingState == TIME_OUT) {
-    _parsingState = PARSING_DONE;
+    _parsingState = HTTP_PARSING_DONE;
     return;
   }
 
@@ -172,7 +185,7 @@ void HttpRequest::_parseBody() {
     _parseChunk();
   } else if (_storage.remains() > _contentLength) {
     _storage.dataToBody(_body, _contentLength);
-    _parsingState = PARSING_DONE;
+    _parsingState = HTTP_PARSING_DONE;
   }
 }
 
@@ -190,7 +203,7 @@ void HttpRequest::_parseChunk() {
     }
 
     if (_chunkSize == 0) {
-      _parsingState = PARSING_DONE;
+      _parsingState = HTTP_PARSING_DONE;
       _chunkSize    = -1;
       return;
     }
