@@ -82,7 +82,7 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
     } else if (_identifier == "server_name") {
       _server_info.serverName = _value.str();
     } else if (_identifier == "location") {
-      _server_info.locations[_value.str()] = _parseLocation(++it, _server_info, _value.str());
+      _server_info.locations[_value.str()] = _parseLocation(++it, end, _server_info, _value.str());
       continue;
     } else {
       std::cout << "ERROR: invalid config file" << std::endl;
@@ -97,10 +97,10 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
   return _server_info;
 }
 
-LocationInfo Config::_parseLocation(configIterator& it, const ServerInfo& serverInfo, const std::string& id) {
+LocationInfo Config::_parseLocation(configIterator& it, const configIterator& end, const ServerInfo& serverInfo, const std::string& id) {
   LocationInfo _location_info = _init_locationInfo(serverInfo);
   _location_info.id           = id;
-  while (*it != "\n") {
+  while (it != end && *it != "\n" && *it != "server") {
     std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
     if (_trimmed.first != 2) {
       break;
