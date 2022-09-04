@@ -17,7 +17,7 @@ void Storage::preserveRemains() {
   for (vector::iterator it = b + _pos; it != end(); ++it, ++i) {
     *(b + i) = *it;
   }
-  Log::log()(LOG_LOCATION, "", ALL);
+  Log::log()(LOG_LOCATION, "");
   Log::log()(true, "pos", _pos);
   Log::log()(true, "size", size());
   resize(size() - _pos);

@@ -1,9 +1,8 @@
 #if !defined(Event_hpp)
 #define Event_hpp
 
+#include <sys/time.h>
 #include <sys/types.h>
-
-#include <ctime>
 
 #include "CgiResponse.hpp"
 #include "HttpRequest.hpp"
@@ -20,7 +19,7 @@ struct Event {
   HttpRequest    httpRequest;
   CgiResponse    cgiResponse;
   HttpResponse*  httpResponse;
-  time_t         timestamp;
+  timeval        timestamp;
 
   Event(enum EventType t, int kevent_id)
       : type(t),
@@ -31,7 +30,9 @@ struct Event {
         httpRequest(),
         cgiResponse(),
         httpResponse(NULL),
-        timestamp(time(NULL)) {}
+        timestamp() {
+    gettimeofday(&timestamp, NULL);
+  }
   ~Event() { delete httpResponse; }
   void initialize();
 };

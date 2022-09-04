@@ -19,7 +19,7 @@ void VirtualServer::start() {
 
     switch (event.type) {
       case HTTP_REQUEST_READABLE:
-        Log::log().printHttpRequest(event.httpRequest, ALL);
+        Log::log().printHttpRequest(event.httpRequest, INFILE);
         _processHttpRequestReadable(event, location_info);
         break;
 
@@ -28,7 +28,7 @@ void VirtualServer::start() {
         break;
 
       case HTTP_RESPONSE_WRITABLE:
-        Log::log().printHttpResponse(*event.httpResponse, ALL);
+        Log::log().printHttpResponse(*event.httpResponse, INFILE);
         _sendResponse(event.clientFd, *event.httpResponse);
         if (event.httpResponse->storage().empty()) {
           _finishResponse(event);
@@ -69,6 +69,7 @@ void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& locat
   event.type         = HTTP_RESPONSE_WRITABLE;
 
   file_manager.removeFile(event.clientFd);
+  file_manager.registerTempFileFd(event.keventId);
   _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DELETE, NULL);
   _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_ENABLE, &event);
   // event.keventId = event.clientFd; ?
@@ -83,13 +84,13 @@ LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpRequest) {
   while (key != "/" && !key.empty()) {
     found = _serverInfo.locations.find(key);
     if (found != _serverInfo.locations.end()) {
-      Log::log()(LOG_LOCATION, "LocationInfo found", ALL);
-      Log::log()(true, "key", found->first, ALL);
+      Log::log()(LOG_LOCATION, "LocationInfo found", INFILE);
+      Log::log()(true, "key", found->first, INFILE);
       return found->second;
     }
     key = key.substr(0, key.rfind('/'));
   }
-  Log::log()(LOG_LOCATION, "LocationInfo is default", ALL);
+  Log::log()(LOG_LOCATION, "LocationInfo is default", INFILE);
   return _serverInfo.locations["/"];
 }
 
@@ -105,8 +106,7 @@ bool VirtualServer::_callCgi(Event& event) {
   } else if (event.pid == 0) {
     _execveCgi(event);  // child
   } else {              // parent
-    FileManager file_manager;
-    int         cgi_response = file_manager.openFile(res_filepath.c_str(), O_RDONLY | O_CREAT, 0644);
+    int cgi_response = open(res_filepath.c_str(), O_RDONLY | O_CREAT, 0644);
     if (cgi_response == -1) {
       event.httpRequest.setServerError(true);
       Log::log()(LOG_LOCATION, "(CGI) CALL FAILED", ALL);
@@ -133,7 +133,7 @@ void VirtualServer::_execveCgi(Event& event) {
   if (cgi_request == -1 || cgi_response == -1) {
     unlink(res_filepath.c_str());
     unlink(req_filepath.c_str());
-    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED", ALL);
+    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after open", ALL);
     std::exit(EXIT_FAILURE);
   }
 
@@ -146,7 +146,7 @@ void VirtualServer::_execveCgi(Event& event) {
   // int ret = lseek(cgi_request, 0, SEEK_SET);
   cgi_request = open(req_filepath.c_str(), O_RDONLY, 0644);
   if (cgi_request == -1) {
-    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED", ALL);
+    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after open", ALL);
     std::exit(EXIT_FAILURE);
   }
 
@@ -164,9 +164,11 @@ void VirtualServer::_execveCgi(Event& event) {
 }
 
 void VirtualServer::_setEnv(const HttpRequest& http_request, const std::string& cgi_path, char** envp) const {
+  std::string       server_protocol("SERVER_PROTOCOL=");
   std::string       request_method("REQUEST_METHOD=");
   std::string       path_info("PATH_INFO=");
-  std::stringstream secret_header_for_test("HTTP_X_SECRET_HEADER_FOR_TEST=");
+  std::stringstream secret_header_for_test;
+  ;
 
   switch (http_request.method()) {
     case GET:
@@ -182,13 +184,20 @@ void VirtualServer::_setEnv(const HttpRequest& http_request, const std::string& 
       std::exit(EXIT_FAILURE);
   }
 
+  server_protocol += http_request.httpVersion();
   path_info += cgi_path;
-  secret_header_for_test << http_request.secretHeaderForTest();
-  Log::log()(true, "secretHeaderForTest", http_request.secretHeaderForTest(), ALL);
-  envp[0] = strdup("SERVER_PROTOCOL=HTTP/1.1");
+  Log::log()(true, "server_protocol", server_protocol, INFILE);
+  Log::log()(true, "request_method", request_method, INFILE);
+  Log::log()(true, "path_info", path_info, INFILE);
+  Log::log()(true, "secret_header_for_test", secret_header_for_test.str().c_str(), INFILE);
+  envp[0] = strdup(server_protocol.c_str());
   envp[1] = strdup(request_method.c_str());
   envp[2] = strdup(path_info.c_str());
-  envp[3] = strdup(secret_header_for_test.str().c_str());
+  if (http_request.secretHeaderForTest() > 0) {
+    secret_header_for_test << "HTTP_X_SECRET_HEADER_FOR_TEST=";
+    secret_header_for_test << http_request.secretHeaderForTest();
+    envp[3] = strdup(secret_header_for_test.str().c_str());
+  }
 
   if (envp[0] == NULL || envp[1] == NULL || envp[2] == NULL) {
     Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after setenv", ALL);
@@ -215,12 +224,11 @@ std::string VirtualServer::_intToString(int integer) {
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
   int sent_size = send(fd, response.storage().currentPos(), response.storage().remains(), 0);
-  Log::log()(true, "send fd", fd, ALL);
-  Log::log()(true, "sent_size", sent_size, ALL);
-  Log::log()(true, "currentPos", response.storage().currentPos() - response.storage().data(), ALL);
-  Log::log()(true, "remains", response.storage().remains(), ALL);
+  Log::log()(true, "send fd", fd, INFILE);
+  Log::log()(true, "sent_size", sent_size, INFILE);
+  Log::log()(true, "remains", response.storage().remains(), INFILE);
   if (sent_size == -1) {
-    Log::log()(true, "errno", strerror(errno), ALL);
+    Log::log()(true, "errno", strerror(errno), INFILE);
     return;
   }
   Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", ALL);

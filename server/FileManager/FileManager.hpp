@@ -53,6 +53,7 @@ class FileManager {
   void openDirectoy();
   void removeFile();
   void removeFile(int key_fd);
+  void registerTempFileFd(int fd) { _tempFileFd.push_back(fd); }
   void clearTempFd();
   void addIndexToName(const std::string& indexFile);
   std::string readDirectoryEntry();

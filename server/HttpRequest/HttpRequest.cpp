@@ -42,20 +42,21 @@ void HttpRequest::storeChunk(int fd) {
 }
 
 void HttpRequest::initialize() {
-  _method          = NOT_IMPL;
-  _uri             = "";
-  _contentLength   = 0;
-  _contentType     = "";
-  _hostName        = "";
-  _hostPort        = HTTP_DEFAULT_PORT;
-  _parsingState    = HTTP_PARSING_INIT;
-  _headerSize      = 0;
-  _headerTimeStamp = time(NULL);
-  _bodyTimeStamp   = _headerTimeStamp;
-  _isBodyExisted   = false;
-  _isChunked       = false;
-  _isKeepAlive     = true;
-  _chunkSize       = -1;
+  _method              = NOT_IMPL;
+  _uri                 = "";
+  _contentLength       = 0;
+  _contentType         = "";
+  _hostName            = "";
+  _hostPort            = HTTP_DEFAULT_PORT;
+  _parsingState        = HTTP_PARSING_INIT;
+  _headerSize          = 0;
+  _headerTimeStamp     = time(NULL);
+  _bodyTimeStamp       = _headerTimeStamp;
+  _isBodyExisted       = false;
+  _isChunked           = false;
+  _isKeepAlive         = true;
+  _chunkSize           = -1;
+  _secretHeaderForTest = 0;
   _body.clear();
   _storage.preserveRemains();
 }
@@ -177,10 +178,10 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
   } else if (word == "X-Secret-Header-For-Test:") {
     ss >> _secretHeaderForTest;
   } else {
-    Log::log()(LOG_LOCATION, "", ALL);
-    Log::log()(true, "header-field", word, ALL);
+    Log::log()(LOG_LOCATION, "");
+    Log::log()(true, "header-field", word);
     ss >> word;
-    Log::log()(true, "header-value", word, ALL);
+    Log::log()(true, "header-value", word);
   }
 }
 

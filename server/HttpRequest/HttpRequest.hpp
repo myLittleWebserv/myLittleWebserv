@@ -60,12 +60,12 @@ class HttpRequest : public Request {
   HttpRequest()
       : _parsingState(HTTP_PARSING_INIT),
         _headerSize(0),
-        _headerTimeStamp(clock()),
+        _headerTimeStamp(time(NULL)),
         _bodyTimeStamp(_headerTimeStamp),
         _isBodyExisted(false),
         _isChunked(false),
         _chunkSize(-1),
-        _isKeepAlive(true),  //  default: keep-alive
+        _isKeepAlive(true),  //  default: keep-alive: true
         _serverError(false),
         _hostPort(HTTP_DEFAULT_PORT) {}
 

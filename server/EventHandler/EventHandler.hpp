@@ -10,9 +10,10 @@
 
 #include "Event.hpp"
 
-#define MAX_EVENTS 200
-#define TIME_OUT_MICRO 10000
-#define TIME_OUT_SEC 10
+#define MAX_EVENTS 20
+#define KEVENT_TIMEOUT_MILISEC 3000
+#define CONNECTION_TIMEOUT_MILISEC 10000
+#define KEEPALIVE_TIMEOUT_MILISEC 10000
 
 class Router;
 

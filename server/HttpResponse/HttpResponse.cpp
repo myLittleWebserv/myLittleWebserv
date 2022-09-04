@@ -143,8 +143,9 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
       _makeAutoIndexResponse(request, location_info, file_manager);
       return;
     } else if (index_page.empty()) {
-      _makeRedirResponse(301, request, location_info);
-      return;
+      // _makeRedirResponse(301, request, location_info);
+      // return;
+      file_manager.addIndexToName("index.html");  // ?
     } else {
       file_manager.addIndexToName(location_info.indexPagePath);
     }
@@ -231,10 +232,10 @@ void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& locat
 }
 
 void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& location_info) {
-  if (request.body().size() == 0) {
-    _makeErrorResponse(402, request, location_info);
-    return;
-  }
+  // if (request.body().size() == 0) {
+  //   _makeErrorResponse(402, request, location_info);
+  //   return;
+  // }
   if (static_cast<int>(request.body().size()) > location_info.maxBodySize) {
     _makeErrorResponse(413, request, location_info);
     return;
@@ -243,7 +244,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
   FileManager file_manager(request.uri(), location_info);
 
   if (file_manager.isFileExist()) {
-    _makeRedirResponse(303, request, location_info, file_manager.fileName());
+    _makeRedirResponse(303, request, location_info /*, file_manager.fileName()*/);  // ?
     return;
   }
 
