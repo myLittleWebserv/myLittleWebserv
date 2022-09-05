@@ -21,10 +21,12 @@ void VirtualServer::start() {
       case HTTP_REQUEST_READABLE:
         Log::log().printHttpRequest(event.httpRequest, INFILE);
         _processHttpRequestReadable(event, location_info);
+        Log::log()(true, "HTTP_REQUEST_READABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
         break;
 
       case CGI_RESPONSE_READABLE:
         _cgiResponseToHttpResponse(event, location_info);
+        Log::log()(true, "CGI_RESPONSE_READABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
         break;
 
       case HTTP_RESPONSE_WRITABLE:
@@ -32,6 +34,8 @@ void VirtualServer::start() {
         _sendResponse(event.clientFd, *event.httpResponse);
         if (event.httpResponse->storage().empty()) {
           _finishResponse(event);
+          Log::log()(true, "HTTP_RESPONSE_WRITABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC,
+                     ALL);
         }
         break;
 
@@ -126,6 +130,7 @@ bool VirtualServer::_callCgi(Event& event) {
 }
 
 void VirtualServer::_execveCgi(Event& event) {
+  event.baseClock          = clock();
   std::string fd           = _intToString(event.clientFd);
   std::string req_filepath = TEMP_REQUEST_PREFIX + fd;
   std::string res_filepath = TEMP_RESPONSE_PREFIX + fd;
@@ -139,11 +144,15 @@ void VirtualServer::_execveCgi(Event& event) {
     std::exit(EXIT_FAILURE);
   }
 
+  Log::log()(true, "BEFORE WRITE FILE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+
   if (write(cgi_request, event.httpRequest.body().data(), event.httpRequest.body().size()) == -1) {
     Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after write", INFILE);
     Log::log()(true, "errno", strerror(errno), INFILE);
     std::exit(EXIT_FAILURE);
   }
+
+  Log::log()(true, "AFTER WRITE FILE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
 
   // int ret = lseek(cgi_request, 0, SEEK_SET);
   cgi_request = open(req_filepath.c_str(), O_RDONLY, 0644);
@@ -156,6 +165,8 @@ void VirtualServer::_execveCgi(Event& event) {
   char*       argv[2]  = {0, 0};
   char*       envp[5]  = {0, 0, 0, 0, 0};
   argv[0]              = strdup(cgi_path.c_str());
+
+  Log::log()(true, "BEFORE EXECVE CGI TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
 
   _setEnv(event.httpRequest, cgi_path, envp);
   _setFd(cgi_request, cgi_response);
@@ -191,7 +202,7 @@ void VirtualServer::_setEnv(const HttpRequest& http_request, const std::string& 
   Log::log()(true, "server_protocol", server_protocol, INFILE);
   Log::log()(true, "request_method", request_method, INFILE);
   Log::log()(true, "path_info", path_info, INFILE);
-  Log::log()(true, "secret_header_for_test", secret_header_for_test.str().c_str(), INFILE);
+  Log::log()(true, "secret_header_for_test", secret_header_for_test.str(), INFILE);
   envp[0] = strdup(server_protocol.c_str());
   envp[1] = strdup(request_method.c_str());
   envp[2] = strdup(path_info.c_str());
