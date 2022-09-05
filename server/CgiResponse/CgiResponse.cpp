@@ -83,7 +83,7 @@ std::string CgiResponse::CgiResponseResultString() {
   ss << "Status-Code: [" << _statusCode << "]" << std::endl;
   ss << "Status-Message: [" << _statusMessage << "]" << std::endl;
   ss << "Content-Type: [" << _contentType << "]" << std::endl;
-  ss << "----Body---" << std::endl << _body << std::endl << "-----------" << std::endl;
+  // ss << "----Body---" << std::endl << _body << std::endl << "-----------" << std::endl;
   return ss.str();
 }
 

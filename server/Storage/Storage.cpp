@@ -16,6 +16,6 @@ void Storage::preserveRemains() {
   for (i = _readPos; i != _writePos; ++i) {
     (*this)[i - _readPos] = (*this)[i];
   }
+  _writePos = i - _readPos;
   _readPos  = 0;
-  _writePos = i;
 }

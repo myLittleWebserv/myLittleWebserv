@@ -225,7 +225,6 @@ void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
   int sent_size = send(fd, response.storage().currentReadPos(), response.storage().remains(), 0);
   Log::log()(true, "send fd", fd, INFILE);
   Log::log()(true, "sent_size", sent_size, INFILE);
-  Log::log()(true, "remains", response.storage().remains(), INFILE);
   if (sent_size == -1) {
     Log::log()(true, "errno", strerror(errno), INFILE);
     return;
@@ -233,6 +232,7 @@ void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
   Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", ALL);
 
   response.storage().moveReadPos(sent_size);
+  Log::log()(true, "remains", response.storage().remains(), INFILE);
   //!!!!!!!!!!!!!!!!!!!!!!!! REVIEW REQUIRED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   // Storage &storage = response.storage();
   // Log::log()(LOG_LOCATION, "storage.remains(): " + _intToString(storage.remains()), ALL);

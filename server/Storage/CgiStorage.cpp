@@ -11,7 +11,7 @@ void CgiStorage::readFile(int fd) {
   }
 }
 
-void CgiStorage::dataToBody(Storage::vector& body, int required_size) {
+void CgiStorage::dataToBody(std::deque<unsigned char>& body, int required_size) {
   body.insert(body.end(), begin() + _readPos, begin() + _readPos + required_size);
   _readPos += required_size;
 }

@@ -45,9 +45,9 @@ void EventHandler::addConnection(int listen_fd) {
   int         client_fd = accept(listen_fd, (struct sockaddr*)&addr, &alen);  // addr 버리나?
 
   Log::log().syscall(client_fd, LOG_LOCATION, "(SYSCALL) connection accepted", "(SYSCALL) connection not accepted",
-                     ALL);
-  Log::log()("Server Socket fd", listen_fd, ALL);
-  Log::log()("Client Socket fd", client_fd, ALL);
+                     INFILE);
+  Log::log()("Server Socket fd", listen_fd, INFILE);
+  Log::log()("Client Socket fd", client_fd, INFILE);
   Log::log().mark(client_fd == -1);
 
   fcntl(client_fd, F_SETFL, O_NONBLOCK);
@@ -73,8 +73,7 @@ void EventHandler::_checkUnusedFd() {
     int     interval;
     gettimeofday(&current, NULL);
     interval = (current.tv_sec - event.timestamp.tv_sec) * 1000 + (current.tv_usec - event.timestamp.tv_usec) / 1000;
-    if (/*event.reused && interval >= KEEPALIVE_TIMEOUT_MILISEC ||*/
-        interval >= CONNECTION_TIMEOUT_MILISEC && event.type == HTTP_REQUEST_READABLE) {
+    if (interval >= CONNECTION_TIMEOUT_MILISEC && event.type == HTTP_REQUEST_READABLE) {
       v.push_back(&event);
     }
   }
@@ -96,8 +95,8 @@ void EventHandler::routeEvents() {
     _checkUnusedFd();
   }
 
-  for (int i = 0; i < num_kevents; ++i){
-    Event& event  = *(Event*)_keventList[i].udata;
+  for (int i = 0; i < num_kevents; ++i) {
+    Event& event = *(Event*)_keventList[i].udata;
     gettimeofday(&event.timestamp, NULL);
   }
 
@@ -105,9 +104,6 @@ void EventHandler::routeEvents() {
     Event& event  = *(Event*)_keventList[i].udata;
     int    filter = _keventList[i].filter;
     int    flags  = _keventList[i].flags;
-
-    Log::log()(true, "kevent.ident", _keventList[i].ident);
-    // Log::log()(true, "kevent.data", _keventList[i].data, ALL);
 
     if (flags & EV_EOF) {
       removeConnection(event);

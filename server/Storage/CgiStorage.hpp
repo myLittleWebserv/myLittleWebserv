@@ -3,9 +3,9 @@
 
 #include <unistd.h>
 
+#include <deque>
 #include <iostream>
 #include <string>
-#include <vector>
 
 #include "Storage.hpp"
 
@@ -24,7 +24,7 @@ class CgiStorage : public Storage {
  public:
   bool isReadingEnd() { return _isReadingEnd; }
   void readFile(int fd);
-  void dataToBody(vector& body, int required_size);
+  void dataToBody(std::deque<unsigned char>& body, int required_size);
 };
 
 std::ostream& operator<<(std::ostream& os, const std::vector<unsigned char>& v);
