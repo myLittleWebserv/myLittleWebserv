@@ -1,8 +1,8 @@
 #ifndef HTTPRESPONSE_HPP
 
+#include <deque>
 #include <fstream>
 #include <string>
-#include <vector>
 
 #define DEFAULT_ERROR_PAGE_DIR "error_pages"
 
@@ -17,14 +17,14 @@ struct LocationInfo;
 class HttpResponse {
   // Member Variable
  private:
-  std::vector<unsigned char> _body;
-  Storage                    _storage;
-  std::string                _httpVersion;
-  int                        _statusCode;
-  std::string                _message;
-  std::string                _location;
-  int                        _contentLength;
-  std::string                _contentType;  // default = plain/text;
+  std::deque<unsigned char> _body;
+  Storage                   _storage;
+  std::string               _httpVersion;
+  int                       _statusCode;
+  std::string               _message;
+  std::string               _location;
+  int                       _contentLength;
+  std::string               _contentType;  // default = plain/text;
 
   // Method
  private:

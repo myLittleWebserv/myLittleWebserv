@@ -222,7 +222,7 @@ std::string VirtualServer::_intToString(int integer) {
 }
 
 void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
-  int sent_size = send(fd, response.storage().currentPos(), response.storage().remains(), 0);
+  int sent_size = send(fd, response.storage().currentReadPos(), response.storage().remains(), 0);
   Log::log()(true, "send fd", fd, INFILE);
   Log::log()(true, "sent_size", sent_size, INFILE);
   Log::log()(true, "remains", response.storage().remains(), INFILE);
@@ -232,7 +232,7 @@ void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
   }
   Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", ALL);
 
-  response.storage().movePos(sent_size);
+  response.storage().moveReadPos(sent_size);
   //!!!!!!!!!!!!!!!!!!!!!!!! REVIEW REQUIRED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   // Storage &storage = response.storage();
   // Log::log()(LOG_LOCATION, "storage.remains(): " + _intToString(storage.remains()), ALL);

@@ -12,7 +12,7 @@ std::string Storage::getLine() {
 }
 
 void Storage::preserveRemains() {
-  int i;
+  size_t i;
   for (i = _readPos; i != _writePos; ++i) {
     (*this)[i - _readPos] = (*this)[i];
   }
