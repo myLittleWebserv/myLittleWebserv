@@ -4,31 +4,24 @@
 #include "Log.hpp"
 
 CgiResponse::CgiResponse()
-    : _parsingState(CGI_RUNNING),
-      _storage(),
-      // _isParsingEnd(false),
-      // _isError(false),
-      _httpVersion(),
-      _statusCode(0),
-      _statusMessage(),
-      _contentType() {}
+    : _parsingState(CGI_RUNNING), _storage(), _httpVersion(), _statusCode(0), _statusMessage(), _contentType() {}
 
 void CgiResponse::setInfo(const HttpRequest& http_requset) {
   _httpVersion         = http_requset.httpVersion();
   _method              = http_requset.method();
-  _secretHeaderForTest = http_requset.secretHeaderForTest();  // ?
+  _secretHeaderForTest = http_requset.secretHeaderForTest();
 }
 
 void CgiResponse::_checkWaitPid(int pid) {
   int status;
   int result = waitpid(pid, &status, WNOHANG);
-  Log::log()(true, "pid", pid, ALL);
-  Log::log()(true, "result", result, ALL);
+  Log::log()(true, "pid", pid, INFILE);
+  Log::log()(true, "result", result, INFILE);
 
   if (result == pid) {
     _parsingState = CGI_READING;
   } else if (result == -1) {
-    Log::log()(LOG_LOCATION, "CGI_ERROR", ALL);
+    Log::log()(LOG_LOCATION, "CGI_ERROR", INFILE);
     _parsingState = CGI_ERROR;
   }
 }
@@ -42,17 +35,17 @@ void CgiResponse::readCgiResult(int fd, int pid) {
     _storage.readFile(fd);
     if (_storage.isReadingEnd()) {
       _parsingState = CGI_PARSING;
-      Log::log()(LOG_LOCATION, "(DONE) CGI RESULT READING", ALL);
+      Log::log()(LOG_LOCATION, "(DONE) CGI RESULT READING", INFILE);
     }
   }
 
   if (_parsingState == CGI_PARSING) {
     _parseCgiResponse();
   }
-  Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", ALL);
-  Log::log()("_parsingState", _parsingState, ALL);
-  Log::log()(true, "_body.size", _body.size(), ALL);
-  Log::log()(true, "_storage.size", _storage.size(), ALL);
+  Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", INFILE);
+  Log::log()("_parsingState", _parsingState, INFILE);
+  Log::log()(true, "_body.size", _body.size(), INFILE);
+  Log::log()(true, "_storage.size", _storage.size(), INFILE);
 }
 
 void CgiResponse::_parseCgiResponse() {

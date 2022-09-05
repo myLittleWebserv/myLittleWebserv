@@ -29,14 +29,14 @@ void Router::start() {
 void Router::_serverSocketsInit() {
   for (std::vector<int>::iterator port = _config.getPorts().begin(); port != _config.getPorts().end(); ++port) {
     int server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    Log::log().syscall(server_socket, LOG_LOCATION, "", "(SYSCALL) socket error", ALL);
+    Log::log().syscall(server_socket, LOG_LOCATION, "", "(SYSCALL) socket error", INFILE);
     Log::log().mark(server_socket == -1);
 
     int ret;
     int sock_opt = 1;
 
     ret = setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &sock_opt, sizeof(sock_opt));
-    Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) setsockopt error", ALL);
+    Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) setsockopt error", INFILE);
     Log::log().mark(ret == -1);
 
     sockaddr_in server_addr = {
@@ -53,25 +53,25 @@ void Router::_serverSocketsInit() {
     };
 
     ret = bind(server_socket, (sockaddr*)&server_addr, sizeof(server_addr));
-    Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) bind error", ALL);
+    Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) bind error", INFILE);
     Log::log()(ret == -1, "port", *port);
     Log::log()(ret == -1, "addr", inet_ntoa(server_addr.sin_addr));
     Log::log()(ret == -1, "socket fd", server_socket);
     Log::log().mark(ret == -1);
 
     ret = listen(server_socket, BACKLOG);
-    Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) listen error", ALL);
+    Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) listen error", INFILE);
     Log::log()(ret == -1, "socket fd", server_socket);
     Log::log().mark(ret == -1);
 
     ret = fcntl(server_socket, F_SETFL, O_NONBLOCK);
-    Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) fcntl error", ALL);
+    Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) fcntl error", INFILE);
     Log::log().mark(ret == -1);
 
     Event* event = new Event(CONNECTION_REQUEST, server_socket);
     _eventHandler.appendNewEventToChangeList(server_socket, EVFILT_READ, EV_ADD, event);
   }
-  Log::log()(LOG_LOCATION, "(SUCCESS) Server Initialization", ALL);
+  Log::log()(LOG_LOCATION, "(SUCCESS) Server Initialization", INFILE);
 }
 
 int Router::findServerId(HttpRequest& request) const {
@@ -87,8 +87,8 @@ int Router::findServerId(HttpRequest& request) const {
       return i;
     }
   }
-  Log::log()(LOG_LOCATION, "(Not Found) ServerId ", ALL);
-  Log::log()(true, "HttpRequest.hostPort", request.hostPort(), ALL);
-  Log::log()(true, "HttpRequest.hostName", request.hostName(), ALL);
+  Log::log()(LOG_LOCATION, "(Not Found) ServerId ", INFILE);
+  Log::log()(true, "HttpRequest.hostPort", request.hostPort(), INFILE);
+  Log::log()(true, "HttpRequest.hostName", request.hostName(), INFILE);
   return 0;
 }

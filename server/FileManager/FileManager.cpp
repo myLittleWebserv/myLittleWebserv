@@ -63,7 +63,7 @@ void FileManager::clearTempFd() {
     close(*it);
   }
   if (_tempFileFd.size() > 0) {
-    Log::log()(LOG_LOCATION, "(DONE) fds of temporary file closed", ALL);
+    Log::log()(LOG_LOCATION, "(DONE) fds of temporary file closed", INFILE);
   }
   _tempFileFd.clear();
 }
@@ -77,7 +77,7 @@ void FileManager::removeFile(int key_fd) {
   if (unlink(temp_request.c_str()) == -1 || unlink(temp_response.c_str()) == -1) {
     throw "unlink error";
   }
-  Log::log()(LOG_LOCATION, "(DONE) temporary file removed", ALL);
+  Log::log()(LOG_LOCATION, "(DONE) temporary file removed", INFILE);
 }
 
 void FileManager::_appendFileName(std::string back) {

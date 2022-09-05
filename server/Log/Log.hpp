@@ -33,12 +33,15 @@ const std::string currentTimestamp(TimestampType type = LOG_TITLE);
 
 class Log {
  private:
+  int           processedConnection;
   std::ofstream _logFile;
   std::string   _failure_message;
   Log();
   ~Log();
 
  public:
+  void           increaseProcessedConnection() { ++processedConnection; };
+  void           printStatus();
   static Log&    log();
   std::ofstream& getLogStream();
   void           mark(const std::string& mark = "");

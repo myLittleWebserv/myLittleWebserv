@@ -32,7 +32,7 @@ void EventHandler::removeConnection(Event& event) {
     file_manager.registerTempFileFd(event.keventId);
     appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DELETE, NULL);
   }
-  Log::log().syscall(ret, LOG_LOCATION, "(SYSCALL) close done", "(SYSCALL) close error", ALL);
+  Log::log().syscall(ret, LOG_LOCATION, "(SYSCALL) close done", "(SYSCALL) close error", INFILE);
   Log::log()("closed fd", event.clientFd);
   Log::log().mark(ret != 0);
   _eventSet.erase(&event);
@@ -87,7 +87,7 @@ void EventHandler::routeEvents() {
   int num_kevents = kevent(_kQueue, _changeList.data(), _changeList.size(), _keventList, MAX_EVENTS, &_timeOut);
   _changeList.clear();
   _routedEvents.clear();
-  Log::log().syscall(num_kevents, LOG_LOCATION, "", "(SYSCALL) kevent error", ALL);
+  Log::log().syscall(num_kevents, LOG_LOCATION, "", "(SYSCALL) kevent error", INFILE);
   Log::log().mark(num_kevents == -1);
 
   if (num_kevents == 0) {
@@ -108,15 +108,16 @@ void EventHandler::routeEvents() {
     if (flags & EV_EOF) {
       removeConnection(event);
     } else if (filter == EVFILT_WRITE && event.type == HTTP_RESPONSE_WRITABLE) {
-      gettimeofday(&event.timestamp, NULL);
       _routedEvents[event.serverId].push_back(&event);
-      Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", ALL);
+      gettimeofday(&event.timestamp, NULL);
+      Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", INFILE);
     } else if (filter == EVFILT_READ && event.type == CONNECTION_REQUEST) {
       _checkUnusedFd();
       addConnection(event.keventId);
-    } else if (filter == EVFILT_READ && event.type == HTTP_REQUEST_READABLE) {
       gettimeofday(&event.timestamp, NULL);
+    } else if (filter == EVFILT_READ && event.type == HTTP_REQUEST_READABLE) {
       event.httpRequest.storeChunk(event.clientFd);
+      gettimeofday(&event.timestamp, NULL);
 
       if (event.httpRequest.isConnectionClosed()) {
         removeConnection(event);
@@ -124,16 +125,16 @@ void EventHandler::routeEvents() {
         event.serverId = _router.findServerId(event.httpRequest);
         _routedEvents[event.serverId].push_back(&event);
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, NULL);
-        Log::log()(LOG_LOCATION, "(event routed) Http Request Readable", ALL);
+        Log::log()(LOG_LOCATION, "(event routed) Http Request Readable", INFILE);
       }
 
     } else if (filter == EVFILT_READ && event.type == CGI_RESPONSE_READABLE) {
-      gettimeofday(&event.timestamp, NULL);
       event.cgiResponse.readCgiResult(event.keventId, event.pid);
+      gettimeofday(&event.timestamp, NULL);
       if (event.cgiResponse.isParsingEnd()) {
         _routedEvents[event.serverId].push_back(&event);
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, NULL);
-        Log::log()(LOG_LOCATION, "(event routed) Cgi Reponse Readable", ALL);
+        Log::log()(LOG_LOCATION, "(event routed) Cgi Reponse Readable", INFILE);
       }
     }
   }
