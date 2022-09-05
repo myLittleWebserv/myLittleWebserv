@@ -8,7 +8,7 @@
 #include "RequestStorage.hpp"
 
 #define HTTP_PARSING_TIME_OUT 10
-#define HTTP_DEFAULT_PORT 80
+#define HTTP_DEFAULT_PORT 4242
 #define HTTP_MAX_HEADER_SIZE 8192
 
 enum HttpRequestParsingState {
@@ -27,8 +27,8 @@ class HttpRequest : public Request {
   RequestStorage             _storage;  // cgi 보낸 후 resize(0);
   std::vector<unsigned char> _body;
   int                        _headerSize;
-  clock_t                    _headerTimeStamp;  // 생성자에서 초기화
-  clock_t                    _bodyTimeStamp;    // 헤더 다 읽고 나서 초기화.
+  time_t                     _headerTimeStamp;  // 생성자에서 초기화
+  time_t                     _bodyTimeStamp;    // 헤더 다 읽고 나서 초기화.
   bool                       _isBodyExisted;
   bool                       _isChunked;
   int                        _chunkSize;
@@ -52,7 +52,7 @@ class HttpRequest : public Request {
   void   _parseHeader();
   void   _parseBody();
   void   _parseChunk();
-  void   _checkTimeOut(clock_t timestamp);
+  void   _checkTimeOut(time_t timestamp);
   size_t _parseChunkSize(const std::string& line);
 
   // Constructor
@@ -60,12 +60,12 @@ class HttpRequest : public Request {
   HttpRequest()
       : _parsingState(HTTP_PARSING_INIT),
         _headerSize(0),
-        _headerTimeStamp(clock()),
+        _headerTimeStamp(time(NULL)),
         _bodyTimeStamp(_headerTimeStamp),
         _isBodyExisted(false),
         _isChunked(false),
         _chunkSize(-1),
-        _isKeepAlive(false),  //  default: close
+        _isKeepAlive(true),  //  default: keep-alive: true
         _serverError(false),
         _hostPort(HTTP_DEFAULT_PORT) {}
 

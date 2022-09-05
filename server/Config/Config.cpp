@@ -21,8 +21,7 @@ void Config::_readConfigFile(const std::string& confFile) {
       _configContent.push_back(_buffer);
     }
   } else {
-    std::cout << "ERROR: cannot open " << confFile << std::endl;
-    std::exit(1);
+    _error(LOG_LOCATION, "Error: Failed to open config file");
   }
 }
 
@@ -39,9 +38,7 @@ void Config::_startParse() {
       ServerInfo serverInfo = _parseServer(++it, _configContent.end());
       _serverInfos.push_back(serverInfo);
     } else {
-      std::cout << "ERROR: invalid config file" << std::endl;
-      Log::log()(LOG_LOCATION, "ERROR: invalid config file", ALL);
-      std::exit(1);
+      _error(LOG_LOCATION, "Error: Invalid config file");
     }
   }
   if (_serverInfos.empty()) {
@@ -75,14 +72,20 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
     } else if (_identifier == "default_error_page") {
       _parseDefaultErrorPage(_value.str(), _server_info.defaultErrorPages);
     } else if (_identifier == "host") {
-      inet_aton(_value.str().c_str(), &_server_info.hostIp);  // TODO: ip 주소 잘못됐을 때 에러처리
+      inet_aton(_value.str().c_str(), &_server_info.hostIp);
+      if (_server_info.hostIp.s_addr == INADDR_NONE || _server_info.hostIp.s_addr == INADDR_ANY) {
+        _error(LOG_LOCATION, "Error: Invalid host ip");
+      }
     } else if (_identifier == "port") {
       _value >> vi;
-      _server_info.hostPort = vi;  // TODO: 포트넘버 범위 벗어나거나 잘못됐을 때 에러처리
+      if (vi < 1 || vi > PORT_MAX) {
+        _error(LOG_LOCATION, "Error: Invalid port number");
+      }
+      _server_info.hostPort = vi;
     } else if (_identifier == "server_name") {
       _server_info.serverName = _value.str();
     } else if (_identifier == "location") {
-      _server_info.locations[_value.str()] = _parseLocation(++it, _server_info, _value.str());
+      _server_info.locations[_value.str()] = _parseLocation(++it, end, _server_info, _value.str());
       continue;
     } else {
       std::cout << "ERROR: invalid config file" << std::endl;
@@ -97,10 +100,11 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
   return _server_info;
 }
 
-LocationInfo Config::_parseLocation(configIterator& it, const ServerInfo& serverInfo, const std::string& id) {
+LocationInfo Config::_parseLocation(configIterator& it, const configIterator& end, const ServerInfo& serverInfo,
+                                    const std::string& id) {
   LocationInfo _location_info = _init_locationInfo(serverInfo);
   _location_info.id           = id;
-  while (*it != "\n") {
+  while (it != end && *it != "\n" && *it != "server") {
     std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
     if (_trimmed.first != 2) {
       break;
@@ -360,6 +364,11 @@ std::string Config::_itoa(int i) {
   std::stringstream ss;
   ss << i;
   return ss.str();
+}
+
+void Config::_error(const char* file, int line, const char* function, std::string message) {
+  Log::log()(file, line, function, message, ALL);
+  exit(1);
 }
 
 int Config::_error_codes[ERROR_PAGES_COUNT] = {400, 402, 404, 405, 413, 500, 501, 502, 503, 504, 505};

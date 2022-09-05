@@ -10,3 +10,12 @@ std::string Storage::getLine() {
   }
   return "";
 }
+
+void Storage::preserveRemains() {
+  int i;
+  for (i = _readPos; i != _writePos; ++i) {
+    (*this)[i - _readPos] = (*this)[i];
+  }
+  _readPos  = 0;
+  _writePos = i;
+}

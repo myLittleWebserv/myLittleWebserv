@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Config.hpp                                         :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/08/31 23:20:58 by jaemjung         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
@@ -25,8 +13,9 @@
 
 #define ERROR_PAGES_COUNT 11
 #define ERROR_PAGES_PATH "/error_pages/"
-#define HTTP_DEFAULT_PORT 80
+#define HTTP_DEFAULT_PORT 4242
 #define DEFAULT_MAX_BODY_SIZE 200000000
+#define PORT_MAX 65535
 
 struct LocationInfo {
   std::string                id;                 // default "/"
@@ -75,7 +64,8 @@ class Config {
   void         _printConfigContent();
   void         _startParse();
   ServerInfo   _parseServer(configIterator& it, const configIterator& end);
-  LocationInfo _parseLocation(configIterator& it, const ServerInfo& serverInfo, const std::string& id);
+  LocationInfo _parseLocation(configIterator& it, const configIterator& end, const ServerInfo& serverInfo,
+                              const std::string& id);
   void         _parseLocationInfoToken(LocationInfo& info, const std::string& identifier, const std::string& value);
   void         _parseDefaultErrorPage(const std::string& pages, std::map<int, std::string>& defaultErrorPages);
   std::vector<std::string>    _parseAllowedMethod(const std::string& value);
@@ -92,6 +82,7 @@ class Config {
   void                        _parsedConfigResult();
   void                        _setPorts();
   std::string                 _itoa(int i);
+  void                        _error(const char* file, int line, const char* function, std::string message);
 
   // Constructor
  public:
