@@ -4,7 +4,21 @@
 #include "Log.hpp"
 
 CgiResponse::CgiResponse()
-    : _parsingState(CGI_RUNNING), _storage(), _httpVersion(), _statusCode(0), _statusMessage(), _contentType() {}
+    : _parsingState(CGI_RUNNING),
+      _storage(),
+      _httpVersion(),
+      _statusCode(0),
+      _statusMessage(),
+      _contentType(),
+      _body(NULL) {}
+
+void CgiResponse::initialize() {
+  _parsingState = CGI_RUNNING;
+  _statusCode   = 0;
+
+  _storage.clear();
+  _body = NULL;
+}
 
 void CgiResponse::setInfo(const HttpRequest& http_requset) {
   _httpVersion         = http_requset.httpVersion();
@@ -21,8 +35,8 @@ void CgiResponse::_checkWaitPid(int pid) {
   if (result == pid) {
     _parsingState = CGI_READING;
   } else if (result == -1) {
-    Log::log()(LOG_LOCATION, "CGI_ERROR", INFILE);
     _parsingState = CGI_ERROR;
+    Log::log()(LOG_LOCATION, "CGI_ERROR", INFILE);
   }
 }
 
@@ -44,7 +58,6 @@ void CgiResponse::readCgiResult(int fd, int pid) {
   }
   Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", INFILE);
   Log::log()("_parsingState", _parsingState, INFILE);
-  Log::log()(true, "_body.size", _body.size(), INFILE);
   Log::log()(true, "_storage.size", _storage.size(), INFILE);
 }
 
@@ -63,7 +76,8 @@ void CgiResponse::_parseCgiResponse() {
       content_type_line[content_type_line.size() - 1] = '\0';
       _contentType                                    = content_type_line;
     } else if (line.find("\r") != std::string::npos) {
-      _storage.dataToBody(_body, _storage.remains());
+      // _storage.dataToBody(_body, _storage.remains());
+      _body = _storage.currentReadPos();
       break;
     }
     line = _storage.getLine();

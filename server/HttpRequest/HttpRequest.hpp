@@ -90,7 +90,7 @@ class HttpRequest : public Request {
   const std::string&                uri() const { return _uri; }
   int                               secretHeaderForTest() const { return _secretHeaderForTest; }
   const std::vector<unsigned char>& body() { return _body; }
-  const Storage&                    storage() { return _storage; }
+  Storage&                          storage() { return _storage; }
 };
 
 #endif

@@ -28,7 +28,6 @@ class HttpResponse {
 
   // Method
  private:
-  void        _responseToStorage();
   void        _headerToStorage();
   void        _fileToBody(std::ifstream& file);
   void        _processGetRequest(HttpRequest& request, LocationInfo& location_info);
@@ -43,6 +42,8 @@ class HttpResponse {
   bool        _isAllowedMethod(int method, std::vector<std::string>& allowed_method);
   std::string _getMessage(int status_code);
   std::string _getContentType(const std::string& file_name);
+  template <typename BodyIterBegin, typename BodyIterEnd>
+  void _responseToStorage(BodyIterBegin bi, BodyIterEnd ei);
 
   // Constructor
  public:
@@ -53,5 +54,11 @@ class HttpResponse {
   Storage&    storage() { return _storage; }
   std::string headerToString();
 };
+
+template <typename BodyIterBegin, typename BodyIterEnd>
+void HttpResponse::_responseToStorage(BodyIterBegin bi, BodyIterEnd ei) {
+  _headerToStorage();
+  _storage.insert(bi, ei);
+}
 
 #endif

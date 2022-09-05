@@ -69,14 +69,16 @@ HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_inf
     return;
   }
 
-  _body.insert(_body.end(), cgi_response.body().begin(), cgi_response.body().end());
+  // _body.insert(_body.end(), cgi_response.body().begin(), cgi_response.body().end());
 
   _httpVersion   = cgi_response.httpVersion();
   _statusCode    = cgi_response.statusCode();
   _message       = cgi_response.statusMessage();
-  _contentLength = _body.size();
+  _contentLength = cgi_response.bodySize();
   _contentType   = cgi_response.contentType();
-  _responseToStorage();
+
+  CgiResponse::vector::pointer body_pos = cgi_response.body();
+  _responseToStorage(body_pos, body_pos + _contentLength);
 }
 
 // Interface
@@ -117,11 +119,6 @@ void HttpResponse::_headerToStorage() {
   response_stream << "\r\n";
   std::string response_header = response_stream.str();
   _storage.insert(response_header.begin(), response_header.end());
-}
-
-void HttpResponse::_responseToStorage() {
-  _headerToStorage();
-  _storage.insert(_body.begin(), _body.end());
 }
 
 void HttpResponse::_fileToBody(std::ifstream& file) {
@@ -168,7 +165,7 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
   _contentLength = _body.size();
   _contentType   = _getContentType(file_manager.fileName());
   Log::log()(LOG_LOCATION, "Get request processed.");
-  _responseToStorage();
+  _responseToStorage(_body.begin(), _body.end());
 }
 
 void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info,
@@ -194,11 +191,12 @@ void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& lo
 
   _body.insert(_body.begin(), body.c_str(), body.c_str() + body.size());
 
-  _httpVersion = request.httpVersion();
-  _statusCode  = 200;
-  _message     = _getMessage(_statusCode);
+  _httpVersion   = request.httpVersion();
+  _statusCode    = 200;
+  _message       = _getMessage(_statusCode);
+  _contentLength = _body.size();
 
-  _responseToStorage();
+  _responseToStorage(_body.begin(), _body.end());
 }
 
 void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
@@ -255,7 +253,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
   _statusCode  = 201;
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Post request processed.");
-  _responseToStorage();
+  _responseToStorage(_body.begin(), _body.end());
 }
 
 void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
@@ -282,7 +280,7 @@ void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& locati
   _httpVersion = request.httpVersion();
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Put request processed.");
-  _responseToStorage();
+  _responseToStorage(_body.begin(), _body.end());
 }
 
 void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
@@ -296,7 +294,7 @@ void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& loc
   file_manager.removeFile();
 
   Log::log()(LOG_LOCATION, "Delete request processed.");
-  _responseToStorage();
+  _responseToStorage(_body.begin(), _body.end());
 }
 
 void HttpResponse::_makeErrorResponse(int error_code, Request& request, LocationInfo& location_info) {
@@ -323,7 +321,7 @@ void HttpResponse::_makeErrorResponse(int error_code, Request& request, Location
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Error page returned.");
 
-  _responseToStorage();
+  _responseToStorage(_body.begin(), _body.end());
 }
 
 void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info,
@@ -344,7 +342,7 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
 
   // add other field ?
   Log::log()(LOG_LOCATION, "Redirection address returned.");
-  _responseToStorage();
+  _responseToStorage(_body.begin(), _body.end());
 }
 
 bool HttpResponse::_isAllowedMethod(int method, std::vector<std::string>& allowed_methods) {

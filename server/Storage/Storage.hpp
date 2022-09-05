@@ -26,6 +26,7 @@ class Storage : private std::vector<unsigned char> {
 
   // Interface
  public:
+  using vector::clear;
   size_t          size() { return _writePos; }
   size_t          capacity() { return vector::size(); }
   void            moveReadPos(int move) { _readPos += move; }
