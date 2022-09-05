@@ -163,12 +163,14 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
       _hostName = word.substr(0, delim);
     }
   } else if (word == "Connection:") {
+    Log::log()(true, "header-field", word);
     ss >> word;
     if (word == "keep-alive") {
       _isKeepAlive = true;
     } else {
       _isKeepAlive = false;
     }
+    Log::log()(true, "header-value", word);
   } else if (word == "Transfer-Encoding:") {
     ss >> word;
     if (word == "chunked") {

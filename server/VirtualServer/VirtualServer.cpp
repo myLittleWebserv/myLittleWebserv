@@ -42,7 +42,7 @@ void VirtualServer::start() {
 }
 
 void VirtualServer::_finishResponse(Event& event) {
-  if (event.httpRequest.isKeepAlive()) {
+  if (event.httpRequest.isKeepAlive() || !event.httpRequest.storage().empty())  {
     event.initialize();
     _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_DISABLE, &event);
     _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_ENABLE, &event);

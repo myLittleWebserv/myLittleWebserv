@@ -96,6 +96,11 @@ void EventHandler::routeEvents() {
     _checkUnusedFd();
   }
 
+  for (int i = 0; i < num_kevents; ++i){
+    Event& event  = *(Event*)_keventList[i].udata;
+    gettimeofday(&event.timestamp, NULL);
+  }
+
   for (int i = 0; i < num_kevents; ++i) {
     Event& event  = *(Event*)_keventList[i].udata;
     int    filter = _keventList[i].filter;
