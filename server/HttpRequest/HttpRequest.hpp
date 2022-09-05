@@ -65,7 +65,7 @@ class HttpRequest : public Request {
         _isBodyExisted(false),
         _isChunked(false),
         _chunkSize(-1),
-        _isKeepAlive(false),  //  default: keep-alive: true
+        _isKeepAlive(true),  //  default: keep-alive: true
         _serverError(false),
         _hostPort(HTTP_DEFAULT_PORT) {}
 

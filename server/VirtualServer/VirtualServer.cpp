@@ -42,7 +42,7 @@ void VirtualServer::start() {
 }
 
 void VirtualServer::_finishResponse(Event& event) {
-  if (event.httpRequest.isKeepAlive() || !event.httpRequest.storage().empty())  {
+  if (event.httpRequest.isKeepAlive() || !event.httpRequest.storage().empty()) {
     event.initialize();
     _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_DISABLE, &event);
     _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_ENABLE, &event);
@@ -72,7 +72,6 @@ void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& locat
   file_manager.registerTempFileFd(event.keventId);
   _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DELETE, NULL);
   _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_ENABLE, &event);
-  // event.keventId = event.clientFd; ?
   Log::log()(LOG_LOCATION, "(DONE) making Http Response using CGI RESPONSE", ALL);
 }
 
