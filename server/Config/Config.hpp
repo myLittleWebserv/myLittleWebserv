@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Config.hpp                                         :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: jaemjung <jaemjung@student.42seoul.kr>     +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/08/18 18:06:58 by jaemjung          #+#    #+#             */
-/*   Updated: 2022/09/04 14:22:00 by jaemjung         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
@@ -25,8 +13,9 @@
 
 #define ERROR_PAGES_COUNT 11
 #define ERROR_PAGES_PATH "/error_pages/"
-#define HTTP_DEFAULT_PORT 80
+#define HTTP_DEFAULT_PORT 4242
 #define DEFAULT_MAX_BODY_SIZE 200000000
+#define PORT_MAX 65535
 
 struct LocationInfo {
   std::string                id;                 // default "/"
@@ -93,6 +82,7 @@ class Config {
   void                        _parsedConfigResult();
   void                        _setPorts();
   std::string                 _itoa(int i);
+  void                        _error(const char* file, int line, const char* function, std::string message);
 
   // Constructor
  public:

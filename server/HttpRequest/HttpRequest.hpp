@@ -8,7 +8,7 @@
 #include "RequestStorage.hpp"
 
 #define HTTP_PARSING_TIME_OUT 10
-#define HTTP_DEFAULT_PORT 80
+#define HTTP_DEFAULT_PORT 4242
 #define HTTP_MAX_HEADER_SIZE 8192
 
 enum HttpRequestParsingState {
