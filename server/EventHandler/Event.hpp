@@ -8,13 +8,21 @@
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
 
-enum EventType { CONNECTION_REQUEST, HTTP_REQUEST_READABLE, HTTP_RESPONSE_WRITABLE, CGI_RESPONSE_READABLE };
+enum EventType {
+  CONNECTION_REQUEST,
+  HTTP_REQUEST_READABLE,
+  HTTP_RESPONSE_WRITABLE,
+  CGI_REQUEST_WRITABLE,
+  CGI_RESPONSE_READABLE,
+  CGI
+};
 
 struct Event {
   enum EventType type;
   int            keventId;
   int            serverId;
   int            clientFd;
+  int            pipeFd;
   pid_t          pid;
   HttpRequest    httpRequest;
   CgiResponse    cgiResponse;
@@ -27,6 +35,7 @@ struct Event {
         keventId(kevent_id),
         serverId(-1),
         clientFd(kevent_id),
+        pipeFd(-1),
         pid(-1),
         httpRequest(),
         cgiResponse(),

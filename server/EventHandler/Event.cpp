@@ -7,5 +7,6 @@ void Event::initialize() {
   delete httpResponse;
   httpResponse = NULL;
   keventId     = clientFd;
+  pipeFd       = -1;
   Log::log()(LOG_LOCATION, "(init) event", INFILE);
 }

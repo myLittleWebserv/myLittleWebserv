@@ -246,8 +246,10 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
     return;
   }
 
+  int remains = request.body().remains();
   file_manager.openOutFile();
-  file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
+  file_manager.outFile().write(reinterpret_cast<const char*>(request.body().currentReadPos()), remains);
+  request.body().moveReadPos(remains);
 
   _httpVersion = request.httpVersion();
   _statusCode  = 201;
@@ -268,13 +270,16 @@ void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& locati
 
   FileManager file_manager(request.uri(), location_info);
 
+  int remains = request.body().remains();
   if (file_manager.isFileExist()) {
     file_manager.openOutFile(std::ofstream::trunc);
-    file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
+    file_manager.outFile().write(reinterpret_cast<const char*>(request.body().currentReadPos()), remains);
+    request.body().moveReadPos(remains);
     _statusCode = 200;
   } else {
     file_manager.openOutFile();
-    file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
+    file_manager.outFile().write(reinterpret_cast<const char*>(request.body().currentReadPos()), remains);
+    request.body().moveReadPos(remains);
     _statusCode = 201;
   }
   _httpVersion = request.httpVersion();

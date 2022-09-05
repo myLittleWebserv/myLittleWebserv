@@ -15,7 +15,7 @@
 
 class HttpRequest;
 
-enum CgiResponseParsingState { CGI_ERROR, CGI_RUNNING, CGI_READING, CGI_PARSING, CGI_PARSING_DONE };
+enum CgiResponseParsingState { CGI_ERROR, CGI_PARSING_HEADER, CGI_PARSING_BODY, CGI_PARSING_DONE };
 
 class CgiResponse : public Request {
  public:
@@ -33,8 +33,10 @@ class CgiResponse : public Request {
   int                     _secretHeaderForTest;
 
   std::vector<std::string> _split(const std::string& str, const std::string& delimiter);
-  void                     _parseCgiResponse();
+  void                     _parseHeader();
+  void                     _parseBody(int pid);
   void                     _checkWaitPid(int pid);
+  // void                     _parseCgiResponse();
 
   // Constructor
  public:
@@ -56,6 +58,7 @@ class CgiResponse : public Request {
   vector::pointer    body() { return _body; }
   size_t             bodySize() { return _storage.remains(); }
   std::string        CgiResponseResultString();
+  void               setServerError() { _parsingState = CGI_ERROR; }
 };
 
 #endif

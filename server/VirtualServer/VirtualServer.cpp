@@ -15,13 +15,22 @@ void VirtualServer::start() {
   std::vector<Event*> event_list = _eventHandler.getRoutedEvents(_serverId);
   for (std::vector<Event*>::size_type i = 0; i < event_list.size(); i++) {
     Event&        event         = *event_list[i];
-    LocationInfo& location_info = _findLocationInfo(event.httpRequest);
+    LocationInfo& location_info = _findLocationInfo(event.httpRequest);  // ?
 
     switch (event.type) {
       case HTTP_REQUEST_READABLE:
         Log::log().printHttpRequest(event.httpRequest, INFILE);
         _processHttpRequestReadable(event, location_info);
         Log::log()(true, "HTTP_REQUEST_READABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+        break;
+
+      case CGI_REQUEST_WRITABLE:
+        _sendCgiRequest(event.keventId, event.httpRequest);
+        event.type = CGI;
+        if (event.httpRequest.body().empty()) {
+          _finishCgiRequest(event);
+          Log::log()(true, "CGI_REQUEST_WRITABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+        }
         break;
 
       case CGI_RESPONSE_READABLE:
@@ -45,6 +54,27 @@ void VirtualServer::start() {
   }
 }
 
+void VirtualServer::_finishCgiRequest(Event& event) {
+  event.type = CGI;
+  // _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_ENABLE, NULL);
+  // _eventHandler.appendNewEventToChangeList(event.pipeFd, EVFILT_READ, EV_ADD, &event);
+  close(event.keventId);  // ?
+  event.keventId = event.pipeFd;
+}
+
+void VirtualServer::_sendCgiRequest(int to_fd, HttpRequest& request) {
+  int write_size = write(to_fd, request.body().currentReadPos(), request.body().remains());
+  if (write_size == -1) {
+    Log::log()(true, "errno", strerror(errno), INFILE);
+    return;
+  }
+  Log::log()(LOG_LOCATION, "(SYSCALL) send CgiRequest to CGI ", INFILE);
+  Log::log()(true, "send fd", to_fd, INFILE);
+  Log::log()(true, "sent_size", write_size, INFILE);
+  request.body().moveReadPos(write_size);
+  Log::log()(true, "remains", request.body().remains(), INFILE);
+}
+
 void VirtualServer::_finishResponse(Event& event) {
   if (event.httpRequest.isKeepAlive() || !event.httpRequest.storage().empty()) {
     event.initialize();
@@ -61,13 +91,17 @@ void VirtualServer::_finishResponse(Event& event) {
 
 void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& location_info) {
   if (event.httpRequest.isCgi(location_info.cgiExtension) && _callCgi(event)) {
-    return;
+    event.type = CGI;
+    _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DISABLE, &event);
+    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ADD, &event);
+    _eventHandler.appendNewEventToChangeList(event.pipeFd, EVFILT_READ, EV_ADD, &event);
+  } else {
+    event.httpResponse = new HttpResponse(event.httpRequest, location_info);
+    event.type         = HTTP_RESPONSE_WRITABLE;
+    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, &event);
+    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ENABLE, &event);
+    Log::log()(LOG_LOCATION, "(DONE) making Http Response using HTTP REQUEST", INFILE);
   }
-  event.httpResponse = new HttpResponse(event.httpRequest, location_info);
-  event.type         = HTTP_RESPONSE_WRITABLE;
-  _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, &event);
-  _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_WRITE, EV_ENABLE, &event);
-  Log::log()(LOG_LOCATION, "(DONE) making Http Response using HTTP REQUEST", INFILE);
 }
 
 void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& location_info) {
@@ -75,9 +109,10 @@ void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& locat
   event.httpResponse = new HttpResponse(event.cgiResponse, location_info);
   event.type         = HTTP_RESPONSE_WRITABLE;
 
-  file_manager.removeFile(event.clientFd);
+  // file_manager.removeFile(event.clientFd);
   file_manager.registerTempFileFd(event.keventId);
   _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DELETE, NULL);
+  // close(event.keventId);  // ?
   _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_WRITE, EV_ENABLE, &event);
   Log::log()(LOG_LOCATION, "(DONE) making Http Response using CGI RESPONSE", INFILE);
 }
@@ -101,8 +136,14 @@ LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpRequest) {
 }
 
 bool VirtualServer::_callCgi(Event& event) {
-  std::string fd           = _intToString(event.clientFd);
-  std::string res_filepath = TEMP_RESPONSE_PREFIX + fd;
+  int w_pipe[2];
+  int r_pipe[2];
+  int ret = 0;
+
+  ret += pipe(w_pipe);
+  ret += pipe(r_pipe);
+  Log::log().syscall(ret < 0, LOG_LOCATION, "", "(SYSCALL) pipe failed", INFILE);
+  Log::log().mark(ret == -1);
 
   event.pid = fork();
   if (event.pid == -1) {
@@ -110,66 +151,35 @@ bool VirtualServer::_callCgi(Event& event) {
     Log::log()(LOG_LOCATION, "(CGI) CALL FAILED", INFILE);
     return false;
   } else if (event.pid == 0) {
-    _execveCgi(event);  // child
-  } else {              // parent
-    int cgi_response = open(res_filepath.c_str(), O_RDONLY | O_CREAT, 0644);
-    if (cgi_response == -1) {
-      event.httpRequest.setServerError(true);
-      Log::log()(LOG_LOCATION, "(CGI) CALL FAILED", INFILE);
-      return false;
-    }
-    fcntl(cgi_response, F_SETFL, O_NONBLOCK);
-    event.keventId = cgi_response;
-    event.type     = CGI_RESPONSE_READABLE;
-    _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DISABLE, &event);
-    _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_ADD, &event);
+    close(w_pipe[1]);
+    close(r_pipe[0]);
+    _execveCgi(event, w_pipe[0], r_pipe[1]);  // child
+  } else {                                    // parent
+    close(w_pipe[0]);
+    close(r_pipe[1]);
+    fcntl(w_pipe[1], F_SETFL, O_NONBLOCK);
+    fcntl(r_pipe[0], F_SETFL, O_NONBLOCK);
+
+    Log::log()(LOG_LOCATION, "PIPE FD", INFILE);
+    Log::log()(true, "PIPE write", w_pipe[1], INFILE);
+    Log::log()(true, "PIPE read ", r_pipe[0], INFILE);
+
+    event.keventId = w_pipe[1];
+    event.pipeFd   = r_pipe[0];
   }
   Log::log()(LOG_LOCATION, "(CGI) CALL SUCCESS", INFILE);
   event.cgiResponse.setInfo(event.httpRequest);
   return true;
 }
 
-void VirtualServer::_execveCgi(Event& event) {
-  event.baseClock          = clock();
-  std::string fd           = _intToString(event.clientFd);
-  std::string req_filepath = TEMP_REQUEST_PREFIX + fd;
-  std::string res_filepath = TEMP_RESPONSE_PREFIX + fd;
-  int         cgi_request  = open(req_filepath.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
-  int         cgi_response = open(res_filepath.c_str(), O_WRONLY | O_CREAT, 0644);
-
-  if (cgi_request == -1 || cgi_response == -1) {
-    unlink(res_filepath.c_str());
-    unlink(req_filepath.c_str());
-    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after open", INFILE);
-    std::exit(EXIT_FAILURE);
-  }
-
-  Log::log()(true, "BEFORE WRITE FILE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
-
-  if (write(cgi_request, event.httpRequest.body().data(), event.httpRequest.body().size()) == -1) {
-    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after write", INFILE);
-    Log::log()(true, "errno", strerror(errno), INFILE);
-    std::exit(EXIT_FAILURE);
-  }
-
-  Log::log()(true, "AFTER WRITE FILE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
-
-  // int ret = lseek(cgi_request, 0, SEEK_SET);
-  cgi_request = open(req_filepath.c_str(), O_RDONLY, 0644);
-  if (cgi_request == -1) {
-    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after open", INFILE);
-    std::exit(EXIT_FAILURE);
-  }
-
+void VirtualServer::_execveCgi(Event& event, int read_end, int write_end) {
   std::string cgi_path = _findLocationInfo(event.httpRequest).cgiPath;
   char*       argv[2]  = {0, 0};
   char*       envp[5]  = {0, 0, 0, 0, 0};
   argv[0]              = strdup(cgi_path.c_str());
 
-  Log::log()(true, "BEFORE EXECVE CGI TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
-
   _setEnv(event.httpRequest, cgi_path, envp);
-  _setFd(cgi_request, cgi_response);
+  _setFd(read_end, write_end);
 
   execve(cgi_path.c_str(), argv, envp);
   Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after execve", INFILE);
@@ -181,7 +191,6 @@ void VirtualServer::_setEnv(const HttpRequest& http_request, const std::string& 
   std::string       request_method("REQUEST_METHOD=");
   std::string       path_info("PATH_INFO=");
   std::stringstream secret_header_for_test;
-  ;
 
   switch (http_request.method()) {
     case GET:

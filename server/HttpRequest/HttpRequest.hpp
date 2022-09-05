@@ -23,18 +23,18 @@ enum HttpRequestParsingState {
 class HttpRequest : public Request {
   // Member Variable
  private:
-  HttpRequestParsingState    _parsingState;
-  RequestStorage             _storage;  // cgi 보낸 후 resize(0);
-  std::vector<unsigned char> _body;
-  int                        _headerSize;
-  time_t                     _headerTimeStamp;  // 생성자에서 초기화
-  time_t                     _bodyTimeStamp;    // 헤더 다 읽고 나서 초기화.
-  bool                       _isBodyExisted;
-  bool                       _isChunked;
-  int                        _chunkSize;
-  bool                       _isKeepAlive;
-  bool                       _serverError;
-  int                        _secretHeaderForTest;
+  HttpRequestParsingState _parsingState;
+  RequestStorage          _storage;  // cgi 보낸 후 resize(0);
+  Storage                 _body;
+  int                     _headerSize;
+  time_t                  _headerTimeStamp;  // 생성자에서 초기화
+  time_t                  _bodyTimeStamp;    // 헤더 다 읽고 나서 초기화.
+  bool                    _isBodyExisted;
+  bool                    _isChunked;
+  int                     _chunkSize;
+  bool                    _isKeepAlive;
+  bool                    _serverError;
+  int                     _secretHeaderForTest;
 
   // HttpRequest Variable
   MethodType  _method;
@@ -89,7 +89,7 @@ class HttpRequest : public Request {
   MethodType                        method() const { return _method; }
   const std::string&                uri() const { return _uri; }
   int                               secretHeaderForTest() const { return _secretHeaderForTest; }
-  const std::vector<unsigned char>& body() { return _body; }
+  Storage& body() { return _body; }
   Storage&                          storage() { return _storage; }
 };
 

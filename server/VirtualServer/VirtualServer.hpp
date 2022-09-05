@@ -13,13 +13,15 @@ class VirtualServer {
   EventHandler& _eventHandler;
 
   bool          _callCgi(Event& event);
-  void          _execveCgi(Event& event);
+  void          _execveCgi(Event& event, int read_end, int write_end);
   void          _sendResponse(int fd, HttpResponse& response);
+  void          _sendCgiRequest(int to_fd, HttpRequest& request);
   LocationInfo& _findLocationInfo(HttpRequest& httpRequest);
   std::string   _intToString(int integer);
   void          _setEnv(const HttpRequest& http_request, const std::string& cgi_path, char** envp) const;
   void          _setFd(int request, int response) const;
   void          _finishResponse(Event& event);
+  void          _finishCgiRequest(Event& event);
   void          _processHttpRequestReadable(Event& event, LocationInfo& location_info);
   void          _cgiResponseToHttpResponse(Event& event, LocationInfo& location_info);
 
