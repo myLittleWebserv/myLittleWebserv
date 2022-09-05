@@ -16,11 +16,12 @@ class Storage : private std::vector<unsigned char> {
   // Member Variable
  protected:
   unsigned char _buffer[READ_BUFFER_SIZE];
-  int           _pos;
+  int           _readPos;
+  int           _writePos;
 
   // Constructor
  public:
-  Storage() : _pos(0) {}
+  Storage() : _readPos(0), _writePos(0) {}
   virtual ~Storage() {}
 
   // Interface
@@ -28,14 +29,28 @@ class Storage : private std::vector<unsigned char> {
   using vector::begin;
   using vector::clear;
   using vector::data;
-  using vector::end;
-  using vector::insert;
-  using vector::size;
-  void            movePos(int move) { _pos += move; }
-  int             remains() { return static_cast<int>(size()) - _pos; }
-  bool            empty() const { return static_cast<int>(size()) == _pos; }
-  vector::pointer currentPos() { return data() + _pos; }
+  size_t          size() { return _writePos; }
+  size_t          capacity() { return vector::size(); }
+  void            moveReadPos(int move) { _readPos += move; }
+  int             remains() { return _writePos - _readPos; }
+  bool            empty() const { return _writePos == _readPos; }
+  vector::pointer currentReadPos() { return data() + _readPos; }
+  vector::pointer currentWritePos() { return data() + _writePos; }
   std::string     getLine();
+  void            preserveRemains();
+  template <typename BeginIter, typename EndIter>
+  void insert(BeginIter bi, EndIter ei);
 };
+
+template <typename BeginIter, typename EndIter>
+void Storage::insert(BeginIter bi, EndIter ei) {
+  for (; _writePos != capacity() && bi != ei; ++_writePos, ++bi) {
+    (*this)[_writePos] = *bi;
+  }
+  for (; bi != ei; ++bi) {
+    push_back(*bi);
+    ++_writePos;
+  }
+}
 
 // #endif

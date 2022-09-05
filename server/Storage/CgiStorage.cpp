@@ -7,12 +7,13 @@ void CgiStorage::readFile(int fd) {
     _isReadingEnd = true;
   }
   if (read_size > 0) {
-    insert(end(), _buffer, _buffer + read_size);
+    insert(_buffer, _buffer + read_size);
   }
 }
 
 void CgiStorage::dataToBody(Storage::vector& body, int required_size) {
-  body.insert(body.end(), begin() + _pos, begin() + _pos + required_size);
+  body.insert(body.end(), begin() + _readPos, begin() + _readPos + required_size);
+  _readPos += required_size;
 }
 
 std::ostream& operator<<(std::ostream& os, const std::vector<unsigned char>& v) {

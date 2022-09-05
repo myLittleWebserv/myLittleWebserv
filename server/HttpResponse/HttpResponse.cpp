@@ -116,12 +116,12 @@ void HttpResponse::_headerToStorage() {
   }
   response_stream << "\r\n";
   std::string response_header = response_stream.str();
-  _storage.insert(_storage.end(), response_header.begin(), response_header.end());
+  _storage.insert(response_header.begin(), response_header.end());
 }
 
 void HttpResponse::_responseToStorage() {
   _headerToStorage();
-  _storage.insert(_storage.end(), _body.begin(), _body.end());
+  _storage.insert(_body.begin(), _body.end());
 }
 
 void HttpResponse::_fileToBody(std::ifstream& file) {

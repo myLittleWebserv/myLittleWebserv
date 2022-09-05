@@ -16,11 +16,11 @@ void RequestStorage::readFile(int fd) {
   }
 
   if (read_size > 0) {
-    insert(end(), _buffer, _buffer + read_size);
+    insert(_buffer, _buffer + read_size);
   }
 }
 
 void RequestStorage::dataToBody(vector& _body, int required_size) {
-  _body.insert(_body.end(), begin() + _pos, begin() + _pos + required_size);
-  _pos += (required_size + 2);  // jump "\r\n"
+  _body.insert(_body.end(), begin() + _readPos, begin() + _readPos + required_size);
+  _readPos += (required_size + 2);  // jump "\r\n"
 }
