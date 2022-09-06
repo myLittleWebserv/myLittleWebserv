@@ -46,7 +46,6 @@ void CgiResponse::readCgiResult(int fd, int pid) {
   if (!_storage.isReadingEnd()) {
     return;
   }
-
   Log::log()(LOG_LOCATION, "(TRANSFER) pipe buffer to _storage done", INFILE);
 
   if (_parsingState == CGI_PARSING_HEADER) {
@@ -88,32 +87,9 @@ void CgiResponse::_parseHeader() {
 
 void CgiResponse::_parseBody(int pid) {
   _body = _storage.currentReadPos();
-  _checkWaitPid(pid);
+  (void)pid;
+  // _checkWaitPid(pid);
 }
-
-// void CgiResponse::_parseCgiResponse() {
-//   std::string line = _storage.getLine();
-
-//   while (line != "") {
-//     if (line.find("Status:") != std::string::npos) {
-//       std::string status_line                    = line.substr(8);
-//       status_line[status_line.size() - 1]        = '\0';
-//       std::vector<std::string> status_line_split = _split(status_line, " ");
-//       _statusCode                                = atoi(status_line_split[0].c_str());
-//       _statusMessage                             = status_line_split[1];
-//     } else if (line.find("Content-Type:") != std::string::npos) {
-//       std::string content_type_line                   = line.substr(14);
-//       content_type_line[content_type_line.size() - 1] = '\0';
-//       _contentType                                    = content_type_line;
-//     } else if (line.find("\r") != std::string::npos) {
-//       // _storage.dataToBody(_body, _storage.remains());
-//       _body = _storage.currentReadPos();
-//       break;
-//     }
-//     line = _storage.getLine();
-//   }
-//   _parsingState = CGI_PARSING_DONE;
-// }
 
 std::string CgiResponse::CgiResponseResultString() {
   std::stringstream ss;

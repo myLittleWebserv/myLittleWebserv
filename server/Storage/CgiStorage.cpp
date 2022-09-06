@@ -9,6 +9,8 @@ void CgiStorage::readFile(int fd) {
     _isReadingEnd = true;
   }
 
+  Log::log()(true, "read_size", read_size);
+
   if (read_size > 0) {
     insert(_buffer, _buffer + read_size);
   }

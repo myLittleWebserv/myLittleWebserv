@@ -110,6 +110,7 @@ void EventHandler::routeEvents() {
         int ws;
         waitpid(event.pid, &ws, WNOHANG);
         Log::log()(true, "ws", WEXITSTATUS(ws), INFILE);
+        event.cgiResponse.readCgiResult(event.pipeFd, event.pid);
         event.type = CGI_RESPONSE_READABLE;
         _routedEvents[event.serverId].push_back(&event);
         Log::log()(LOG_LOCATION, "(event routed) Cgi Reponse Readable", INFILE);
@@ -137,7 +138,7 @@ void EventHandler::routeEvents() {
       }
 
     } else if (filter == EVFILT_READ && event.type == CGI) {
-      event.cgiResponse.readCgiResult(event.keventId, event.pid);
+      event.cgiResponse.readCgiResult(event.pipeFd, event.pid);
       gettimeofday(&event.timestamp, NULL);
       // if (event.cgiResponse.isParsingEnd()) {
       //   event.type = CGI_RESPONSE_READABLE;

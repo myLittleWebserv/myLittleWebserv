@@ -9,8 +9,6 @@
 
 #include "Storage.hpp"
 
-#define READ_BUFFER_SIZE 8192
-
 class CgiStorage : public Storage {
   // Member Variable
  private:
