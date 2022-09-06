@@ -157,10 +157,8 @@ bool VirtualServer::_callCgi(Event& event) {
   } else {                                    // parent
     close(w_pipe[0]);
     close(r_pipe[1]);
-    int ret = fcntl(w_pipe[1], F_SETFL, O_NONBLOCK);
+    fcntl(w_pipe[1], F_SETFL, O_NONBLOCK);
     fcntl(r_pipe[0], F_SETFL, O_NONBLOCK);
-    Log::log()(true, "ret", ret, INFILE);
-    Log::log()(true, "errno", strerror(errno), INFILE);
 
     Log::log()(LOG_LOCATION, "PIPE FD", INFILE);
     Log::log()(true, "PIPE write", w_pipe[1], INFILE);
