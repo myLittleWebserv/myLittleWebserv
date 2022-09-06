@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "Log.hpp"
-#define READ_BUFFER_SIZE 8192
+#define READ_BUFFER_SIZE 66000
 
 class Storage : private std::vector<unsigned char> {
   // Types;

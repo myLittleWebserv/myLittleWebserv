@@ -6,7 +6,6 @@
 
 #include "Log.hpp"
 #include "Storage.hpp"
-#define READ_BUFFER_SIZE 8192
 
 enum RequestReadingState { RECEIVE_DONE = -1, CONNECTION_CLOSED = 0, RECEIVING };
 // enum FileReadingState { READING, READ_DONE };

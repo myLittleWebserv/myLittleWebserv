@@ -144,7 +144,7 @@ void VirtualServer::_execveCgi(Event& event) {
     std::exit(EXIT_FAILURE);
   }
 
-  Log::log()(true, "BEFORE WRITE FILE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+  // Log::log()(true, "BEFORE WRITE FILE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
 
   if (write(cgi_request, event.httpRequest.body().data(), event.httpRequest.body().size()) == -1) {
     Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after write", INFILE);
@@ -152,7 +152,7 @@ void VirtualServer::_execveCgi(Event& event) {
     std::exit(EXIT_FAILURE);
   }
 
-  Log::log()(true, "AFTER WRITE FILE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+  // Log::log()(true, "AFTER WRITE FILE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
 
   // int ret = lseek(cgi_request, 0, SEEK_SET);
   cgi_request = open(req_filepath.c_str(), O_RDONLY, 0644);
@@ -166,7 +166,7 @@ void VirtualServer::_execveCgi(Event& event) {
   char*       envp[5]  = {0, 0, 0, 0, 0};
   argv[0]              = strdup(cgi_path.c_str());
 
-  Log::log()(true, "BEFORE EXECVE CGI TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+  // Log::log()(true, "BEFORE EXECVE CGI TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
 
   _setEnv(event.httpRequest, cgi_path, envp);
   _setFd(cgi_request, cgi_response);
