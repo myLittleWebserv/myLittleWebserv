@@ -8,6 +8,8 @@
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
 
+struct LocationInfo;
+
 enum EventType {
   CONNECTION_REQUEST,
   HTTP_REQUEST_READABLE,
@@ -27,6 +29,7 @@ struct Event {
   HttpRequest    httpRequest;
   CgiResponse    cgiResponse;
   HttpResponse*  httpResponse;
+  LocationInfo*  locationInfo;
   timeval        timestamp;
   clock_t        baseClock;
 
@@ -40,6 +43,7 @@ struct Event {
         httpRequest(),
         cgiResponse(),
         httpResponse(NULL),
+        locationInfo(NULL),
         timestamp(),
         baseClock(clock()) {
     gettimeofday(&timestamp, NULL);

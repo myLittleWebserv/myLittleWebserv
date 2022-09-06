@@ -22,8 +22,8 @@ class VirtualServer {
   void          _setFd(int request, int response) const;
   void          _finishResponse(Event& event);
   void          _finishCgiRequest(Event& event);
-  void          _processHttpRequestReadable(Event& event, LocationInfo& location_info);
-  void          _cgiResponseToHttpResponse(Event& event, LocationInfo& location_info);
+  void          _processHttpRequestReadable(Event& event);
+  void          _cgiResponseToHttpResponse(Event& event);
 
  public:
   VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler);

@@ -14,13 +14,14 @@ VirtualServer::VirtualServer(int id, ServerInfo& info, EventHandler& eventHandle
 void VirtualServer::start() {
   std::vector<Event*> event_list = _eventHandler.getRoutedEvents(_serverId);
   for (std::vector<Event*>::size_type i = 0; i < event_list.size(); i++) {
-    Event&        event         = *event_list[i];
-    LocationInfo& location_info = _findLocationInfo(event.httpRequest);  // ?
+    Event& event = *event_list[i];
+    if (event.locationInfo == NULL)
+      event.locationInfo = &_findLocationInfo(event.httpRequest);
 
     switch (event.type) {
       case HTTP_REQUEST_READABLE:
         Log::log().printHttpRequest(event.httpRequest, INFILE);
-        _processHttpRequestReadable(event, location_info);
+        _processHttpRequestReadable(event);
         Log::log()(true, "HTTP_REQUEST_READABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
         break;
 
@@ -34,7 +35,7 @@ void VirtualServer::start() {
         break;
 
       case CGI_RESPONSE_READABLE:
-        _cgiResponseToHttpResponse(event, location_info);
+        _cgiResponseToHttpResponse(event);
         Log::log()(true, "CGI_RESPONSE_READABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
         break;
 
@@ -89,7 +90,8 @@ void VirtualServer::_finishResponse(Event& event) {
   Log::log().mark();
 }
 
-void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& location_info) {
+void VirtualServer::_processHttpRequestReadable(Event& event) {
+  LocationInfo& location_info = *event.locationInfo;
   if (event.httpRequest.isCgi(location_info.cgiExtension) && _callCgi(event)) {
     event.type = CGI;
     _eventHandler.appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DISABLE, &event);
@@ -104,8 +106,9 @@ void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& loca
   }
 }
 
-void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& location_info) {
-  FileManager file_manager;
+void VirtualServer::_cgiResponseToHttpResponse(Event& event) {
+  LocationInfo& location_info = *event.locationInfo;
+  FileManager   file_manager;
   event.httpResponse = new HttpResponse(event.cgiResponse, location_info);
   event.type         = HTTP_RESPONSE_WRITABLE;
 
