@@ -59,12 +59,6 @@ class HttpResponse {
   HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info);
   // Interface
  public:
-  // const vector::pointer bodyPos() { return _body + _bodySent; }
-  // void                  moveBodyPos(int move) { _bodySent += move; }
-  // int                   bodyRemains() { return _contentLength - _bodySent; }
-  // const char*           headerPos() { return _header.c_str() + _headerSent; }
-  // int                   headerRemains() { return _header.size() - _headerSent; }
-  // void                  moveHeaderPos(int move) { _header += move; }
   bool               isSendingEnd() { return _sendingState == HTTP_SENDING_DONE; }
   void               sendResponse(int fd);
   const std::string& header() { return _header; }
