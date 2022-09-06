@@ -13,7 +13,7 @@ class VirtualServer {
   EventHandler& _eventHandler;
 
   bool          _callCgi(Event& event);
-  void          _execveCgi(Event& event, int read_end, int write_end);
+  void          _execveCgi(Event& event, int write_end);
   void          _sendResponse(int fd, HttpResponse& response);
   void          _sendCgiRequest(int to_fd, HttpRequest& request);
   LocationInfo& _findLocationInfo(HttpRequest& httpRequest);

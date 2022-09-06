@@ -22,7 +22,7 @@ class RequestStorage : public Storage {
   // Interface
  public:
   RequestReadingState state() { return _state; }
-  void                dataToBody(Storage& _body, int required_size);
+  void                dataToBody(vector& _body, int required_size);
   void                readFile(int fd);
 };
 

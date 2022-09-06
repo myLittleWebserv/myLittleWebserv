@@ -97,19 +97,19 @@ void EventHandler::routeEvents() {
 
   for (int i = 0; i < num_kevents; ++i) {
     Event& event = *(Event*)_keventList[i].udata;
+    // Log::log()(true, "kevent.ident", _keventList[i].ident);
     gettimeofday(&event.timestamp, NULL);
   }
 
   for (int i = 0; i < num_kevents; ++i) {
-    Event& event  = *(Event*)_keventList[i].udata;
-    int    filter = _keventList[i].filter;
-    int    flags  = _keventList[i].flags;
+    Event& event = *(Event*)_keventList[i].udata;
+    // int    filter = _keventList[i].filter;
+    int flags = _keventList[i].flags;
 
     if (flags & EV_EOF) {
-      if (event.type != CGI) {
+      if (event.type != CGI_RESPONSE_READABLE) {
         removeConnection(event);
       } else {
-        event.type = CGI_RESPONSE_READABLE;
         event.cgiResponse.readCgiResult(event.pipeFd, event.pid);
         _routedEvents[event.serverId].push_back(&event);
         int ws;
@@ -146,16 +146,9 @@ void EventHandler::routeEvents() {
         }
         break;
 
-      case CGI:
-        if (filter == EVFILT_READ) {
-          event.cgiResponse.readCgiResult(event.pipeFd, event.pid);
-          gettimeofday(&event.timestamp, NULL);
-        } else if (filter == EVFILT_WRITE) {
-          event.type = CGI_REQUEST_WRITABLE;
-          _routedEvents[event.serverId].push_back(&event);
-          gettimeofday(&event.timestamp, NULL);
-          Log::log()(LOG_LOCATION, "(event routed) Cgi Request Writable", INFILE);
-        }
+      case CGI_RESPONSE_READABLE:
+        event.cgiResponse.readCgiResult(event.keventId, event.pid);
+        gettimeofday(&event.timestamp, NULL);
         break;
 
       default:

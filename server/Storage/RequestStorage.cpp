@@ -20,7 +20,7 @@ void RequestStorage::readFile(int fd) {
   }
 }
 
-void RequestStorage::dataToBody(Storage& _body, int required_size) {
-  _body.insert(begin() + _readPos, begin() + _readPos + required_size);
+void RequestStorage::dataToBody(Storage::vector& _body, int required_size) {
+  _body.insert(_body.end(), begin() + _readPos, begin() + _readPos + required_size);
   _readPos += (required_size + 2);  // jump "\r\n"
 }

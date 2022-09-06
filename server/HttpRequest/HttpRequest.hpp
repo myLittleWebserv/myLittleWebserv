@@ -23,18 +23,18 @@ enum HttpRequestParsingState {
 class HttpRequest : public Request {
   // Member Variable
  private:
-  HttpRequestParsingState _parsingState;
-  RequestStorage          _storage;  // cgi 보낸 후 resize(0);
-  Storage                 _body;
-  int                     _headerSize;
-  time_t                  _headerTimeStamp;  // 생성자에서 초기화
-  time_t                  _bodyTimeStamp;    // 헤더 다 읽고 나서 초기화.
-  bool                    _isBodyExisted;
-  bool                    _isChunked;
-  int                     _chunkSize;
-  bool                    _isKeepAlive;
-  bool                    _serverError;
-  int                     _secretHeaderForTest;
+  HttpRequestParsingState    _parsingState;
+  RequestStorage             _storage;  // cgi 보낸 후 resize(0);
+  std::vector<unsigned char> _body;
+  int                        _headerSize;
+  time_t                     _headerTimeStamp;  // 생성자에서 초기화
+  time_t                     _bodyTimeStamp;    // 헤더 다 읽고 나서 초기화.
+  bool                       _isBodyExisted;
+  bool                       _isChunked;
+  int                        _chunkSize;
+  bool                       _isKeepAlive;
+  bool                       _serverError;
+  int                        _secretHeaderForTest;
 
   // HttpRequest Variable
   MethodType  _method;
@@ -71,26 +71,26 @@ class HttpRequest : public Request {
 
   // Interface
  public:
-  bool                              isParsingEnd();
-  bool                              isTimeOut() { return _parsingState == TIME_OUT; }
-  bool                              isConnectionClosed() { return _storage.state() == CONNECTION_CLOSED; }
-  bool                              isBadRequest() { return _parsingState == BAD_REQUEST; }
-  bool                              isInternalServerError() { return _serverError; }
-  void                              setServerError(bool state) { _serverError = state; }
-  bool                              isKeepAlive() { return _isKeepAlive; }
-  bool                              isCgi(const std::string& ext);
-  void                              storeChunk(int fd);
-  void                              initialize();
-  int                               hostPort() const { return _hostPort; }
-  const std::string&                hostName() const { return _hostName; }
-  const std::string&                httpVersion() const { return _httpVersion; }
-  int                               contentLength() const { return _contentLength; }
-  const std::string&                contentType() const { return _contentType; }
-  MethodType                        method() const { return _method; }
-  const std::string&                uri() const { return _uri; }
-  int                               secretHeaderForTest() const { return _secretHeaderForTest; }
-  Storage& body() { return _body; }
-  Storage&                          storage() { return _storage; }
+  bool                        isParsingEnd();
+  bool                        isTimeOut() { return _parsingState == TIME_OUT; }
+  bool                        isConnectionClosed() { return _storage.state() == CONNECTION_CLOSED; }
+  bool                        isBadRequest() { return _parsingState == BAD_REQUEST; }
+  bool                        isInternalServerError() { return _serverError; }
+  void                        setServerError(bool state) { _serverError = state; }
+  bool                        isKeepAlive() { return _isKeepAlive; }
+  bool                        isCgi(const std::string& ext);
+  void                        storeChunk(int fd);
+  void                        initialize();
+  int                         hostPort() const { return _hostPort; }
+  const std::string&          hostName() const { return _hostName; }
+  const std::string&          httpVersion() const { return _httpVersion; }
+  int                         contentLength() const { return _contentLength; }
+  const std::string&          contentType() const { return _contentType; }
+  MethodType                  method() const { return _method; }
+  const std::string&          uri() const { return _uri; }
+  int                         secretHeaderForTest() const { return _secretHeaderForTest; }
+  std::vector<unsigned char>& body() { return _body; }
+  Storage&                    storage() { return _storage; }
 };
 
 #endif
