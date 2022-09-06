@@ -1,6 +1,7 @@
 #include "HttpResponse.hpp"
 
 #include <dirent.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <sstream>
@@ -12,7 +13,8 @@
 
 // Constructor
 
-HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : _statusCode(0), _contentLength(0) {
+HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info)
+    : _sendingState(HTTP_SENDING_HEADER), _body(NULL), _bodySent(0), _headerSent(0), _statusCode(0), _contentLength(0) {
   if (request.isBadRequest()) {
     _makeErrorResponse(400, request, location_info);
     return;
@@ -59,7 +61,8 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info) : 
   }
 }
 
-HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info) {
+HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info)
+    : _sendingState(HTTP_SENDING_HEADER), _body(NULL), _bodySent(0), _headerSent(0), _statusCode(0), _contentLength(0) {
   if (cgi_response.isError()) {
     _makeErrorResponse(500, cgi_response, location_info);
   }
@@ -69,7 +72,7 @@ HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_inf
     return;
   }
 
-  // _body.insert(_body.end(), cgi_response.body().begin(), cgi_response.body().end());
+  // _tempBody.insert(_tempBody.end(), cgi_response.body().begin(), cgi_response.body().end());
 
   _httpVersion   = cgi_response.httpVersion();
   _statusCode    = cgi_response.statusCode();
@@ -78,31 +81,51 @@ HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_inf
   _contentType   = cgi_response.contentType();
 
   CgiResponse::vector::pointer body_pos = cgi_response.body();
-  _responseToStorage(body_pos, body_pos + _contentLength);
+  _makeResponse(body_pos);
 }
 
 // Interface
 
-std::string HttpResponse::headerToString() {
-  std::stringstream response_stream;
+void HttpResponse::sendResponse(int fd) {
+  const char*     header;
+  int             remains;
+  int             sent_size;
+  vector::pointer body;
 
-  response_stream << _httpVersion << ' ' << _statusCode << ' ' << _message << "\r\n";
-
-  if (_contentLength != 0) {
-    response_stream << "Content-Legnth: " << _contentLength << "\r\n";
+  switch (_sendingState) {
+    case HTTP_SENDING_HEADER:
+      header    = _header.c_str() + _headerSent;
+      remains   = _header.size() - _headerSent;
+      sent_size = send(fd, header, remains, 0);
+      if (sent_size == -1) {
+        Log::log()(true, "errno", strerror(errno), INFILE);
+        return;
+      }
+      _headerSent += sent_size;
+      if (_headerSent != _header.size()) {
+        break;
+      }
+    case HTTP_SENDING_BODY:
+      body      = _body + _bodySent;
+      remains   = _contentLength - _bodySent;
+      sent_size = send(fd, body, remains, 0);
+      if (sent_size == -1) {
+        Log::log()(true, "errno", strerror(errno), INFILE);
+        return;
+      }
+      _bodySent += sent_size;
+      if (_bodySent != _contentLength) {
+        _sendingState = HTTP_SENDING_BODY;
+        break;
+      }
+    default:
+      _sendingState = HTTP_SENDING_DONE;
+      break;
   }
-  if (!_contentType.empty()) {
-    response_stream << "Content-Type: " << _contentType << "\r\n";
-  }
-  if (!_location.empty()) {
-    response_stream << "Location: " << _location << "\r\n";
-  }
-  response_stream << "\r\n";
-  return response_stream.str();
 }
 
 // Method
-void HttpResponse::_headerToStorage() {
+void HttpResponse::_makeHeader() {
   std::stringstream response_stream;
 
   response_stream << _httpVersion << ' ' << _statusCode << ' ' << _message << "\r\n";
@@ -117,16 +140,15 @@ void HttpResponse::_headerToStorage() {
     response_stream << "Location: " << _location << "\r\n";
   }
   response_stream << "\r\n";
-  std::string response_header = response_stream.str();
-  _storage.insert(response_header.begin(), response_header.end());
+  _header = response_stream.str();
 }
 
 void HttpResponse::_fileToBody(std::ifstream& file) {
   while (!file.eof()) {
     std::string line;
     std::getline(file, line);
-    _body.insert(_body.end(), line.c_str(), line.c_str() + line.size());
-    _body.insert(_body.end(), '\n');
+    _tempBody.insert(_tempBody.end(), line.c_str(), line.c_str() + line.size());
+    _tempBody.insert(_tempBody.end(), '\n');
   }
 }
 
@@ -155,17 +177,17 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
 
   file_manager.openInFile();
   _fileToBody(file_manager.inFile());
-  if (static_cast<int>(_body.size()) > location_info.maxBodySize) {
+  if (static_cast<int>(_tempBody.size()) > location_info.maxBodySize) {
     _makeErrorResponse(413, request, location_info);
   }
 
   _httpVersion   = request.httpVersion();
   _statusCode    = 200;
   _message       = _getMessage(_statusCode);
-  _contentLength = _body.size();
+  _contentLength = _tempBody.size();
   _contentType   = _getContentType(file_manager.fileName());
   Log::log()(LOG_LOCATION, "Get request processed.");
-  _responseToStorage(_body.begin(), _body.end());
+  _makeResponse(_tempBody.data());
 }
 
 void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info,
@@ -189,14 +211,14 @@ void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& lo
   }
   body += "<hr></body></html>";
 
-  _body.insert(_body.begin(), body.c_str(), body.c_str() + body.size());
+  _tempBody.insert(_tempBody.begin(), body.c_str(), body.c_str() + body.size());
 
   _httpVersion   = request.httpVersion();
   _statusCode    = 200;
   _message       = _getMessage(_statusCode);
-  _contentLength = _body.size();
+  _contentLength = _tempBody.size();
 
-  _responseToStorage(_body.begin(), _body.end());
+  _makeResponse(_tempBody.data());
 }
 
 void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
@@ -226,7 +248,8 @@ void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& locat
   _message     = _getMessage(_statusCode);
   _contentType = _getContentType(file_manager.fileName());
   Log::log()(LOG_LOCATION, "Head request processed.");
-  _headerToStorage();
+
+  _makeHeader();
 }
 
 void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& location_info) {
@@ -253,7 +276,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
   _statusCode  = 201;
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Post request processed.");
-  _responseToStorage(_body.begin(), _body.end());
+  _makeResponse(_tempBody.data());
 }
 
 void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
@@ -280,7 +303,7 @@ void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& locati
   _httpVersion = request.httpVersion();
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Put request processed.");
-  _responseToStorage(_body.begin(), _body.end());
+  _makeResponse(_tempBody.data());
 }
 
 void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
@@ -294,7 +317,7 @@ void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& loc
   file_manager.removeFile();
 
   Log::log()(LOG_LOCATION, "Delete request processed.");
-  _responseToStorage(_body.begin(), _body.end());
+  _makeResponse(_tempBody.data());
 }
 
 void HttpResponse::_makeErrorResponse(int error_code, Request& request, LocationInfo& location_info) {
@@ -321,7 +344,7 @@ void HttpResponse::_makeErrorResponse(int error_code, Request& request, Location
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Error page returned.");
 
-  _responseToStorage(_body.begin(), _body.end());
+  _makeResponse(_tempBody.data());
 }
 
 void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info,
@@ -342,7 +365,7 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
 
   // add other field ?
   Log::log()(LOG_LOCATION, "Redirection address returned.");
-  _responseToStorage(_body.begin(), _body.end());
+  _makeResponse(_tempBody.data());
 }
 
 bool HttpResponse::_isAllowedMethod(int method, std::vector<std::string>& allowed_methods) {
@@ -447,4 +470,9 @@ std::string HttpResponse::_getContentType(const std::string& file_name) {
     return "audio/mpeg";
   }
   return "text/plain";
+}
+
+void HttpResponse::_makeResponse(vector::pointer body) {
+  _makeHeader();
+  _body = body;
 }

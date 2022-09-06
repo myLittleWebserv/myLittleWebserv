@@ -33,8 +33,8 @@ class CgiResponse : public Request {
   int                     _secretHeaderForTest;
 
   std::vector<std::string> _split(const std::string& str, const std::string& delimiter);
-  void                     _parseCgiResponse();
-  void                     _checkWaitPid(int pid);
+  void                     _parseCgiResponse(clock_t base_clock);
+  void                     _checkWaitPid(int pid, clock_t clock);
 
   // Constructor
  public:
@@ -45,7 +45,7 @@ class CgiResponse : public Request {
   void               initialize();
   bool               isParsingEnd();
   bool               isError();
-  void               readCgiResult(int fd, int pid);
+  void               readCgiResult(int fd, int pid, clock_t clock);
   void               setInfo(const HttpRequest& http_request);
   MethodType         method() const { return _method; }
   const std::string& httpVersion() const { return _httpVersion; }

@@ -26,7 +26,7 @@ void CgiResponse::setInfo(const HttpRequest& http_requset) {
   _secretHeaderForTest = http_requset.secretHeaderForTest();
 }
 
-void CgiResponse::_checkWaitPid(int pid) {
+void CgiResponse::_checkWaitPid(int pid, clock_t base_clock) {
   int status;
   int result = waitpid(pid, &status, WNOHANG);
   Log::log()(true, "pid", pid, INFILE);
@@ -34,15 +34,16 @@ void CgiResponse::_checkWaitPid(int pid) {
 
   if (result == pid) {
     _parsingState = CGI_READING;
+    Log::log()(true, "CGI EXECUTION DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
   } else if (result == -1) {
     _parsingState = CGI_ERROR;
     Log::log()(LOG_LOCATION, "CGI_ERROR", INFILE);
   }
 }
 
-void CgiResponse::readCgiResult(int fd, int pid) {
+void CgiResponse::readCgiResult(int fd, int pid, clock_t base_clock) {
   if (_parsingState == CGI_RUNNING) {
-    _checkWaitPid(pid);
+    _checkWaitPid(pid, base_clock);
   }
 
   if (_parsingState == CGI_READING) {
@@ -50,18 +51,19 @@ void CgiResponse::readCgiResult(int fd, int pid) {
     if (_storage.isReadingEnd()) {
       _parsingState = CGI_PARSING;
       Log::log()(LOG_LOCATION, "(DONE) CGI RESULT READING", INFILE);
+      Log::log()(true, "CGI RESULT READING DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
     }
   }
 
   if (_parsingState == CGI_PARSING) {
-    _parseCgiResponse();
+    _parseCgiResponse(base_clock);
   }
   Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", INFILE);
   Log::log()("_parsingState", _parsingState, INFILE);
   Log::log()(true, "_storage.size", _storage.size(), INFILE);
 }
 
-void CgiResponse::_parseCgiResponse() {
+void CgiResponse::_parseCgiResponse(clock_t base_clock) {
   std::string line = _storage.getLine();
 
   while (line != "") {
@@ -83,6 +85,7 @@ void CgiResponse::_parseCgiResponse() {
     line = _storage.getLine();
   }
   _parsingState = CGI_PARSING_DONE;
+  Log::log()(true, "CGI RESULT PARSING DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
 }
 
 std::string CgiResponse::CgiResponseResultString() {

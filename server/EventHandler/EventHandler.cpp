@@ -129,12 +129,13 @@ void EventHandler::routeEvents() {
       }
 
     } else if (filter == EVFILT_READ && event.type == CGI_RESPONSE_READABLE) {
-      event.cgiResponse.readCgiResult(event.keventId, event.pid);
+      event.cgiResponse.readCgiResult(event.keventId, event.pid, event.baseClock);
       gettimeofday(&event.timestamp, NULL);
       if (event.cgiResponse.isParsingEnd()) {
         _routedEvents[event.serverId].push_back(&event);
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, NULL);
         Log::log()(LOG_LOCATION, "(event routed) Cgi Reponse Readable", INFILE);
+        Log::log()(true, "CGI event routed DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
       }
     }
   }

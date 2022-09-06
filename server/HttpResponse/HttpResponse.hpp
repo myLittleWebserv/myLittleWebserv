@@ -1,8 +1,8 @@
 #ifndef HTTPRESPONSE_HPP
 
-#include <deque>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #define DEFAULT_ERROR_PAGE_DIR "error_pages"
 
@@ -14,21 +14,30 @@ class CgiResponse;
 class FileManager;
 struct LocationInfo;
 
+enum HttpResponseSendingState { HTTP_SENDING_HEADER, HTTP_SENDING_BODY, HTTP_SENDING_DONE };
+
 class HttpResponse {
+  // Types
+  typedef std::vector<unsigned char> vector;
+
   // Member Variable
  private:
-  std::deque<unsigned char> _body;
-  Storage                   _storage;
-  std::string               _httpVersion;
-  int                       _statusCode;
-  std::string               _message;
-  std::string               _location;
-  int                       _contentLength;
-  std::string               _contentType;  // default = plain/text;
+  enum HttpResponseSendingState _sendingState;
+  vector                        _tempBody;
+  vector::pointer               _body;
+  size_t                        _bodySent;
+  size_t                        _headerSent;
+  std::string                   _header;
+  std::string                   _httpVersion;
+  int                           _statusCode;
+  std::string                   _message;
+  std::string                   _location;
+  size_t                        _contentLength;
+  std::string                   _contentType;  // default = plain/text;
 
   // Method
  private:
-  void        _headerToStorage();
+  void        _makeHeader();
   void        _fileToBody(std::ifstream& file);
   void        _processGetRequest(HttpRequest& request, LocationInfo& location_info);
   void        _processHeadRequest(HttpRequest& request, LocationInfo& location_info);
@@ -42,8 +51,7 @@ class HttpResponse {
   bool        _isAllowedMethod(int method, std::vector<std::string>& allowed_method);
   std::string _getMessage(int status_code);
   std::string _getContentType(const std::string& file_name);
-  template <typename BodyIterBegin, typename BodyIterEnd>
-  void _responseToStorage(BodyIterBegin bi, BodyIterEnd ei);
+  void        _makeResponse(vector::pointer body);
 
   // Constructor
  public:
@@ -51,14 +59,15 @@ class HttpResponse {
   HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info);
   // Interface
  public:
-  Storage&    storage() { return _storage; }
-  std::string headerToString();
+  // const vector::pointer bodyPos() { return _body + _bodySent; }
+  // void                  moveBodyPos(int move) { _bodySent += move; }
+  // int                   bodyRemains() { return _contentLength - _bodySent; }
+  // const char*           headerPos() { return _header.c_str() + _headerSent; }
+  // int                   headerRemains() { return _header.size() - _headerSent; }
+  // void                  moveHeaderPos(int move) { _header += move; }
+  bool               isSendingEnd() { return _sendingState == HTTP_SENDING_DONE; }
+  void               sendResponse(int fd);
+  const std::string& header() { return _header; }
 };
-
-template <typename BodyIterBegin, typename BodyIterEnd>
-void HttpResponse::_responseToStorage(BodyIterBegin bi, BodyIterEnd ei) {
-  _headerToStorage();
-  _storage.insert(bi, ei);
-}
 
 #endif

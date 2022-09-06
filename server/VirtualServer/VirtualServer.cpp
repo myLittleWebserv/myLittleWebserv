@@ -1,7 +1,6 @@
 #include "VirtualServer.hpp"
 
 #include <fcntl.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 #include <cstring>
@@ -31,8 +30,9 @@ void VirtualServer::start() {
 
       case HTTP_RESPONSE_WRITABLE:
         Log::log().printHttpResponse(*event.httpResponse, INFILE);
-        _sendResponse(event.clientFd, *event.httpResponse);
-        if (event.httpResponse->storage().empty()) {
+        // _sendResponse(event.clientFd, *event.httpResponse);
+        event.httpResponse->sendResponse(event.clientFd);
+        if (event.httpResponse->isSendingEnd()) {
           _finishResponse(event);
           Log::log()(true, "HTTP_RESPONSE_WRITABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC,
                      ALL);
@@ -75,6 +75,7 @@ void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& locat
   event.httpResponse = new HttpResponse(event.cgiResponse, location_info);
   event.type         = HTTP_RESPONSE_WRITABLE;
 
+  Log::log()(true, "CGI RESPONSE to HTTPRESPONSE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
   file_manager.removeFile(event.clientFd);
   file_manager.registerTempFileFd(event.keventId);
   _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DELETE, NULL);
@@ -233,19 +234,6 @@ std::string VirtualServer::_intToString(int integer) {
   std::stringstream ss;
   ss << integer;
   return ss.str();
-}
-
-void VirtualServer::_sendResponse(int fd, HttpResponse& response) {
-  int sent_size = send(fd, response.storage().currentReadPos(), response.storage().remains(), 0);
-  Log::log()(LOG_LOCATION, "(SYSCALL) send HttpResponse to client ", INFILE);
-  Log::log()(true, "send fd", fd, INFILE);
-  Log::log()(true, "sent_size", sent_size, INFILE);
-  if (sent_size == -1) {
-    Log::log()(true, "errno", strerror(errno), INFILE);
-    return;
-  }
-  response.storage().moveReadPos(sent_size);
-  Log::log()(true, "remains", response.storage().remains(), INFILE);
 }
 
 ServerInfo& VirtualServer::getServerInfo() const { return _serverInfo; }

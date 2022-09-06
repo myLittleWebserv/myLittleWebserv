@@ -122,7 +122,7 @@ void Log::printHttpResponse(HttpResponse& response, LogLocationType location) {
   std::stringstream logMessage;
 
   logMessage << "HttpResponse:\n";
-  logMessage << response.headerToString();
+  logMessage << response.header();
   // for (std::vector<unsigned char>::const_iterator it = response.storage().begin(); it != response.storage().end();
   //      ++it) {
   //   logMessage << *it;
