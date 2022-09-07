@@ -30,7 +30,7 @@ struct Storage : private std::vector<unsigned char> {
   using vector::data;
   size_t          size() { return _writePos; }
   size_t          capacity() { return vector::size(); }
-  void            moveReadPos(int move) { _readPos += move; }
+  void            moveReadPos(int move);
   int             remains() { return _writePos - _readPos; }
   bool            empty() const { return _writePos == _readPos; }
   vector::pointer currentReadPos() { return data() + _readPos; }
@@ -47,7 +47,7 @@ void Storage::insert(BeginIter bi, EndIter ei) {
     (*this)[_writePos] = *bi;
   }
   vector::insert(vector::end(), bi, ei);
-  _writePos = vector::size();
+  _writePos += (ei - bi);
 }
 
 // #endif

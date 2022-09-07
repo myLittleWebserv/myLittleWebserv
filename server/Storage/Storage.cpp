@@ -13,28 +13,18 @@ std::string Storage::getLine() {
   return "";
 }
 
-void Storage::preserveRemains() {
-  Log::log()(LOG_LOCATION, "preserve remains2");
-  for (size_t j = 0; j < capacity(); ++j) {
-    Log::log().getLogStream() << (*this)[j];
-  }
+void Storage::moveReadPos(int move) {
+  if (move + _readPos > _writePos)
+    _readPos = _writePos;
+  else
+    _readPos += move;
+}
 
-  Log::log()(LOG_LOCATION, "");
-  Log::log()(true, "readPos", _readPos);
-  Log::log()(true, "writePos", _writePos);
+void Storage::preserveRemains() {
   size_t i;
   for (i = _readPos; i != _writePos; ++i) {
     (*this)[i - _readPos] = (*this)[i];
   }
   _writePos = i - _readPos;
   _readPos  = 0;
-
-  Log::log()(LOG_LOCATION, "preserve remains3");
-  for (size_t j = 0; j < capacity(); ++j) {
-    Log::log().getLogStream() << (*this)[j];
-  }
-
-  Log::log()(LOG_LOCATION, "");
-  Log::log()(true, "readPos", _readPos);
-  Log::log()(true, "writePos", _writePos);
 }

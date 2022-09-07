@@ -1,9 +1,8 @@
-#include "HttpRequest.hpp"
-
 #include <algorithm>
 #include <cstdlib>
 #include <sstream>
 
+#include "HttpRequest.hpp"
 #include "Log.hpp"
 
 // Interface
@@ -43,11 +42,6 @@ void HttpRequest::storeChunk(int fd) {
   _storage.readFile(fd);
   if (_storage.state() != RECEIVE_DONE) {
     return;
-  }
-
-  Log::log()(LOG_LOCATION, "preserve remains");
-  for (size_t j = 0; j < _storage.capacity(); ++j) {
-    Log::log().getLogStream() << _storage.data()[j];
   }
 
   Log::log()(LOG_LOCATION, "(TRANSFER) socket buffer to _storage done", INFILE);

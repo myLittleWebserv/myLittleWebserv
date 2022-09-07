@@ -26,11 +26,6 @@ void HttpRequest::storeChunk(int fd) {
     return;
   }
 
-  Log::log()(LOG_LOCATION, "");
-  for (size_t j = 0; j < _storage.capacity(); ++j) {
-    Log::log().getLogStream() << _storage.data()[j];
-  }
-
   Log::log()(LOG_LOCATION, "(TRANSFER) socket buffer to _storage done", ALL);
 
   if (_parsingState == HTTP_PARSING_INIT || _parsingState == HTTP_PARSING_HEADER) {
@@ -63,7 +58,22 @@ void HttpRequest::initialize() {
   _chunkSize           = -1;
   _secretHeaderForTest = 0;
   _body.clear();
+
+  Log::log()(LOG_LOCATION, "");
+  for (size_t j = 0; j < _storage.capacity(); ++j) {
+    Log::log().getLogStream() << _storage.data()[j];
+  }
+  Log::log()(true, "readPos", _storage._readPos);
+  Log::log()(true, "writePos", _storage._writePos);
+
   _storage.preserveRemains();
+
+  Log::log()(LOG_LOCATION, "");
+  for (size_t j = 0; j < _storage.capacity(); ++j) {
+    Log::log().getLogStream() << _storage.data()[j];
+  }
+  Log::log()(true, "readPos", _storage._readPos);
+  Log::log()(true, "writePos", _storage._writePos);
 }
 
 // Method

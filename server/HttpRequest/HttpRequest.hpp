@@ -40,10 +40,10 @@ class HttpRequest : public Request {
   MethodType  _method;
   std::string _uri;
   std::string _httpVersion;
-  int         _contentLength;
-  std::string _contentType;
   int         _hostPort;
   std::string _hostName;
+  int         _contentLength;
+  std::string _contentType;
 
   // Method
  private:
