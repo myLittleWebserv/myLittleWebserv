@@ -209,7 +209,7 @@ void HttpRequest::_parseChunk() {
 
     if (_chunkSize == 0) {
       _parsingState = HTTP_PARSING_DONE;
-      _storage.moveReadPos(2);
+      // _storage.moveReadPos(2);
       _chunkSize = -1;
       return;
     }
