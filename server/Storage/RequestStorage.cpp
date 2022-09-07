@@ -20,7 +20,10 @@ void RequestStorage::readFile(int fd) {
   }
 }
 
-void RequestStorage::dataToBody(vector& _body, int required_size) {
+void RequestStorage::dataToBody(vector& _body, int required_size, bool chunked) {
   _body.insert(_body.end(), begin() + _readPos, begin() + _readPos + required_size);
-  _readPos += (required_size + 2);  // jump "\r\n"
+  if (chunked)
+    _readPos += (required_size + 2);  // jump "\r\n"
+  else
+    _readPos += required_size;
 }

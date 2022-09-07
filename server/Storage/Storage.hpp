@@ -7,13 +7,13 @@
 #include "Log.hpp"
 #define READ_BUFFER_SIZE 1000000
 
-class Storage : private std::vector<unsigned char> {
+struct Storage : private std::vector<unsigned char> {
   // Types;
  public:
   typedef std::vector<unsigned char> vector;
 
   // Member Variable
- protected:
+ public:
   static unsigned char _buffer[READ_BUFFER_SIZE];
   size_t               _readPos;
   size_t               _writePos;
@@ -27,6 +27,7 @@ class Storage : private std::vector<unsigned char> {
   // Interface
  public:
   using vector::clear;
+  using vector::data;
   size_t          size() { return _writePos; }
   size_t          capacity() { return vector::size(); }
   void            moveReadPos(int move) { _readPos += move; }
