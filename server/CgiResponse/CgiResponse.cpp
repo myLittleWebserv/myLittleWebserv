@@ -67,18 +67,21 @@ void CgiResponse::readCgiResult(int fd, int pid, clock_t base_clock) {
 
 void CgiResponse::_parseCgiResponse(clock_t base_clock) {
   std::string line = _storage.getLine();
+  std::stringstream ss;
 
   while (line != "") {
     if (line.find("Status:") != std::string::npos) {
-      std::string status_line                    = line.substr(8);
-      status_line[status_line.size() - 1]        = '\0';
-      std::vector<std::string> status_line_split = _split(status_line, " ");
-      _statusCode                                = atoi(status_line_split[0].c_str());
-      _statusMessage                             = status_line_split[1];
+      ss << line.substr(8);
+      ss >> _statusCode;
+      ss >> _statusMessage;
     } else if (line.find("Content-Type:") != std::string::npos) {
-      std::string content_type_line                   = line.substr(14);
-      content_type_line[content_type_line.size() - 1] = '\0';
-      _contentType                                    = content_type_line;
+      ss << line.substr(14);
+      std::string content_type_line;
+      ss >> content_type_line;
+      _contentType += content_type_line;
+      _contentType += " ";
+      ss >> content_type_line;
+      _contentType += content_type_line;
     } else if (line.find("\r") != std::string::npos) {
       _body = _storage.currentReadPos();
       break;
