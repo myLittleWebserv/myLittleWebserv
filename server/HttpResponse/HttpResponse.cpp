@@ -181,6 +181,8 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
     _makeErrorResponse(413, request, location_info);
   }
 
+  _tempBody.push_back('\r');
+  _tempBody.push_back('\n');
   _httpVersion   = request.httpVersion();
   _statusCode    = 200;
   _message       = _getMessage(_statusCode);

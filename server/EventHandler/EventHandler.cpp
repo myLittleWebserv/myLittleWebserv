@@ -60,7 +60,7 @@ void EventHandler::addConnection(int listen_fd) {
   _eventSet.insert(event);
 }
 
-void EventHandler::_checkUnusedFd() {
+void EventHandler::_checkUnusedFd(const timeval& base_time) {
   FileManager file_manager;
 
   file_manager.clearTempFd();
@@ -69,16 +69,15 @@ void EventHandler::_checkUnusedFd() {
 
   for (std::set<Event*>::iterator it = _eventSet.begin(); it != _eventSet.end(); ++it) {
     Event&  event = **it;
-    timeval current;
     int     interval;
-    gettimeofday(&current, NULL);
-    interval = (current.tv_sec - event.timestamp.tv_sec) * 1000 + (current.tv_usec - event.timestamp.tv_usec) / 1000;
+    interval = (base_time.tv_sec - event.timestamp.tv_sec) * 1000 + (base_time.tv_usec - event.timestamp.tv_usec) / 1000;
     if (interval >= CONNECTION_TIMEOUT_MILISEC && event.type == HTTP_REQUEST_READABLE) {
       v.push_back(&event);
     }
   }
   for (std::vector<Event*>::iterator it = v.begin(); it != v.end(); ++it) {
     Event& event = **it;
+    Log::log()(LOG_LOCATION, "CLOSE BECAUSE TIME OUT", INFILE);
     removeConnection(event);
   }
 }
@@ -92,7 +91,9 @@ void EventHandler::routeEvents() {
 
   if (num_kevents == 0) {
     Log::log()("Wating event...", CONSOLE);
-    _checkUnusedFd();
+    timeval current;
+    gettimeofday(&current, NULL);
+    // _checkUnusedFd(current);
   }
 
   for (int i = 0; i < num_kevents; ++i) {
@@ -112,7 +113,7 @@ void EventHandler::routeEvents() {
       gettimeofday(&event.timestamp, NULL);
       Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", INFILE);
     } else if (filter == EVFILT_READ && event.type == CONNECTION_REQUEST) {
-      _checkUnusedFd();
+      // _checkUnusedFd(event.timestamp);
       addConnection(event.keventId);
       gettimeofday(&event.timestamp, NULL);
     } else if (filter == EVFILT_READ && event.type == HTTP_REQUEST_READABLE) {

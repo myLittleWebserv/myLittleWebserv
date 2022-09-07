@@ -1,6 +1,6 @@
 #!/bin/bash
-#peer=.42seoul.k
-peer=localhost
+peer=.42seoul.k
+#peer=localhost
 while [ 1 ]
 do
 PID=$(ps u | grep -E '[.]/'${NAME} | awk '{print $2}' | xargs echo )
