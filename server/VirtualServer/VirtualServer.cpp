@@ -20,22 +20,24 @@ void VirtualServer::start() {
       case HTTP_REQUEST_READABLE:
         Log::log().printHttpRequest(event.httpRequest, INFILE);
         _processHttpRequestReadable(event, location_info);
-        Log::log()(true, "HTTP_REQUEST_READABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+        Log::log()(true, "HTTP_REQUEST_READABLE  DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
         break;
 
       case CGI_RESPONSE_READABLE:
         _cgiResponseToHttpResponse(event, location_info);
-        Log::log()(true, "CGI_RESPONSE_READABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+        Log::log()(true, "CGI_RESPONSE_READABLE  DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
         break;
 
       case HTTP_RESPONSE_WRITABLE:
         Log::log().printHttpResponse(*event.httpResponse, INFILE);
-        // _sendResponse(event.clientFd, *event.httpResponse);
         event.httpResponse->sendResponse(event.clientFd);
         if (event.httpResponse->isSendingEnd()) {
           _finishResponse(event);
           Log::log()(true, "HTTP_RESPONSE_WRITABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC,
                      ALL);
+          Log::log().printStatus();
+          Log::log().increaseProcessedConnection();
+          Log::log().mark();
         }
         break;
 
@@ -54,9 +56,6 @@ void VirtualServer::_finishResponse(Event& event) {
     _eventHandler.removeConnection(event);
   }
   Log::log()(LOG_LOCATION, "(DONE) sending Http Response", INFILE);
-  Log::log().printStatus();
-  Log::log().increaseProcessedConnection();
-  Log::log().mark();
 }
 
 void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& location_info) {
@@ -75,7 +74,7 @@ void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& locat
   event.httpResponse = new HttpResponse(event.cgiResponse, location_info);
   event.type         = HTTP_RESPONSE_WRITABLE;
 
-  Log::log()(true, "CGI RESPONSE to HTTPRESPONSE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+  Log::log()(true, "CGI RES to HTTPRES     DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
   file_manager.removeFile(event.clientFd);
   file_manager.registerTempFileFd(event.keventId);
   _eventHandler.appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DELETE, NULL);

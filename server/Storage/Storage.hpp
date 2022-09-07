@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "Log.hpp"
-#define READ_BUFFER_SIZE 66000
+#define READ_BUFFER_SIZE 1000000
 
 class Storage : private std::vector<unsigned char> {
   // Types;
@@ -14,9 +14,9 @@ class Storage : private std::vector<unsigned char> {
 
   // Member Variable
  protected:
-  unsigned char _buffer[READ_BUFFER_SIZE];
-  size_t        _readPos;
-  size_t        _writePos;
+  static unsigned char _buffer[READ_BUFFER_SIZE];
+  size_t               _readPos;
+  size_t               _writePos;
   using vector::begin;
 
   // Constructor
@@ -45,10 +45,8 @@ void Storage::insert(BeginIter bi, EndIter ei) {
   for (; _writePos != capacity() && bi != ei; ++_writePos, ++bi) {
     (*this)[_writePos] = *bi;
   }
-  for (; bi != ei; ++bi) {
-    push_back(*bi);
-    ++_writePos;
-  }
+  vector::insert(vector::end(), bi, ei);
+  _writePos = vector::size();
 }
 
 // #endif

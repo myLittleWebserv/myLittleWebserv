@@ -11,10 +11,10 @@ void CgiStorage::readFile(int fd) {
   }
 }
 
-void CgiStorage::dataToBody(std::deque<unsigned char>& body, int required_size) {
-  body.insert(body.end(), begin() + _readPos, begin() + _readPos + required_size);
-  _readPos += required_size;
-}
+// void CgiStorage::dataToBody(std::deque<unsigned char>& body, int required_size) {
+//   body.insert(body.end(), begin() + _readPos, begin() + _readPos + required_size);
+//   _readPos += required_size;
+// }
 
 std::ostream& operator<<(std::ostream& os, const std::vector<unsigned char>& v) {
   for (std::vector<unsigned char>::const_iterator it = v.begin(); it != v.end(); ++it) {

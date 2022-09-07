@@ -135,7 +135,6 @@ void EventHandler::routeEvents() {
         _routedEvents[event.serverId].push_back(&event);
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, NULL);
         Log::log()(LOG_LOCATION, "(event routed) Cgi Reponse Readable", INFILE);
-        Log::log()(true, "CGI event routed DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
       }
     }
   }

@@ -1,5 +1,7 @@
 #include "Storage.hpp"
 
+unsigned char Storage::_buffer[READ_BUFFER_SIZE];
+
 std::string Storage::getLine() {
   for (vector::size_type i = _readPos; i < size(); ++i) {
     if ((*this)[i] == '\n') {

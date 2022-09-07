@@ -34,7 +34,7 @@ void CgiResponse::_checkWaitPid(int pid, clock_t base_clock) {
 
   if (result == pid) {
     _parsingState = CGI_READING;
-    Log::log()(true, "CGI EXECUTION DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
+    Log::log()(true, "CGI EXECUTION          DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
   } else if (result == -1) {
     _parsingState = CGI_ERROR;
     Log::log()(LOG_LOCATION, "CGI_ERROR", INFILE);
@@ -51,7 +51,7 @@ void CgiResponse::readCgiResult(int fd, int pid, clock_t base_clock) {
     if (_storage.isReadingEnd()) {
       _parsingState = CGI_PARSING;
       Log::log()(LOG_LOCATION, "(DONE) CGI RESULT READING", INFILE);
-      Log::log()(true, "CGI RESULT READING DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
+      Log::log()(true, "CGI RESULT READING     DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
     }
   }
 
@@ -78,14 +78,13 @@ void CgiResponse::_parseCgiResponse(clock_t base_clock) {
       content_type_line[content_type_line.size() - 1] = '\0';
       _contentType                                    = content_type_line;
     } else if (line.find("\r") != std::string::npos) {
-      // _storage.dataToBody(_body, _storage.remains());
       _body = _storage.currentReadPos();
       break;
     }
     line = _storage.getLine();
   }
   _parsingState = CGI_PARSING_DONE;
-  Log::log()(true, "CGI RESULT PARSING DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
+  Log::log()(true, "CGI RESULT PARSING     DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
 }
 
 std::string CgiResponse::CgiResponseResultString() {
