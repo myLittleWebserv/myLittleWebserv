@@ -131,7 +131,7 @@ void HttpResponse::_makeHeader() {
   response_stream << _httpVersion << ' ' << _statusCode << ' ' << _message << "\r\n";
 
   if (_contentLength != 0) {
-    response_stream << "Content-Legnth: " << _contentLength << "\r\n";
+    response_stream << "Content-Length: " << _contentLength << "\r\n";
   }
   if (!_contentType.empty()) {
     response_stream << "Content-Type: " << _contentType << "\r\n";
@@ -181,8 +181,8 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
     _makeErrorResponse(413, request, location_info);
   }
 
-  _tempBody.push_back('\r');
-  _tempBody.push_back('\n');
+  // _tempBody.push_back('\r');
+  // _tempBody.push_back('\n');
   _httpVersion   = request.httpVersion();
   _statusCode    = 200;
   _message       = _getMessage(_statusCode);
@@ -327,23 +327,28 @@ void HttpResponse::_makeErrorResponse(int error_code, Request& request, Location
 
   if (location_info.defaultErrorPages.count(error_code)) {
     std::stringstream file_name;
-    file_name << location_info.root << '/' << location_info.defaultErrorPages[error_code];
+    file_name << location_info.root << location_info.defaultErrorPages[error_code];
     file.open(file_name.str().c_str());
+    Log::log()(true, "file open STATUS", file.is_open(), ALL);
+    Log::log()(true, "file name", file_name.str(), ALL);
   }
 
   if (!file.is_open()) {
     std::stringstream default_error_page;
     default_error_page << DEFAULT_ERROR_PAGE_DIR << '/' << error_code << ".html";
     file.open(default_error_page.str().c_str());
+    Log::log()(true, "file open STATUS", file.is_open(), ALL);
+    Log::log()(true, "file name", default_error_page.str(), ALL);
   }
 
   if (request.method() != HEAD) {
     _fileToBody(file);
   }
 
-  _httpVersion = request.httpVersion();
-  _statusCode  = error_code;
-  _message     = _getMessage(_statusCode);
+  _httpVersion   = request.httpVersion();
+  _statusCode    = error_code;
+  _message       = _getMessage(_statusCode);
+  _contentLength = _tempBody.size();
   Log::log()(LOG_LOCATION, "Error page returned.");
 
   _makeResponse(_tempBody.data());

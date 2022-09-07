@@ -20,4 +20,9 @@ void Storage::preserveRemains() {
   }
   _writePos = i - _readPos;
   _readPos  = 0;
+
+  Log::log()(LOG_LOCATION, "preserve remains");
+  for (size_t j = 0; j < _writePos; ++j) {
+    Log::log().getLogStream() << (*this)[j];
+  }
 }

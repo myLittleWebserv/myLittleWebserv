@@ -61,7 +61,9 @@ class HttpResponse {
  public:
   bool               isSendingEnd() { return _sendingState == HTTP_SENDING_DONE; }
   void               sendResponse(int fd);
+  int contentLength() {return _contentLength;}
   const std::string& header() { return _header; }
+  vector::pointer body() { return _body; }
 };
 
 #endif

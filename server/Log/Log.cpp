@@ -123,10 +123,9 @@ void Log::printHttpResponse(HttpResponse& response, LogLocationType location) {
 
   logMessage << "HttpResponse:\n";
   logMessage << response.header();
-  // for (std::vector<unsigned char>::const_iterator it = response.storage().begin(); it != response.storage().end();
-  //      ++it) {
-  //   logMessage << *it;
-  // }
+  for (int i = 0; i < response.contentLength(); ++i) {
+    logMessage << response.body()[i];
+  }
 
   if (location == ALL || location == CONSOLE) {
     std::cerr << logMessage.str() << std::endl;

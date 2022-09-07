@@ -96,6 +96,7 @@ void HttpRequest::_parseStartLine(const std::string& line) {
     return;
   }
   if (*line.rbegin() != '\r' || std::count(line.begin(), line.end(), ' ') != 2) {
+    Log::log()(LOG_LOCATION, "", INFILE);
     Log::log()(true, "BAD_REQUEST: line", line, INFILE);
     _parsingState = BAD_REQUEST;
     return;
@@ -126,6 +127,7 @@ void HttpRequest::_parseStartLine(const std::string& line) {
   std::getline(ss, _httpVersion, '\r');
 
   if (ss.bad()) {
+    Log::log()(LOG_LOCATION, "", INFILE);
     Log::log()(true, "BAD_REQUEST: line", line, INFILE);
     _parsingState = BAD_REQUEST;
   } else {
@@ -224,6 +226,7 @@ size_t HttpRequest::_parseChunkSize(const std::string& line) {
   size_t size = std::strtol(line.c_str(), &p, 16);  // chunk 최대 크기 몇?
   if (*p != '\r') {
     _parsingState = BAD_REQUEST;
+    Log::log()(LOG_LOCATION, "", INFILE);
     Log::log()(true, "BAD_REQUEST: line", line, INFILE);
     return 0;
   }
