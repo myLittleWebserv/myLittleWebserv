@@ -48,12 +48,23 @@ void CgiResponse::readCgiResult(int fd, int pid, clock_t base_clock) {
     _checkWaitPid(pid, base_clock);
   }
 
+  Log::log()(LOG_LOCATION, "before read");
+  Log::log()(true, "_readPos", _storage._readPos);
+  Log::log()(true, "_writePos", _storage._writePos);
+
   if (_parsingState == CGI_READING) {
     _storage.readFile(fd);
+
+    Log::log()(LOG_LOCATION, "reading");
+    Log::log()(true, "_readPos", _storage._readPos);
+    Log::log()(true, "_writePos", _storage._writePos);
     if (_storage.isReadingEnd()) {
       _parsingState = CGI_PARSING;
+
       Log::log()(LOG_LOCATION, "(DONE) CGI RESULT READING", INFILE);
       Log::log()(true, "CGI RESULT READING     DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
+      Log::log()(true, "readPos", _storage._readPos);
+      Log::log()(true, "writePos", _storage._writePos);
     }
   }
 
@@ -66,7 +77,7 @@ void CgiResponse::readCgiResult(int fd, int pid, clock_t base_clock) {
 }
 
 void CgiResponse::_parseCgiResponse(clock_t base_clock) {
-  std::string line = _storage.getLine();
+  std::string       line = _storage.getLine();
   std::stringstream ss;
 
   while (line != "") {

@@ -130,9 +130,7 @@ void HttpResponse::_makeHeader() {
 
   response_stream << _httpVersion << ' ' << _statusCode << ' ' << _message << "\r\n";
 
-  if (_contentLength != 0) {
-    response_stream << "Content-Length: " << _contentLength << "\r\n";
-  }
+  response_stream << "Content-Length: " << _contentLength << "\r\n";
   if (!_contentType.empty()) {
     response_stream << "Content-Type: " << _contentType << "\r\n";
   }
@@ -144,11 +142,12 @@ void HttpResponse::_makeHeader() {
 }
 
 void HttpResponse::_fileToBody(std::ifstream& file) {
-  while (!file.eof()) {
-    std::string line;
-    std::getline(file, line);
+  std::string line;
+  std::getline(file, line);
+  while (!line.empty() && !file.eof()) {
     _tempBody.insert(_tempBody.end(), line.c_str(), line.c_str() + line.size());
     _tempBody.insert(_tempBody.end(), '\n');
+    std::getline(file, line);
   }
 }
 
@@ -181,8 +180,6 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
     _makeErrorResponse(413, request, location_info);
   }
 
-  // _tempBody.push_back('\r');
-  // _tempBody.push_back('\n');
   _httpVersion   = request.httpVersion();
   _statusCode    = 200;
   _message       = _getMessage(_statusCode);
@@ -329,16 +326,16 @@ void HttpResponse::_makeErrorResponse(int error_code, Request& request, Location
     std::stringstream file_name;
     file_name << location_info.root << location_info.defaultErrorPages[error_code];
     file.open(file_name.str().c_str());
-    Log::log()(true, "file open STATUS", file.is_open(), ALL);
-    Log::log()(true, "file name", file_name.str(), ALL);
+    Log::log()(true, "file open STATUS", file.is_open(), INFILE);
+    Log::log()(true, "file name", file_name.str(), INFILE);
   }
 
   if (!file.is_open()) {
     std::stringstream default_error_page;
     default_error_page << DEFAULT_ERROR_PAGE_DIR << '/' << error_code << ".html";
     file.open(default_error_page.str().c_str());
-    Log::log()(true, "file open STATUS", file.is_open(), ALL);
-    Log::log()(true, "file name", default_error_page.str(), ALL);
+    Log::log()(true, "file open STATUS", file.is_open(), INFILE);
+    Log::log()(true, "file name", default_error_page.str(), INFILE);
   }
 
   if (request.method() != HEAD) {

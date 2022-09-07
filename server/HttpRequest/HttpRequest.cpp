@@ -26,7 +26,7 @@ void HttpRequest::storeChunk(int fd) {
     return;
   }
 
-  Log::log()(LOG_LOCATION, "(TRANSFER) socket buffer to _storage done", ALL);
+  Log::log()(LOG_LOCATION, "(TRANSFER) socket buffer to _storage done", INFILE);
 
   if (_parsingState == HTTP_PARSING_INIT || _parsingState == HTTP_PARSING_HEADER) {
     _parseHeader();
@@ -35,10 +35,10 @@ void HttpRequest::storeChunk(int fd) {
     _parseBody();
   }
 
-  Log::log()(LOG_LOCATION, "(STATE) CURRENT HTTP_PARSING STATE", ALL);
-  Log::log()("_parsingState", _parsingState, ALL);
-  Log::log()(true, "_body.size", _body.size(), ALL);
-  Log::log()(true, "_storage.size", _storage.size(), ALL);
+  Log::log()(LOG_LOCATION, "(STATE) CURRENT HTTP_PARSING STATE", INFILE);
+  Log::log()("_parsingState", _parsingState, INFILE);
+  Log::log()(true, "_body.size", _body.size(), INFILE);
+  Log::log()(true, "_storage.size", _storage.size(), INFILE);
 }
 
 void HttpRequest::initialize() {
@@ -59,21 +59,21 @@ void HttpRequest::initialize() {
   _secretHeaderForTest = 0;
   _body.clear();
 
-  // Log::log()(LOG_LOCATION, "");
+  Log::log()(LOG_LOCATION, "PREV");
   // for (size_t j = 0; j < _storage.capacity(); ++j) {
   //   Log::log().getLogStream() << _storage.data()[j];
   // }
-  // Log::log()(true, "readPos", _storage._readPos);
-  // Log::log()(true, "writePos", _storage._writePos);
+  Log::log()(true, "readPos", _storage._readPos);
+  Log::log()(true, "writePos", _storage._writePos);
 
   _storage.preserveRemains();
 
-  // Log::log()(LOG_LOCATION, "");
+  Log::log()(LOG_LOCATION, "AFTER");
   // for (size_t j = 0; j < _storage.capacity(); ++j) {
   //   Log::log().getLogStream() << _storage.data()[j];
   // }
-  // Log::log()(true, "readPos", _storage._readPos);
-  // Log::log()(true, "writePos", _storage._writePos);
+  Log::log()(true, "readPos", _storage._readPos);
+  Log::log()(true, "writePos", _storage._writePos);
 }
 
 // Method
@@ -112,7 +112,7 @@ void HttpRequest::_parseHeader() {
 
 void HttpRequest::_parseStartLine(const std::string& line) {
   if (*line.rbegin() != '\r' || std::count(line.begin(), line.end(), ' ') != 2) {
-    Log::log()(true, "BAD_REQUEST: line", line, ALL);
+    Log::log()(true, "BAD_REQUEST: line", line, INFILE);
     _parsingState = BAD_REQUEST;
     return;
   }
@@ -142,7 +142,7 @@ void HttpRequest::_parseStartLine(const std::string& line) {
   ss >> _httpVersion;
 
   if (ss.bad()) {
-    Log::log()(true, "BAD_REQUEST: line", line, ALL);
+    Log::log()(true, "BAD_REQUEST: line", line, INFILE);
     _parsingState = BAD_REQUEST;
   } else {
     _parsingState = HTTP_PARSING_HEADER;
@@ -255,7 +255,7 @@ size_t HttpRequest::_parseChunkSize(const std::string& line) {
   size_t size = std::strtol(line.c_str(), &p, 16);  // chunk 최대 크기 몇?
   if (*p != '\r') {
     _parsingState = BAD_REQUEST;
-    Log::log()(LOG_LOCATION, "BAD REQUEST", ALL);
+    Log::log()(LOG_LOCATION, "BAD REQUEST", INFILE);
     return 0;
   }
   return size;

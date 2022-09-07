@@ -123,9 +123,9 @@ void Log::printHttpResponse(HttpResponse& response, LogLocationType location) {
 
   logMessage << "HttpResponse:\n";
   logMessage << response.header();
-  for (int i = 0; i < response.contentLength(); ++i) {
-    logMessage << response.body()[i];
-  }
+  // for (int i = 0; i < response.contentLength(); ++i) {
+  //   logMessage << response.body()[i];
+  // }
 
   if (location == ALL || location == CONSOLE) {
     std::cerr << logMessage.str() << std::endl;

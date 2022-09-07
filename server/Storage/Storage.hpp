@@ -26,8 +26,8 @@ struct Storage : private std::vector<unsigned char> {
 
   // Interface
  public:
-  using vector::clear;
   using vector::data;
+  void            clear();
   size_t          size() { return _writePos; }
   size_t          capacity() { return vector::size(); }
   void            moveReadPos(int move);
@@ -43,6 +43,11 @@ struct Storage : private std::vector<unsigned char> {
 
 template <typename BeginIter, typename EndIter>
 void Storage::insert(BeginIter bi, EndIter ei) {
+  Log::log()(LOG_LOCATION, "");
+  Log::log()(true, "_writePos", _writePos);
+  Log::log()(true, "capacity()", capacity());
+  // Log::log()(true, "bi", bi);
+  // Log::log()(true, "ei", ei);
   for (; _writePos != capacity() && bi != ei; ++_writePos, ++bi) {
     (*this)[_writePos] = *bi;
   }
