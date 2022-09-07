@@ -20,6 +20,7 @@ struct Event {
   CgiResponse    cgiResponse;
   HttpResponse*  httpResponse;
   timeval        timestamp;
+  clock_t        baseClock;
 
   Event(enum EventType t, int kevent_id)
       : type(t),
@@ -30,7 +31,8 @@ struct Event {
         httpRequest(),
         cgiResponse(),
         httpResponse(NULL),
-        timestamp() {
+        timestamp(),
+        baseClock(clock()) {
     gettimeofday(&timestamp, NULL);
   }
   ~Event() { delete httpResponse; }

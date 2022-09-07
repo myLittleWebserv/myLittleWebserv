@@ -4,6 +4,7 @@ CLIENT := myLittleClient
 OBJ_DIR := objs
 SRC_DIR := server
 LOG_DIR := log_files
+TMP_DIR := temp
 
 SRC :=	main.cpp\
 		Router.cpp\
@@ -48,13 +49,17 @@ VPATH := $(shell ls -R)
 
 all : directories $(NAME) $(CLIENT)
 
-directories : $(OBJ_DIR) $(LOG_DIR)
+directories : $(OBJ_DIR) $(LOG_DIR) $(TMP_DIR)
 
 $(OBJ_DIR):
 	mkdir $@
 
 $(LOG_DIR):
 	mkdir $@
+
+$(TMP_DIR):
+	mkdir -p ${HOME}/goinfre/$@
+	ln -s ${HOME}/goinfre/$@ $@
 
 $(NAME) : $(OBJ)
 	$(CXX) -o $@ $^ $(LDFALGS) $(LIBRARY)
@@ -67,6 +72,7 @@ clean-log:
 
 clean:
 	rm -rf $(OBJ_DIR)
+	rm -rf $(TMP_DIR)
 	rm -rf $(LOG_DIR)/*
 
 fclean: clean

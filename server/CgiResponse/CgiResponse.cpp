@@ -6,76 +6,101 @@
 CgiResponse::CgiResponse()
     : _parsingState(CGI_RUNNING),
       _storage(),
-      // _isParsingEnd(false),
-      // _isError(false),
       _httpVersion(),
       _statusCode(0),
       _statusMessage(),
-      _contentType() {}
+      _contentType(),
+      _body(NULL) {}
+
+void CgiResponse::initialize() {
+  _parsingState  = CGI_RUNNING;
+  _statusCode    = 0;
+  _httpVersion   = "";
+  _statusMessage = "";
+  _contentType   = "";
+  _storage.clear();
+  _body = NULL;
+}
 
 void CgiResponse::setInfo(const HttpRequest& http_requset) {
   _httpVersion         = http_requset.httpVersion();
   _method              = http_requset.method();
-  _secretHeaderForTest = http_requset.secretHeaderForTest();  // ?
+  _secretHeaderForTest = http_requset.secretHeaderForTest();
 }
 
-void CgiResponse::_checkWaitPid(int pid) {
+void CgiResponse::_checkWaitPid(int pid, clock_t base_clock) {
   int status;
   int result = waitpid(pid, &status, WNOHANG);
-  Log::log()(true, "pid", pid, ALL);
-  Log::log()(true, "result", result, ALL);
+  Log::log()(true, "pid", pid, INFILE);
+  Log::log()(true, "result", result, INFILE);
 
   if (result == pid) {
     _parsingState = CGI_READING;
+    Log::log()(true, "CGI EXECUTION          DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
   } else if (result == -1) {
-    Log::log()(LOG_LOCATION, "CGI_ERROR", ALL);
     _parsingState = CGI_ERROR;
+    Log::log()(LOG_LOCATION, "CGI_ERROR", INFILE);
   }
 }
 
-void CgiResponse::readCgiResult(int fd, int pid) {
+void CgiResponse::readCgiResult(int fd, int pid, clock_t base_clock) {
   if (_parsingState == CGI_RUNNING) {
-    _checkWaitPid(pid);
+    _checkWaitPid(pid, base_clock);
   }
+
+  Log::log()(LOG_LOCATION, "before read");
+  Log::log()(true, "_readPos", _storage._readPos);
+  Log::log()(true, "_writePos", _storage._writePos);
 
   if (_parsingState == CGI_READING) {
     _storage.readFile(fd);
+
+    Log::log()(LOG_LOCATION, "reading");
+    Log::log()(true, "_readPos", _storage._readPos);
+    Log::log()(true, "_writePos", _storage._writePos);
     if (_storage.isReadingEnd()) {
       _parsingState = CGI_PARSING;
-      Log::log()(LOG_LOCATION, "(DONE) CGI RESULT READING", ALL);
+
+      Log::log()(LOG_LOCATION, "(DONE) CGI RESULT READING", INFILE);
+      Log::log()(true, "CGI RESULT READING     DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
+      Log::log()(true, "readPos", _storage._readPos);
+      Log::log()(true, "writePos", _storage._writePos);
     }
   }
 
   if (_parsingState == CGI_PARSING) {
-    _parseCgiResponse();
+    _parseCgiResponse(base_clock);
   }
-  Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", ALL);
-  Log::log()("_parsingState", _parsingState, ALL);
-  Log::log()(true, "_body.size", _body.size(), ALL);
-  Log::log()(true, "_storage.size", _storage.size(), ALL);
+  Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", INFILE);
+  Log::log()("_parsingState", _parsingState, INFILE);
+  Log::log()(true, "_storage.size", _storage.size(), INFILE);
 }
 
-void CgiResponse::_parseCgiResponse() {
-  std::string line = _storage.getLine();
+void CgiResponse::_parseCgiResponse(clock_t base_clock) {
+  std::string       line = _storage.getLine();
+  std::stringstream ss;
 
   while (line != "") {
     if (line.find("Status:") != std::string::npos) {
-      std::string status_line                    = line.substr(8);
-      status_line[status_line.size() - 1]        = '\0';
-      std::vector<std::string> status_line_split = _split(status_line, " ");
-      _statusCode                                = atoi(status_line_split[0].c_str());
-      _statusMessage                             = status_line_split[1];
+      ss << line.substr(8);
+      ss >> _statusCode;
+      ss >> _statusMessage;
     } else if (line.find("Content-Type:") != std::string::npos) {
-      std::string content_type_line                   = line.substr(14);
-      content_type_line[content_type_line.size() - 1] = '\0';
-      _contentType                                    = content_type_line;
+      ss << line.substr(14);
+      std::string content_type_line;
+      ss >> content_type_line;
+      _contentType += content_type_line;
+      _contentType += " ";
+      ss >> content_type_line;
+      _contentType += content_type_line;
     } else if (line.find("\r") != std::string::npos) {
-      _storage.dataToBody(_body, _storage.remains());
+      _body = _storage.currentReadPos();
       break;
     }
     line = _storage.getLine();
   }
   _parsingState = CGI_PARSING_DONE;
+  Log::log()(true, "CGI RESULT PARSING     DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
 }
 
 std::string CgiResponse::CgiResponseResultString() {
@@ -83,7 +108,7 @@ std::string CgiResponse::CgiResponseResultString() {
   ss << "Status-Code: [" << _statusCode << "]" << std::endl;
   ss << "Status-Message: [" << _statusMessage << "]" << std::endl;
   ss << "Content-Type: [" << _contentType << "]" << std::endl;
-  ss << "----Body---" << std::endl << _body << std::endl << "-----------" << std::endl;
+  // ss << "----Body---" << std::endl << _body << std::endl << "-----------" << std::endl;
   return ss.str();
 }
 

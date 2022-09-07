@@ -32,7 +32,7 @@ void EventHandler::removeConnection(Event& event) {
     file_manager.registerTempFileFd(event.keventId);
     appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DELETE, NULL);
   }
-  Log::log().syscall(ret, LOG_LOCATION, "(SYSCALL) close done", "(SYSCALL) close error", ALL);
+  Log::log().syscall(ret, LOG_LOCATION, "(SYSCALL) close done", "(SYSCALL) close error", INFILE);
   Log::log()("closed fd", event.clientFd);
   Log::log().mark(ret != 0);
   _eventSet.erase(&event);
@@ -45,9 +45,9 @@ void EventHandler::addConnection(int listen_fd) {
   int         client_fd = accept(listen_fd, (struct sockaddr*)&addr, &alen);  // addr 버리나?
 
   Log::log().syscall(client_fd, LOG_LOCATION, "(SYSCALL) connection accepted", "(SYSCALL) connection not accepted",
-                     ALL);
-  Log::log()("Server Socket fd", listen_fd, ALL);
-  Log::log()("Client Socket fd", client_fd, ALL);
+                     INFILE);
+  Log::log()("Server Socket fd", listen_fd, INFILE);
+  Log::log()("Client Socket fd", client_fd, INFILE);
   Log::log().mark(client_fd == -1);
 
   fcntl(client_fd, F_SETFL, O_NONBLOCK);
@@ -60,7 +60,7 @@ void EventHandler::addConnection(int listen_fd) {
   _eventSet.insert(event);
 }
 
-void EventHandler::_checkUnusedFd() {
+void EventHandler::_checkUnusedFd(const timeval& base_time) {
   FileManager file_manager;
 
   file_manager.clearTempFd();
@@ -69,17 +69,15 @@ void EventHandler::_checkUnusedFd() {
 
   for (std::set<Event*>::iterator it = _eventSet.begin(); it != _eventSet.end(); ++it) {
     Event&  event = **it;
-    timeval current;
     int     interval;
-    gettimeofday(&current, NULL);
-    interval = (current.tv_sec - event.timestamp.tv_sec) * 1000 + (current.tv_usec - event.timestamp.tv_usec) / 1000;
-    if (/*event.reused && interval >= KEEPALIVE_TIMEOUT_MILISEC ||*/
-        interval >= CONNECTION_TIMEOUT_MILISEC && event.type == HTTP_REQUEST_READABLE) {
+    interval = (base_time.tv_sec - event.timestamp.tv_sec) * 1000 + (base_time.tv_usec - event.timestamp.tv_usec) / 1000;
+    if (interval >= CONNECTION_TIMEOUT_MILISEC && event.type == HTTP_REQUEST_READABLE) {
       v.push_back(&event);
     }
   }
   for (std::vector<Event*>::iterator it = v.begin(); it != v.end(); ++it) {
     Event& event = **it;
+    Log::log()(LOG_LOCATION, "CLOSE BECAUSE TIME OUT", INFILE);
     removeConnection(event);
   }
 }
@@ -88,16 +86,18 @@ void EventHandler::routeEvents() {
   int num_kevents = kevent(_kQueue, _changeList.data(), _changeList.size(), _keventList, MAX_EVENTS, &_timeOut);
   _changeList.clear();
   _routedEvents.clear();
-  Log::log().syscall(num_kevents, LOG_LOCATION, "", "(SYSCALL) kevent error", ALL);
+  Log::log().syscall(num_kevents, LOG_LOCATION, "", "(SYSCALL) kevent error", INFILE);
   Log::log().mark(num_kevents == -1);
 
   if (num_kevents == 0) {
     Log::log()("Wating event...", CONSOLE);
-    _checkUnusedFd();
+    timeval current;
+    gettimeofday(&current, NULL);
+    // _checkUnusedFd(current);
   }
 
-  for (int i = 0; i < num_kevents; ++i){
-    Event& event  = *(Event*)_keventList[i].udata;
+  for (int i = 0; i < num_kevents; ++i) {
+    Event& event = *(Event*)_keventList[i].udata;
     gettimeofday(&event.timestamp, NULL);
   }
 
@@ -106,21 +106,19 @@ void EventHandler::routeEvents() {
     int    filter = _keventList[i].filter;
     int    flags  = _keventList[i].flags;
 
-    Log::log()(true, "kevent.ident", _keventList[i].ident);
-    // Log::log()(true, "kevent.data", _keventList[i].data, ALL);
-
     if (flags & EV_EOF) {
       removeConnection(event);
     } else if (filter == EVFILT_WRITE && event.type == HTTP_RESPONSE_WRITABLE) {
-      gettimeofday(&event.timestamp, NULL);
       _routedEvents[event.serverId].push_back(&event);
-      Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", ALL);
-    } else if (filter == EVFILT_READ && event.type == CONNECTION_REQUEST) {
-      _checkUnusedFd();
-      addConnection(event.keventId);
-    } else if (filter == EVFILT_READ && event.type == HTTP_REQUEST_READABLE) {
       gettimeofday(&event.timestamp, NULL);
+      Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", INFILE);
+    } else if (filter == EVFILT_READ && event.type == CONNECTION_REQUEST) {
+      // _checkUnusedFd(event.timestamp);
+      addConnection(event.keventId);
+      gettimeofday(&event.timestamp, NULL);
+    } else if (filter == EVFILT_READ && event.type == HTTP_REQUEST_READABLE) {
       event.httpRequest.storeChunk(event.clientFd);
+      gettimeofday(&event.timestamp, NULL);
 
       if (event.httpRequest.isConnectionClosed()) {
         removeConnection(event);
@@ -128,16 +126,16 @@ void EventHandler::routeEvents() {
         event.serverId = _router.findServerId(event.httpRequest);
         _routedEvents[event.serverId].push_back(&event);
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, NULL);
-        Log::log()(LOG_LOCATION, "(event routed) Http Request Readable", ALL);
+        Log::log()(LOG_LOCATION, "(event routed) Http Request Readable", INFILE);
       }
 
     } else if (filter == EVFILT_READ && event.type == CGI_RESPONSE_READABLE) {
+      event.cgiResponse.readCgiResult(event.keventId, event.pid, event.baseClock);
       gettimeofday(&event.timestamp, NULL);
-      event.cgiResponse.readCgiResult(event.keventId, event.pid);
       if (event.cgiResponse.isParsingEnd()) {
         _routedEvents[event.serverId].push_back(&event);
         appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DISABLE, NULL);
-        Log::log()(LOG_LOCATION, "(event routed) Cgi Reponse Readable", ALL);
+        Log::log()(LOG_LOCATION, "(event routed) Cgi Reponse Readable", INFILE);
       }
     }
   }

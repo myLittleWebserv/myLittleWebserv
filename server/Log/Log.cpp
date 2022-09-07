@@ -28,7 +28,7 @@ const std::string currentTimestamp(TimestampType type) {
   return timestamp.str();
 }
 
-Log::Log() {
+Log::Log() : processedConnection(0) {
   _logFile.open((LOG_DIR + currentTimestamp(LOG_TITLE) + ".log").c_str(), std::ofstream::out | std::ofstream::app);
 }
 
@@ -38,6 +38,8 @@ Log& Log::log() {
   static Log log;
   return log;
 }
+
+void Log::printStatus() { operator()(true, "Processed Connection", processedConnection, ALL); }
 
 std::ofstream& Log::getLogStream() { return _logFile; }
 
@@ -120,10 +122,9 @@ void Log::printHttpResponse(HttpResponse& response, LogLocationType location) {
   std::stringstream logMessage;
 
   logMessage << "HttpResponse:\n";
-  logMessage << response.headerToString();
-  // for (std::vector<unsigned char>::const_iterator it = response.storage().begin(); it != response.storage().end();
-  //      ++it) {
-  //   logMessage << *it;
+  logMessage << response.header();
+  // for (int i = 0; i < response.contentLength(); ++i) {
+  //   logMessage << response.body()[i];
   // }
 
   if (location == ALL || location == CONSOLE) {

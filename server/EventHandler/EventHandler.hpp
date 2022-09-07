@@ -11,8 +11,8 @@
 #include "Event.hpp"
 
 #define MAX_EVENTS 2000
-#define KEVENT_TIMEOUT_MILISEC 25
-#define CONNECTION_TIMEOUT_MILISEC 50
+#define KEVENT_TIMEOUT_MILISEC 1000
+#define CONNECTION_TIMEOUT_MILISEC 1000  // KEVENT_TIMEOUT_MILISEC 보다 크거나 같음.
 
 class Router;
 
@@ -36,7 +36,7 @@ class EventHandler {
   void                 appendNewEventToChangeList(int ident, int filter, int flag, Event* event);
   void                 removeConnection(Event& event);
   void                 routeEvents();
-  void                 _checkUnusedFd();
+  void                 _checkUnusedFd(const timeval& base_time);
   std::vector<Event*>& getRoutedEvents(int server_id);
 };
 
