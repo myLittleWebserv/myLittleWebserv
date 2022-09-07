@@ -3,7 +3,7 @@
 void Event::initialize() {
   type = HTTP_REQUEST_READABLE;
   httpRequest.initialize();
-  // cgiResponse.initialize();
+  cgiResponse.initialize();
   delete httpResponse;
   httpResponse = NULL;
   keventId     = clientFd;

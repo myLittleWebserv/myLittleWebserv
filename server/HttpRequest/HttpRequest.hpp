@@ -63,6 +63,7 @@ class HttpRequest : public Request {
         _chunkSize(-1),
         _isKeepAlive(true),  //  default: keep-alive: true
         _serverError(false),
+        _contentLength(0),
         _hostPort(HTTP_DEFAULT_PORT) {}
 
   // Interface

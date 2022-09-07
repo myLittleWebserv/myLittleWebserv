@@ -13,9 +13,11 @@ CgiResponse::CgiResponse()
       _body(NULL) {}
 
 void CgiResponse::initialize() {
-  _parsingState = CGI_RUNNING;
-  _statusCode   = 0;
-
+  _parsingState  = CGI_RUNNING;
+  _statusCode    = 0;
+  _httpVersion   = "";
+  _statusMessage = "";
+  _contentType   = "";
   _storage.clear();
   _body = NULL;
 }

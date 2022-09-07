@@ -152,7 +152,7 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
   std::stringstream ss(line);
   std::string       word;
 
-  ss >> word;
+  std::getline(ss, word, ' ');
   if (word == "Content-Type:") {
     ss >> _contentType;
   } else if (word == "Content-Length:") {
