@@ -230,9 +230,13 @@ void HttpRequest::_parseChunk() {
     }
 
     if (_chunkSize == 0) {
+      std::string line = _storage.getLine();
+      if (line.empty()) {
+        _checkTimeOut(_bodyTimeStamp);
+        return;
+      }
       _parsingState = HTTP_PARSING_DONE;
-      _storage.moveReadPos(2);
-      _chunkSize = -1;
+      _chunkSize    = -1;
       return;
     }
 

@@ -14,10 +14,10 @@ std::string Storage::getLine() {
 }
 
 void Storage::moveReadPos(int move) {
-  if (move + _readPos > _writePos)
-    _readPos = _writePos;
-  else
-    _readPos += move;
+  // if (move + _readPos > _writePos)
+  //   _readPos = _writePos;
+  // else
+  _readPos += move;
 }
 
 void Storage::preserveRemains() {
