@@ -89,7 +89,7 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
       continue;
     } else {
       std::cout << "ERROR: invalid config file" << std::endl;
-      Log::log()(LOG_LOCATION, "ERROR: invalid config file" + _identifier + _value.str(), ALL);
+      Log::log()(LOG_LOCATION, "ERROR: invalid config file " + _identifier + _value.str(), ALL);
       std::exit(1);
     }
     ++it;
@@ -104,22 +104,25 @@ LocationInfo Config::_parseLocation(configIterator& it, const configIterator& en
                                     const std::string& id) {
   LocationInfo _location_info = _init_locationInfo(serverInfo);
   _location_info.id           = id;
+  _location_info.root += id;
   while (it != end && *it != "\n" && *it != "server") {
     std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
     if (_trimmed.first != 2) {
       break;
     }
-    std::vector<std::string> _splitted = _split(_trimmed.second, ":");
-    if (_splitted.size() != 2) {
+    std::string::size_type delim = _trimmed.second.find(':');
+    // std::vector<std::string> _splitted = _split(_trimmed.second, ":");
+    if (delim == std::string::npos) {
       if (_trimmed.second == "autoindex") {
         _location_info.isAutoIndexOn = true;
         it++;
         continue;
       }
+      Log::log()(LOG_LOCATION, "ERROR: split error", ALL);
       std::exit(1);
     }
-    std::string _identifier = _splitted[0];
-    std::string _value      = _trimLeftSpace(_splitted[1]);
+    std::string _identifier = _trimmed.second.substr(0, delim);
+    std::string _value      = _trimLeftSpace(_trimmed.second.substr(delim + 1));
     _parseLocationInfoToken(_location_info, _identifier, _value);
     it++;
   }
@@ -352,7 +355,11 @@ void Config::_parsedConfigResult() {
 
 void Config::_setPorts() {
   for (serverInfoConstIterator it = _serverInfos.begin(); it != _serverInfos.end(); ++it) {
-    _ports.push_back(it->hostPort);
+    if (_ports.count(it->hostPort)) {
+      Log::log()(LOG_LOCATION, "same port!", ALL);
+      std::exit(1);
+    }
+    _ports.insert(it->hostPort);
   }
   // std::cout << "ports: ";
   // for (std::vector<int>::const_iterator it = _ports.begin(); it != _ports.end(); ++it) {
@@ -373,5 +380,5 @@ void Config::_error(const char* file, int line, const char* function, std::strin
 
 int Config::_error_codes[ERROR_PAGES_COUNT] = {400, 402, 404, 405, 413, 500, 501, 502, 503, 504, 505};
 
-std::vector<int>&        Config::getPorts() { return _ports; }
+std::set<int>&           Config::getPorts() { return _ports; }
 std::vector<ServerInfo>& Config::getServerInfos() { return _serverInfos; }

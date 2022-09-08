@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -55,7 +56,7 @@ class Config {
  private:
   std::vector<std::string> _configContent;
   std::vector<ServerInfo>  _serverInfos;
-  std::vector<int>         _ports;
+  std::set<int>            _ports;
   static int               _error_codes[ERROR_PAGES_COUNT];
 
   // Method
@@ -95,7 +96,7 @@ class Config {
   // Interface
  public:
   std::vector<ServerInfo>& getServerInfos();
-  std::vector<int>&        getPorts();
+  std::set<int>&           getPorts();
 };
 
 #endif

@@ -1,8 +1,8 @@
 #ifndef MYLITTLEWEBSERV_ROUTER_HPP
 #define MYLITTLEWEBSERV_ROUTER_HPP
 
-#include <vector>
 #include <exception>
+#include <vector>
 
 #include "Config.hpp"
 #include "EventHandler.hpp"
@@ -15,9 +15,15 @@ class Router {
   EventHandler               _eventHandler;
 
   void _serverSocketsInit();
+
+ public:
   class ServerSocketInitException : public std::exception {
    public:
     virtual const char* what() const throw() { return "(ERROR) failed to init server sockets!"; }
+  };
+  class ServerSystemCallException : public std::exception {
+   public:
+    virtual const char* what() const throw() { return "(ERROR) failed to system-call!"; }
   };
 
  public:

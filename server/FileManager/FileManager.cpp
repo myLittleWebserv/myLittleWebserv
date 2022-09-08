@@ -1,6 +1,6 @@
 #include "FileManager.hpp"
 
-#include <exception>
+#include "Router.hpp"
 
 FileManager::TempFileFds FileManager::_tempFileFd;
 
@@ -22,6 +22,9 @@ FileManager::FileManager(const std::string& uri, const LocationInfo& location_in
 
 void FileManager::addIndexToName(const std::string& indexFile) {
   _appendFileName(indexFile);
+
+  Log::log()(true, "File path", _absolutePath);
+
   _updateFileInfo();
 }
 
@@ -75,7 +78,7 @@ void FileManager::removeFile(int key_fd) {
   std::string temp_response = TEMP_RESPONSE_PREFIX + key.str();
 
   if (unlink(temp_request.c_str()) == -1 || unlink(temp_response.c_str()) == -1) {
-    throw "unlink error";
+    throw Router::ServerSystemCallException();
   }
   Log::log()(LOG_LOCATION, "(DONE) temporary file removed", INFILE);
 }

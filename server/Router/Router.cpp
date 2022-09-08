@@ -33,7 +33,7 @@ void Router::start() {
 }
 
 void Router::_serverSocketsInit() {
-  for (std::vector<int>::iterator port = _config.getPorts().begin(); port != _config.getPorts().end(); ++port) {
+  for (std::set<int>::iterator port = _config.getPorts().begin(); port != _config.getPorts().end(); ++port) {
     int server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket < 0) {
       Log::log().syscall(server_socket, LOG_LOCATION, "", "(SYSCALL) socket error", ALL);

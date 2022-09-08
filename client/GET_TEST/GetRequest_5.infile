@@ -1,2 +1,2 @@
 GET /autoindex_on_index HTTP/1.1
-Host: localhost:7771
+Host: localhost:7777

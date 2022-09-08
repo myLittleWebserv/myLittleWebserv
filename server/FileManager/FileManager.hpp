@@ -55,7 +55,7 @@ class FileManager {
   bool               isDirectory() { return _isDirectoy; }
   std::ifstream&     inFile() { return _inFile; }
   std::ofstream&     outFile() { return _outFile; }
-  const std::string& fileName() { return _absolutePath; }
+  const std::string& filePath() { return _absolutePath; }
   int                openFile(const char* file_path, int oflags, mode_t mode);
   void               openInFile() { _inFile.open(_absolutePath.c_str()); }
   void openOutFile(std::ofstream::openmode opt = std::ofstream::out) { _outFile.open(_absolutePath.c_str(), opt); }

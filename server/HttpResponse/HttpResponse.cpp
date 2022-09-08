@@ -94,7 +94,7 @@ void HttpResponse::sendResponse(int fd) {
       header    = _header.c_str() + _headerSent;
       remains   = _header.size() - _headerSent;
       sent_size = send(fd, header, remains, 0);
-      if (sent_size == -1) {
+      if (sent_size == -1) {  // client 연결 제거.
         Log::log()(true, "errno", strerror(errno), INFILE);
         return;
       }
@@ -140,11 +140,14 @@ void HttpResponse::_makeHeader() {
 
 void HttpResponse::_fileToBody(std::ifstream& file) {
   std::string line;
-  std::getline(file, line);
-  while (!line.empty() && !file.eof()) {
+
+  if (file.peek() == std::ifstream::traits_type::eof())
+    return;
+
+  while (!file.eof()) {
+    std::getline(file, line);
     _tempBody.insert(_tempBody.end(), line.c_str(), line.c_str() + line.size());
     _tempBody.insert(_tempBody.end(), '\n');
-    std::getline(file, line);
   }
 }
 
@@ -153,14 +156,12 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
   bool        isAutoIndexOn = location_info.isAutoIndexOn;
   std::string index_page    = location_info.indexPagePath;
 
-  if (file_manager.isDirectory()) {
+  if (file_manager.isFileExist() && file_manager.isDirectory()) {
     if (index_page.empty() && isAutoIndexOn) {
-      _makeAutoIndexResponse(request, file_manager);
+      _makeAutoIndexResponse(request, location_info, file_manager);
       return;
     } else if (index_page.empty()) {
-      // _makeRedirResponse(301, request, location_info);
-      // return;
-      file_manager.addIndexToName("index.html");  // ?
+      file_manager.addIndexToName("index.html");
     } else {
       file_manager.addIndexToName(location_info.indexPagePath);
     }
@@ -181,24 +182,26 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
   _statusCode    = 200;
   _message       = _getMessage(_statusCode);
   _contentLength = _tempBody.size();
-  _contentType   = _getContentType(file_manager.fileName());
+  _contentType   = _getContentType(file_manager.filePath());
   Log::log()(LOG_LOCATION, "Get request processed.");
   _makeResponse(_tempBody.data());
 }
 
-void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, FileManager& file_manager) {
+void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info,
+                                          FileManager& file_manager) {
   std::string body;
 
   file_manager.openDirectoy();
 
-  body += "<html><head><title> Index of / " + file_manager.fileName() + " / </title></head>\n";
-  body += "<body><h1> Index of / " + file_manager.fileName() + " / </h1><hr>\n";
+  body += "<html><head><title> Index of / " + file_manager.filePath() + " / </title></head>\n";
+  body += "<body><h1> Index of / " + file_manager.filePath() + " / </h1><hr>\n";
 
   std::string file_name = file_manager.readDirectoryEntry();
   while (!file_name.empty()) {
     if (file_name != ".") {
       body += "<pre><a href = \"";
-      body += file_name + "\">" + file_name + "/</a></pre>\n";
+      body += file_manager.filePath().substr(location_info.root.size() + 1) + '/' + file_name + "\">" + file_name +
+              "/</a></pre>\n";
     }
     file_name = file_manager.readDirectoryEntry();
   }
@@ -219,13 +222,12 @@ void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& locat
   bool        isAutoIndexOn = location_info.isAutoIndexOn;
   std::string index_page    = location_info.indexPagePath;
 
-  if (file_manager.isDirectory()) {
+  if (file_manager.isFileExist() && file_manager.isDirectory()) {
     if (index_page.empty() && isAutoIndexOn) {
-      _makeAutoIndexResponse(request, file_manager);
+      _makeAutoIndexResponse(request, location_info, file_manager);
       return;
     } else if (index_page.empty()) {
-      _makeRedirResponse(301, request, location_info);
-      return;
+      file_manager.addIndexToName("index.html");
     } else {
       file_manager.addIndexToName(location_info.indexPagePath);
     }
@@ -239,7 +241,7 @@ void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& locat
   _httpVersion = request.httpVersion();
   _statusCode  = 200;
   _message     = _getMessage(_statusCode);
-  _contentType = _getContentType(file_manager.fileName());
+  _contentType = _getContentType(file_manager.filePath());
   Log::log()(LOG_LOCATION, "Head request processed.");
 
   _makeHeader();
@@ -265,6 +267,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
 
   file_manager.openOutFile();
   file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
+  file_manager.outFile().close();
 
   _httpVersion = request.httpVersion();
   _statusCode  = 201;
@@ -309,6 +312,10 @@ void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& loc
   }
 
   file_manager.removeFile();
+
+  _httpVersion = request.httpVersion();
+  _statusCode  = 200;
+  _message     = _getMessage(_statusCode);
 
   Log::log()(LOG_LOCATION, "Delete request processed.");
   _makeResponse(_tempBody.data());

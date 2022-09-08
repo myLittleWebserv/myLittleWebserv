@@ -11,13 +11,13 @@ int main(int argc, char** argv) {
 
   Router router(argv[1]);
 
-  // while (1) {
-  try {
-    router.start();
-  } catch (const char* msg) {
-    std::cerr << "error : " << msg << std::endl;
-    std::cerr << "Server Reoot...!" << std::endl;
+  while (1) {
+    try {
+      router.start();
+    } catch (const char* msg) {
+      std::cerr << "error : " << msg << std::endl;
+      std::cerr << "Server Reoot...!" << std::endl;
+    }
   }
-  // }
   return 0;
 }
