@@ -41,7 +41,7 @@ void EventHandler::removeConnection(Event& event) {
 void EventHandler::_addConnection(int listen_fd) {
   sockaddr_in addr;
   socklen_t   alen;
-  int         client_fd = accept(listen_fd, (struct sockaddr*)&addr, &alen);  // addr 버리나?
+  int         client_fd = accept(listen_fd, (struct sockaddr*)&addr, &alen);
 
   Log::log().syscall(client_fd, LOG_LOCATION, "(SYSCALL) connection accepted", "(SYSCALL) connection not accepted",
                      INFILE);

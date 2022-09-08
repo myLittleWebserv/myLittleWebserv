@@ -3,14 +3,11 @@
 #include <sys/socket.h>
 
 #include "Log.hpp"
-#include "Router.hpp"
 
 void RequestStorage::readFile(int fd) {
   ssize_t read_size = recv(fd, _buffer, READ_BUFFER_SIZE, 0);
 
-  if (read_size == -1) {
-    throw Router::ServerSystemCallException();
-  } else if (read_size == 0) {
+  if (read_size <= 0) {
     _state = CONNECTION_CLOSED;
   } else if (read_size == READ_BUFFER_SIZE) {
     _state = RECEIVING;

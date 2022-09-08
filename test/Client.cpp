@@ -45,7 +45,6 @@ int main(int argc, char **argv) {
       line = "\r\n";
     else
       line += "\r\n";
-    // line = "GET / HTTP/1.1\r\n\r\n";
     std::cout << "Client: send to server: '" << line << "' length: " << line.length() << std::endl;
     int send_size = send(client_fd, line.c_str(), line.length(), 0);
     if (send_size == -1) {

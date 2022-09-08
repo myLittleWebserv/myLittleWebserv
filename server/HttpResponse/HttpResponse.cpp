@@ -19,7 +19,7 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info)
     _makeErrorResponse(400, request, location_info);
     return;
   }
-  if (request.httpVersion() != "HTTP/1.1") {  // 더 아래 버전 ?
+  if (request.httpVersion() != "HTTP/1.1") {
     _makeErrorResponse(505, request, location_info);
     return;
   }
@@ -170,7 +170,7 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
   }
 
   if (!file_manager.isFileExist()) {
-    _makeErrorResponse(404, request, location_info);  // ? 403
+    _makeErrorResponse(404, request, location_info);
     return;
   }
 
@@ -219,7 +219,7 @@ void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& lo
   _makeResponse(_tempBody.data());
 }
 
-void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
+void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {
   FileManager file_manager(request.uri(), location_info);
   bool        isAutoIndexOn = location_info.isAutoIndexOn;
   std::string index_page    = location_info.indexPagePath;
@@ -236,7 +236,7 @@ void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& locat
   }
 
   if (!file_manager.isFileExist()) {
-    _makeErrorResponse(404, request, location_info);  // ? 403
+    _makeErrorResponse(404, request, location_info);
     return;
   }
 
@@ -263,7 +263,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
 
   if (file_manager.isFileExist()) {
     std::string file_name = request.uri().substr(location_info.id.size());
-    _makeRedirResponse(303, request, location_info, file_name);  // ?
+    _makeRedirResponse(303, request, location_info, file_name);
     return;
   }
 
@@ -278,7 +278,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
   _makeResponse(_tempBody.data());
 }
 
-void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
+void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& location_info) {
   if (request.body().size() == 0) {
     _makeErrorResponse(402, request, location_info);
     return;
@@ -305,7 +305,7 @@ void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& locati
   _makeResponse(_tempBody.data());
 }
 
-void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& location_info) {  // ?
+void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& location_info) {
   FileManager file_manager(request.uri(), location_info);
 
   if (!file_manager.isFileExist()) {
@@ -363,7 +363,7 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
 
   if (location_field.empty()) {
     if (location_info.redirPath.empty()) {
-      _location = "index.html";  // ?
+      _location = "index.html";
     } else {
       _location = location_info.redirPath;
     }

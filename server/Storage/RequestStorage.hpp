@@ -1,4 +1,3 @@
-// #ifndef STORAGE_HPP
 #pragma once
 
 #include <string>
@@ -8,7 +7,6 @@
 #include "Storage.hpp"
 
 enum RequestReadingState { RECEIVE_DONE = -1, CONNECTION_CLOSED = 0, RECEIVING };
-// enum FileReadingState { READING, READ_DONE };
 
 class RequestStorage : public Storage {
   // Member Variable
@@ -25,5 +23,3 @@ class RequestStorage : public Storage {
   void                dataToBody(vector& _body, int required_size, bool chunked = 0);
   void                readFile(int fd);
 };
-
-// #endif

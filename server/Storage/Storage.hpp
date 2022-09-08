@@ -1,4 +1,3 @@
-// #ifndef STORAGE_HPP
 #pragma once
 
 #include <string>
@@ -54,5 +53,3 @@ void Storage::insert(BeginIter bi, EndIter ei) {
   vector::insert(vector::end(), bi, ei);
   _writePos += (ei - bi);
 }
-
-// #endif

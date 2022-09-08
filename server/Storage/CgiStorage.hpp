@@ -24,7 +24,6 @@ class CgiStorage : public Storage {
   bool isReadError() { return _isReadError; }
   bool isReadingEnd() { return _isReadingEnd; }
   void readFile(int fd);
-  // void dataToBody(std::deque<unsigned char>& body, int required_size);
 };
 
 std::ostream& operator<<(std::ostream& os, const std::vector<unsigned char>& v);

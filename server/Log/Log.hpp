@@ -81,20 +81,4 @@ void Log::operator()(bool condition, const std::string& tag, ARG arg, LogLocatio
   }
 }
 
-// enum LogStatus { ALL, INFILE, CONSOLE };
-
-// std::string currentTimeStamp();
-
-// class Log {
-//  private:
-//   std::ofstream _logFile;
-
-//  public:
-//   Log();
-//   ~Log();
-
-//   void mark(std::string mark);
-//   void operator()(std::string message, LogStatus status = INFILE);
-// };
-
 #endif

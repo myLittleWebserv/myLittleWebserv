@@ -7,7 +7,7 @@ void CgiStorage::readFile(int fd) {
     _isReadError = true;
   } else if (read_size == READ_BUFFER_SIZE) {
     _isReadingEnd = false;
-  } else {
+  } else {  // read_size == 0 -> 이벤트 발생 x
     _isReadingEnd = true;
   }
   if (read_size > 0) {

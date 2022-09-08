@@ -51,11 +51,8 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
   ServerInfo _server_info = _init_serverInfo();
 
   while (it != end && *it != "server" && *it != "\n") {
-    std::pair<int, std::string> _trimmed = _trimLeftTab(*it);
-    // if (_trimmed.first != 1) {
-    //   break;
-    // }
-    std::vector<std::string> _splitted = _split(_trimmed.second, ":");
+    std::pair<int, std::string> _trimmed  = _trimLeftTab(*it);
+    std::vector<std::string>    _splitted = _split(_trimmed.second, ":");
     if (_splitted.size() != 2) {
       std::cout << "ERROR: invalid config file" << std::endl;
       Log::log()(LOG_LOCATION, "ERROR: invalid config file");
@@ -111,7 +108,6 @@ LocationInfo Config::_parseLocation(configIterator& it, const configIterator& en
       break;
     }
     std::string::size_type delim = _trimmed.second.find(':');
-    // std::vector<std::string> _splitted = _split(_trimmed.second, ":");
     if (delim == std::string::npos) {
       if (_trimmed.second == "autoindex") {
         _location_info.isAutoIndexOn = true;
@@ -361,10 +357,6 @@ void Config::_setPorts() {
     }
     _ports.insert(it->hostPort);
   }
-  // std::cout << "ports: ";
-  // for (std::vector<int>::const_iterator it = _ports.begin(); it != _ports.end(); ++it) {
-  //   std::cout << *it << " ";
-  // }
 }
 
 std::string Config::_itoa(int i) {

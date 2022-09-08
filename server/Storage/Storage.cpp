@@ -18,12 +18,7 @@ std::string Storage::getLine() {
   return "";
 }
 
-void Storage::moveReadPos(int move) {
-  // if (move + _readPos > _writePos)
-  //   _readPos = _writePos;
-  // else
-  _readPos += move;
-}
+void Storage::moveReadPos(int move) { _readPos += move; }
 
 void Storage::preserveRemains() {
   size_t i;
