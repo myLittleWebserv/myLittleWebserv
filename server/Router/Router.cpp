@@ -84,7 +84,7 @@ void Router::_serverSocketsInit() {
     }
 
     Event* event = new Event(CONNECTION_REQUEST, server_socket);
-    _eventHandler.appendNewEventToChangeList(server_socket, EVFILT_READ, EV_ADD, event);
+    _eventHandler.addReadEvent(server_socket, event);
   }
   Log::log()(LOG_LOCATION, "(SUCCESS) Server Initialization", INFILE);
 }

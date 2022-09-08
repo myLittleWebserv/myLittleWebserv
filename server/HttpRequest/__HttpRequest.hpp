@@ -24,10 +24,11 @@ class HttpRequest : public Request {
   // Member Variable
  private:
   HttpRequestParsingState    _parsingState;
-  RequestStorage             _storage;
+  RequestStorage             _storage;  // cgi 보낸 후 resize(0);
   std::vector<unsigned char> _body;
   int                        _headerSize;
-  time_t                     _timeStamp;  // 생성자에서 초기화
+  time_t                     _headerTimeStamp;  // 생성자에서 초기화
+  time_t                     _bodyTimeStamp;    // 헤더 다 읽고 나서 초기화.
   bool                       _isBodyExisted;
   bool                       _isChunked;
   int                        _chunkSize;
@@ -39,17 +40,19 @@ class HttpRequest : public Request {
   MethodType  _method;
   std::string _uri;
   std::string _httpVersion;
-  int         _contentLength;
-  std::string _contentType;
   int         _hostPort;
   std::string _hostName;
+  int         _contentLength;
+  std::string _contentType;
 
   // Method
  private:
   void   _parseStartLine(const std::string& line);
   void   _parseHeaderField(const std::string& line);
+  void   _parseHeader();
+  void   _parseBody();
   void   _parseChunk();
-  void   _checkTimeOut();
+  void   _checkTimeOut(time_t timestamp);
   size_t _parseChunkSize(const std::string& line);
 
   // Constructor
@@ -57,14 +60,15 @@ class HttpRequest : public Request {
   HttpRequest()
       : _parsingState(HTTP_PARSING_INIT),
         _headerSize(0),
-        _timeStamp(time(NULL)),
+        _headerTimeStamp(time(NULL)),
+        _bodyTimeStamp(_headerTimeStamp),
         _isBodyExisted(false),
         _isChunked(false),
         _chunkSize(-1),
         _isKeepAlive(true),  //  default: keep-alive: true
         _serverError(false),
-        _contentLength(0),
-        _hostPort(HTTP_DEFAULT_PORT) {}
+        _hostPort(HTTP_DEFAULT_PORT),
+        _contentLength(0) {}
 
   // Interface
  public:
@@ -87,7 +91,7 @@ class HttpRequest : public Request {
   const std::string&                uri() const { return _uri; }
   int                               secretHeaderForTest() const { return _secretHeaderForTest; }
   const std::vector<unsigned char>& body() { return _body; }
-  Storage&                          storage() { return _storage; }
+  const Storage&                    storage() { return _storage; }
 };
 
 #endif

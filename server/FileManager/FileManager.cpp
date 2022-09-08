@@ -58,7 +58,7 @@ int FileManager::openFile(const char* file_path, int oflag, mode_t mode = 0644) 
   return fd;
 }
 
-void FileManager::clearTempFd() {
+void FileManager::clearTempFileFd() {
   for (TempFileFds::iterator it = _tempFileFd.begin(); it != _tempFileFd.end(); ++it) {
     close(*it);
   }

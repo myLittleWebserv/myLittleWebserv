@@ -12,6 +12,7 @@ class VirtualServer {
   ServerInfo&   _serverInfo;
   EventHandler& _eventHandler;
 
+  void          _processEvent(Event& event);
   bool          _callCgi(Event& event);
   void          _execveCgi(Event& event);
   void          _sendResponse(int fd, HttpResponse& response);

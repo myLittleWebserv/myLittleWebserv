@@ -19,15 +19,24 @@ class FileManager {
  public:
   typedef std::vector<int> TempFileFds;
 
+  // Static
  private:
   static TempFileFds _tempFileFd;
-  std::string        _absolutePath;
-  std::ifstream      _inFile;
-  std::ofstream      _outFile;
-  DIR*               _directory;
-  dirent*            _entry;
-  bool               _isExist;
-  bool               _isDirectoy;
+
+ public:
+  static void clearTempFileFd();
+  static void registerTempFileFd(int fd) { _tempFileFd.push_back(fd); }
+  static void removeFile(int key_fd);
+
+  // Member Variable
+ private:
+  std::string   _absolutePath;
+  std::ifstream _inFile;
+  std::ofstream _outFile;
+  DIR*          _directory;
+  dirent*       _entry;
+  bool          _isExist;
+  bool          _isDirectoy;
 
   // Method
  private:
@@ -52,9 +61,6 @@ class FileManager {
   void openOutFile(std::ofstream::openmode opt = std::ofstream::out) { _outFile.open(_absolutePath.c_str(), opt); }
   void openDirectoy();
   void removeFile();
-  void removeFile(int key_fd);
-  void registerTempFileFd(int fd) { _tempFileFd.push_back(fd); }
-  void clearTempFd();
   void addIndexToName(const std::string& indexFile);
   std::string readDirectoryEntry();
 };
