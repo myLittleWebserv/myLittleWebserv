@@ -16,7 +16,8 @@ struct LocationInfo;
 
 enum HttpResponseSendingState {
   HTTP_SENDING_HEADER,
-  HTTP_SENDING_BODY,
+  HTTP_SENDING_TEMPBODY,
+  HTTP_SENDING_FILEBODY,
   HTTP_SENDING_DONE,
   HTTP_SENDING_CONNECTION_CLOSED
 };
@@ -27,9 +28,10 @@ class HttpResponse {
 
   // Member Variable
  private:
-  enum HttpResponseSendingState _sendingState;
+  // vector::pointer               _body;
   vector                        _tempBody;
-  vector::pointer               _body;
+  enum HttpResponseSendingState _sendingState;
+  int                           _bodyFd;
   size_t                        _bodySent;
   size_t                        _headerSent;
   std::string                   _header;
@@ -57,6 +59,9 @@ class HttpResponse {
   std::string _getMessage(int status_code);
   std::string _getContentType(const std::string& file_name);
   void        _makeResponse(vector::pointer body);
+  bool        _sendingStateTransition(size_t total_size, size_t already_sent, HttpResponseSendingState state);
+  template <typename T>
+  int _sendChunk(int fd, const T* base, size_t total_size, size_t& already_sent);
 
   // Constructor
  public:
@@ -69,7 +74,8 @@ class HttpResponse {
   void               sendResponse(int fd);
   int                contentLength() { return _contentLength; }
   const std::string& header() { return _header; }
-  vector::pointer    body() { return _body; }
+  int                bodyFd() { return _bodyFd; }
+  // vector::pointer    body() { return _body; }
 };
 
 #endif

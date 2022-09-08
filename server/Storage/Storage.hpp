@@ -11,11 +11,14 @@ struct Storage : private std::vector<unsigned char> {
  public:
   typedef std::vector<unsigned char> vector;
 
+  // Static
+ public:
+  static unsigned char buffer[READ_BUFFER_SIZE];
+
   // Member Variable
  public:
-  static unsigned char _buffer[READ_BUFFER_SIZE];
-  size_t               _readPos;
-  size_t               _writePos;
+  size_t _readPos;
+  size_t _writePos;
   using vector::begin;
 
   // Constructor

@@ -37,7 +37,9 @@ void VirtualServer::_processEvent(Event& event) {
     case HTTP_RESPONSE_WRITABLE:
       Log::log().printHttpResponse(*event.httpResponse, INFILE);
       event.httpResponse->sendResponse(event.clientFd);
-      if (event.httpResponse->isSendingEnd()) {
+      if (event.httpResponse->isConnectionClosed()) {
+        _eventHandler.removeConnection(event);
+      } else if (event.httpResponse->isSendingEnd()) {
         Log::log()(true, "HTTP_RESPONSE_WRITABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
         _finishResponse(event);
         Log::log().increaseProcessedConnection();
@@ -52,6 +54,11 @@ void VirtualServer::_processEvent(Event& event) {
 }
 
 void VirtualServer::_finishResponse(Event& event) {
+  if (event.keventId != event.clientFd) {
+    FileManager::registerTempFileFd(event.keventId);
+    FileManager::removeFile(event.clientFd);
+  }
+
   if (event.httpRequest.isKeepAlive() || !event.httpRequest.storage().empty()) {
     event.initialize();
     _eventHandler.disableWriteEvent(event.clientFd, &event);
@@ -81,8 +88,6 @@ void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& locat
   event.type         = HTTP_RESPONSE_WRITABLE;
 
   Log::log()(true, "CGI RES to HTTPRES     DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
-  FileManager::registerTempFileFd(event.keventId);
-  FileManager::removeFile(event.clientFd);
   _eventHandler.deleteReadEvent(event.keventId, NULL);
   _eventHandler.enableWriteEvent(event.clientFd, &event);
   Log::log()(LOG_LOCATION, "(DONE) making Http Response using CGI RESPONSE", INFILE);
@@ -126,6 +131,7 @@ bool VirtualServer::_callCgi(Event& event) {
     fcntl(cgi_response, F_SETFL, O_NONBLOCK);
     event.keventId = cgi_response;
     event.cgiResponse.setInfo(event.httpRequest);
+    event.cgiResponse.getLine().setFd(cgi_response);
   }
   Log::log()(LOG_LOCATION, "(CGI) CALL SUCCESS", INFILE);
   return true;

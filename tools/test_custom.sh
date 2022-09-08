@@ -27,13 +27,13 @@ CGI_TEST="client/CGI_TEST"
 # echo $NEXT_TEST_MSG
 # read input
 
-./myLittleClient $PORT1 $POST_TEST/PostRequest_4.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $POST_TEST/PostRequest_4.infile
+# echo $NEXT_TEST_MSG
+# read input
 
-./myLittleClient $PORT1 $POST_TEST/PostRequest_5.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $POST_TEST/PostRequest_5.infile
+# echo $NEXT_TEST_MSG
+# read input
 
 # ./myLittleClient $PORT1 $POST_TEST/PostRequest_6.infile
 # echo $NEXT_TEST_MSG
@@ -41,6 +41,8 @@ read input
 
 
 # GET TEST
+
+echo "====================================== GET TEST ======================================"
 
 ./myLittleClient $PORT1 $GET_TEST/GetRequest_0.infile
 echo $NEXT_TEST_MSG

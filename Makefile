@@ -20,6 +20,8 @@ SRC :=	main.cpp\
 		Storage.cpp\
 		RequestStorage.cpp\
 		CgiStorage.cpp\
+		syscall.cpp\
+		GetLine.cpp
 
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
 
@@ -37,7 +39,8 @@ INCS := -I ./$(SRC_DIR)/Router\
 		-I ./$(SRC_DIR)/HttpResponse\
 		-I ./$(SRC_DIR)/CgiResponse\
 		-I ./$(SRC_DIR)/FileManager\
-		-I ./$(SRC_DIR)/Storage
+		-I ./$(SRC_DIR)/Storage\
+		-I ./$(SRC_DIR)/syscall
 
 
 ifeq ($(shell uname), Linux)
@@ -80,11 +83,12 @@ fclean: clean
 	rm -rf $(NAME)
 	rm -rf *.out
 	rm -rf *.dSYM
+	rm -rf temp/*
 
 re: fclean all
 
 $(CLIENT): client/Client.cpp
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ $^ $(CXXFALGS)
 
 
 

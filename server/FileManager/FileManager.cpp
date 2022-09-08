@@ -20,7 +20,7 @@ FileManager::FileManager(const std::string& uri, const LocationInfo& location_in
   _updateFileInfo();
 }
 
-void FileManager::addIndexToName(const std::string& indexFile) {
+void FileManager::appendToPath(const std::string& indexFile) {
   _appendFileName(indexFile);
 
   Log::log()(true, "File path", _absolutePath);
@@ -57,7 +57,10 @@ void FileManager::removeFile() {
 
 int FileManager::openFile(const char* file_path, int oflag, mode_t mode = 0644) {
   int fd = open(file_path, oflag, mode);
-  _tempFileFd.push_back(fd);
+  if (fd == -1) {
+    Log::log()(LOG_LOCATION, "");
+    throw Router::ServerSystemCallException();
+  }
   return fd;
 }
 
@@ -78,6 +81,7 @@ void FileManager::removeFile(int key_fd) {
   std::string temp_response = TEMP_RESPONSE_PREFIX + key.str();
 
   if (unlink(temp_request.c_str()) == -1 || unlink(temp_response.c_str()) == -1) {
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
     throw Router::ServerSystemCallException();
   }
   Log::log()(LOG_LOCATION, "(DONE) temporary file removed", INFILE);

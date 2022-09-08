@@ -1,6 +1,6 @@
 #include "Storage.hpp"
 
-unsigned char Storage::_buffer[READ_BUFFER_SIZE];
+unsigned char Storage::buffer[READ_BUFFER_SIZE];
 
 void Storage::clear() {
   _writePos = 0;

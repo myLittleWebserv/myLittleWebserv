@@ -67,6 +67,7 @@ int main(int argc, char **argv) {
   }
 
   const int res = std::atexit(atexit);
+  (void)res;
 
   std::stringstream storage;
   readFile(storage, argv[2]);
@@ -79,7 +80,14 @@ int main(int argc, char **argv) {
 
   unsigned char buf[BUFFER_SIZE];
 
-  int recv_size = recv(fd, buf, BUFFER_SIZE, 0);
+  fcntl(fd, F_SETFL, O_NONBLOCK);
+
   std::cout << "\n[output]" << std::endl;
-  write(1, buf, recv_size);
+  int recv_size = recv(fd, buf, BUFFER_SIZE, 0);
+  while (recv_size != 0) {
+    if (recv_size > -1) {
+      write(1, buf, recv_size);
+    }
+    recv_size = recv(fd, buf, BUFFER_SIZE, 0);
+  }
 }
