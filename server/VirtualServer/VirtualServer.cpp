@@ -38,8 +38,8 @@ void VirtualServer::_processEvent(Event& event) {
       Log::log().printHttpResponse(*event.httpResponse, INFILE);
       event.httpResponse->sendResponse(event.clientFd);
       if (event.httpResponse->isSendingEnd()) {
-        _finishResponse(event);
         Log::log()(true, "HTTP_RESPONSE_WRITABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+        _finishResponse(event);
         Log::log().increaseProcessedConnection();
         Log::log().printStatus();
         Log::log().mark();
