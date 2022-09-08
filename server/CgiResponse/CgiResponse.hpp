@@ -44,7 +44,8 @@ class CgiResponse : public Request {
  public:
   void               initialize();
   bool               isParsingEnd();
-  bool               isError();
+  bool               isExecuteError();
+  bool               isReadError();
   void               readCgiResult(int fd, int pid, clock_t clock);
   void               setInfo(const HttpRequest& http_request);
   MethodType         method() const { return _method; }

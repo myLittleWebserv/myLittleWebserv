@@ -114,7 +114,9 @@ void EventHandler::_routeEvent(Event& event) {
     case CGI_RESPONSE_READABLE:
       event.cgiResponse.readCgiResult(event.keventId, event.pid, event.baseClock);
       gettimeofday(&event.timestamp, NULL);
-      if (event.cgiResponse.isParsingEnd()) {
+      if (event.cgiResponse.isReadError()) {
+        removeConnection(event);
+      } else if (event.cgiResponse.isParsingEnd()) {
         _routedEvents[event.serverId].push_back(&event);
         Log::log()(LOG_LOCATION, "(event routed) Cgi Reponse Readable", INFILE);
       }
@@ -147,6 +149,7 @@ void EventHandler::routeEvents() {
     int    flags = _keventList[i].flags;
 
     if (flags & EV_EOF) {
+      Log::log()(LOG_LOCATION, "ev_eof", ALL);
       removeConnection(event);
       continue;
     }

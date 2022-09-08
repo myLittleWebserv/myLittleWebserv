@@ -63,7 +63,7 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info)
 
 HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info)
     : _sendingState(HTTP_SENDING_HEADER), _body(NULL), _bodySent(0), _headerSent(0), _statusCode(0), _contentLength(0) {
-  if (cgi_response.isError()) {
+  if (cgi_response.isExecuteError()) {
     _makeErrorResponse(500, cgi_response, location_info);
   }
 
@@ -94,7 +94,8 @@ void HttpResponse::sendResponse(int fd) {
       header    = _header.c_str() + _headerSent;
       remains   = _header.size() - _headerSent;
       sent_size = send(fd, header, remains, 0);
-      if (sent_size == -1) {  // client 연결 제거.
+      if (sent_size == -1) {
+        _sendingState = HTTP_SENDING_CONNECTION_CLOSED;
         Log::log()(true, "errno", strerror(errno), INFILE);
         return;
       }
@@ -107,6 +108,7 @@ void HttpResponse::sendResponse(int fd) {
       remains   = _contentLength - _bodySent;
       sent_size = send(fd, body, remains, 0);
       if (sent_size == -1) {
+        _sendingState = HTTP_SENDING_CONNECTION_CLOSED;
         Log::log()(true, "errno", strerror(errno), INFILE);
         return;
       }
@@ -266,7 +268,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
   }
 
   file_manager.openOutFile();
-  file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
+  file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());  // ?
   file_manager.outFile().close();
 
   _httpVersion = request.httpVersion();

@@ -112,7 +112,8 @@ std::string CgiResponse::CgiResponseResultString() {
   return ss.str();
 }
 
-bool CgiResponse::isError() { return _parsingState == CGI_ERROR; }
+bool CgiResponse::isExecuteError() { return _parsingState == CGI_ERROR; }
+bool CgiResponse::isReadError() { return _storage.isReadError(); }
 
 bool CgiResponse::isParsingEnd() { return _parsingState == CGI_ERROR || _parsingState == CGI_PARSING_DONE; }
 

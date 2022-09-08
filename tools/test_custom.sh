@@ -11,30 +11,29 @@ CGI_TEST="client/CGI_TEST"
 
 # # POST TEST
 
-./myLittleClient $PORT1 $POST_TEST/PostRequest_0.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $POST_TEST/PostRequest_0.infile
+# echo $NEXT_TEST_MSG
+# read input
 
 # ./myLittleClient $PORT1 $POST_TEST/PostRequest_1.infile
 # echo $NEXT_TEST_MSG
 # read input
 
-./myLittleClient $PORT1 $POST_TEST/PostRequest_2.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $POST_TEST/PostRequest_2.infile
+# echo $NEXT_TEST_MSG
+# read input
 
 # ./myLittleClient $PORT1 $POST_TEST/PostRequest_3.infile
 # echo $NEXT_TEST_MSG
 # read input
 
-# ./myLittleClient $PORT1 $POST_TEST/PostRequest_4.infile
-# echo $NEXT_TEST_MSG
-# read input
+./myLittleClient $PORT1 $POST_TEST/PostRequest_4.infile
+echo $NEXT_TEST_MSG
+read input
 
-
-# ./myLittleClient $PORT1 $POST_TEST/PostRequest_5.infile
-# echo $NEXT_TEST_MSG
-# read input
+./myLittleClient $PORT1 $POST_TEST/PostRequest_5.infile
+echo $NEXT_TEST_MSG
+read input
 
 # ./myLittleClient $PORT1 $POST_TEST/PostRequest_6.infile
 # echo $NEXT_TEST_MSG

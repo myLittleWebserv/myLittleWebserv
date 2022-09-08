@@ -13,13 +13,15 @@ class CgiStorage : public Storage {
   // Member Variable
  private:
   bool _isReadingEnd;
+  bool _isReadError;
 
   // Constructor
  public:
-  CgiStorage() : _isReadingEnd(false) {}
+  CgiStorage() : _isReadingEnd(false), _isReadError(false) {}
 
   // Interface
  public:
+  bool isReadError() { return _isReadError; }
   bool isReadingEnd() { return _isReadingEnd; }
   void readFile(int fd);
   // void dataToBody(std::deque<unsigned char>& body, int required_size);

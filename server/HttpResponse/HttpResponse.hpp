@@ -14,7 +14,12 @@ class CgiResponse;
 class FileManager;
 struct LocationInfo;
 
-enum HttpResponseSendingState { HTTP_SENDING_HEADER, HTTP_SENDING_BODY, HTTP_SENDING_DONE };
+enum HttpResponseSendingState {
+  HTTP_SENDING_HEADER,
+  HTTP_SENDING_BODY,
+  HTTP_SENDING_DONE,
+  HTTP_SENDING_CONNECTION_CLOSED
+};
 
 class HttpResponse {
   // Types
@@ -59,6 +64,7 @@ class HttpResponse {
   HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info);
   // Interface
  public:
+  bool               isConnectionClosed() { return _sendingState == HTTP_SENDING_CONNECTION_CLOSED; }
   bool               isSendingEnd() { return _sendingState == HTTP_SENDING_DONE; }
   void               sendResponse(int fd);
   int                contentLength() { return _contentLength; }
