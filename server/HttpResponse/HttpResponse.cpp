@@ -71,9 +71,6 @@ HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_inf
     _makeErrorResponse(505, cgi_response, location_info);
     return;
   }
-
-  // _tempBody.insert(_tempBody.end(), cgi_response.body().begin(), cgi_response.body().end());
-
   _httpVersion   = cgi_response.httpVersion();
   _statusCode    = cgi_response.statusCode();
   _message       = cgi_response.statusMessage();
@@ -158,7 +155,7 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
 
   if (file_manager.isDirectory()) {
     if (index_page.empty() && isAutoIndexOn) {
-      _makeAutoIndexResponse(request, location_info, file_manager);
+      _makeAutoIndexResponse(request, file_manager);
       return;
     } else if (index_page.empty()) {
       // _makeRedirResponse(301, request, location_info);
@@ -189,11 +186,8 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
   _makeResponse(_tempBody.data());
 }
 
-void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info,
-                                          FileManager& file_manager) {
+void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, FileManager& file_manager) {
   std::string body;
-
-  (void)location_info;
 
   file_manager.openDirectoy();
 
@@ -227,7 +221,7 @@ void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& locat
 
   if (file_manager.isDirectory()) {
     if (index_page.empty() && isAutoIndexOn) {
-      _makeAutoIndexResponse(request, location_info, file_manager);
+      _makeAutoIndexResponse(request, file_manager);
       return;
     } else if (index_page.empty()) {
       _makeRedirResponse(301, request, location_info);
@@ -264,7 +258,8 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
   FileManager file_manager(request.uri(), location_info);
 
   if (file_manager.isFileExist()) {
-    _makeRedirResponse(303, request, location_info /*, file_manager.fileName()*/);  // ?
+    std::string file_name = request.uri().substr(location_info.id.size());
+    _makeRedirResponse(303, request, location_info, file_name);  // ?
     return;
   }
 

@@ -44,7 +44,7 @@ class HttpResponse {
   void        _processPostRequest(HttpRequest& request, LocationInfo& location_info);
   void        _processPutRequest(HttpRequest& request, LocationInfo& location_info);
   void        _processDeleteRequest(HttpRequest& request, LocationInfo& location_info);
-  void        _makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info, FileManager& file_manager);
+  void        _makeAutoIndexResponse(HttpRequest& request, FileManager& file_manager);
   void        _makeErrorResponse(int error_code, Request& request, LocationInfo& location_info);
   void        _makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info,
                                  const std::string& location_field = "");
@@ -61,9 +61,9 @@ class HttpResponse {
  public:
   bool               isSendingEnd() { return _sendingState == HTTP_SENDING_DONE; }
   void               sendResponse(int fd);
-  int contentLength() {return _contentLength;}
+  int                contentLength() { return _contentLength; }
   const std::string& header() { return _header; }
-  vector::pointer body() { return _body; }
+  vector::pointer    body() { return _body; }
 };
 
 #endif
