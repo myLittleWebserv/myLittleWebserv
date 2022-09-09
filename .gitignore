@@ -1,0 +1,11 @@
+log_files
+objs
+*.out
+*.o
+*.json
+*.pseudo
+myLittleWebserv
+myLittleClient
+file_should_exist_after
+multiple_same
+temp
