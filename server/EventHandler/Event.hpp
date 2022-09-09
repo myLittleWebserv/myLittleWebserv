@@ -1,3 +1,4 @@
+
 #if !defined(Event_hpp)
 #define Event_hpp
 
@@ -14,7 +15,8 @@ struct Event {
   enum EventType type;
   int            keventId;
   int            serverId;
-  int            clientFd;
+  int            toSendFd;
+  int            fileFd;
   pid_t          pid;
   HttpRequest    httpRequest;
   CgiResponse    cgiResponse;
@@ -26,7 +28,8 @@ struct Event {
       : type(t),
         keventId(kevent_id),
         serverId(-1),
-        clientFd(kevent_id),
+        toSendFd(kevent_id),
+        fileFd(-1),
         pid(-1),
         httpRequest(),
         cgiResponse(),

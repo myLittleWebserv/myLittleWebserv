@@ -36,15 +36,12 @@ void VirtualServer::_processEvent(Event& event) {
 
     case HTTP_RESPONSE_WRITABLE:
       Log::log().printHttpResponse(*event.httpResponse, INFILE);
-      event.httpResponse->sendResponse(event.clientFd);
+      event.httpResponse->sendResponse(event.toSendFd);
       if (event.httpResponse->isConnectionClosed()) {
         _eventHandler.removeConnection(event);
       } else if (event.httpResponse->isSendingEnd()) {
         Log::log()(true, "HTTP_RESPONSE_WRITABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
         _finishResponse(event);
-        Log::log().increaseProcessedConnection();
-        Log::log().printStatus();
-        Log::log().mark();
       }
       break;
 
@@ -54,31 +51,34 @@ void VirtualServer::_processEvent(Event& event) {
 }
 
 void VirtualServer::_finishResponse(Event& event) {
-  if (event.keventId != event.clientFd) {
-    FileManager::registerTempFileFd(event.keventId);
-    FileManager::removeFile(event.clientFd);
+  if (event.keventId != event.toSendFd) {
+    FileManager::registerTempFileFd(event.fileFd);
+    FileManager::removeFile(event.toSendFd);
   }
 
   if (event.httpRequest.isKeepAlive() || !event.httpRequest.storage().empty()) {
     event.initialize();
-    _eventHandler.disableWriteEvent(event.clientFd, &event);
-    _eventHandler.enableReadEvent(event.clientFd, &event);
+    _eventHandler.disableWriteEvent(event.toSendFd, &event);
+    _eventHandler.enableReadEvent(event.toSendFd, &event);
   } else {
     _eventHandler.removeConnection(event);
   }
   Log::log()(LOG_LOCATION, "(DONE) sending Http Response", INFILE);
+  Log::log().increaseProcessedConnection();
+  Log::log().printStatus();
+  Log::log().mark();
 }
 
 void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& location_info) {
   if (event.httpRequest.isCgi(location_info.cgiExtension) && _callCgi(event)) {
     event.type = CGI_RESPONSE_READABLE;
-    _eventHandler.disableReadEvent(event.clientFd, &event);
-    _eventHandler.addReadEvent(event.keventId, &event);
+    _eventHandler.disableReadEvent(event.toSendFd, &event);
+    _eventHandler.addReadEvent(event.fileFd, &event);
   } else {
     event.httpResponse = new HttpResponse(event.httpRequest, location_info);
     event.type         = HTTP_RESPONSE_WRITABLE;
-    _eventHandler.disableReadEvent(event.clientFd, &event);
-    _eventHandler.enableWriteEvent(event.clientFd, &event);
+    _eventHandler.disableReadEvent(event.toSendFd, &event);
+    _eventHandler.enableWriteEvent(event.toSendFd, &event);
     Log::log()(LOG_LOCATION, "(DONE) making Http Response using HTTP REQUEST", INFILE);
   }
 }
@@ -89,7 +89,7 @@ void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& locat
 
   Log::log()(true, "CGI RES to HTTPRES     DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
   _eventHandler.deleteReadEvent(event.keventId, NULL);
-  _eventHandler.enableWriteEvent(event.clientFd, &event);
+  _eventHandler.enableWriteEvent(event.toSendFd, &event);
   Log::log()(LOG_LOCATION, "(DONE) making Http Response using CGI RESPONSE", INFILE);
 }
 
@@ -111,7 +111,7 @@ LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpRequest) {
 }
 
 bool VirtualServer::_callCgi(Event& event) {
-  std::string fd           = _intToString(event.clientFd);
+  std::string fd           = _intToString(event.toSendFd);
   std::string res_filepath = TEMP_RESPONSE_PREFIX + fd;
 
   event.pid = fork();
@@ -129,6 +129,7 @@ bool VirtualServer::_callCgi(Event& event) {
       return false;
     }
     fcntl(cgi_response, F_SETFL, O_NONBLOCK);
+    event.fileFd   = cgi_response;
     event.keventId = cgi_response;
     event.cgiResponse.setInfo(event.httpRequest);
     event.cgiResponse.getLine().setFd(cgi_response);
@@ -139,7 +140,7 @@ bool VirtualServer::_callCgi(Event& event) {
 
 void VirtualServer::_execveCgi(Event& event) {
   event.baseClock          = clock();
-  std::string fd           = _intToString(event.clientFd);
+  std::string fd           = _intToString(event.toSendFd);
   std::string req_filepath = TEMP_REQUEST_PREFIX + fd;
   std::string res_filepath = TEMP_RESPONSE_PREFIX + fd;
   int         cgi_request  = open(req_filepath.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);

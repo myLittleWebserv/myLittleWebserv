@@ -88,19 +88,9 @@ void CgiResponse::readCgiResult(int fd, int pid, clock_t base_clock) {
         break;
 
     default:
-      int ret = ft::syscall::lseek(fd, 0, SEEK_CUR);
-      Log::log()(true, "lseek", ret);
-      int curr = ft::syscall::lseek(fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
-      ret      = ft::syscall::lseek(fd, 0, SEEK_CUR);
-      Log::log()(true, "lseek", ret);
-
+      int curr      = ft::syscall::lseek(fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
       int file_size = ft::syscall::lseek(fd, 0, SEEK_END);
-      ret           = ft::syscall::lseek(fd, 0, SEEK_CUR);
-      Log::log()(true, "lseek", ret);
-
       ft::syscall::lseek(fd, curr, SEEK_SET);
-      ret = ft::syscall::lseek(fd, 0, SEEK_CUR);
-      Log::log()(true, "lseek", ret);
       _bodySize     = file_size - curr;
       _bodyFd       = fd;
       _parsingState = CGI_PARSING_DONE;
@@ -114,56 +104,7 @@ void CgiResponse::readCgiResult(int fd, int pid, clock_t base_clock) {
   Log::log()(true, "_getline.remainsCount", _getLine.remainsCount(), INFILE);
 }
 
-// void CgiResponse::_parseCgiResponse(clock_t base_clock) {
-//   std::string       line = _storage.getLine();
-//   std::stringstream ss;
-
-//   while (line != "") {
-//     if (line.find("Status:") != std::string::npos) {
-//       ss << line.substr(8);
-//       ss >> _statusCode;
-//       ss >> _statusMessage;
-//     } else if (line.find("Content-Type:") != std::string::npos) {
-//       ss << line.substr(14);
-//       std::string content_type_line;
-//       ss >> content_type_line;
-//       _contentType += content_type_line;
-//       _contentType += " ";
-//       ss >> content_type_line;
-//       _contentType += content_type_line;
-//     } else if (line.find("\r") != std::string::npos) {
-//       _body = _storage.currentReadPos();
-//       break;
-//     }
-//     line = _storage.getLine();
-//   }
-//   _parsingState = CGI_PARSING_DONE;
-//   Log::log()(true, "CGI RESULT PARSING     DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
-// }
-
-// std::string CgiResponse::CgiResponseResultString() {
-//   std::stringstream ss;
-//   ss << "Status-Code: [" << _statusCode << "]" << std::endl;
-//   ss << "Status-Message: [" << _statusMessage << "]" << std::endl;
-//   ss << "Content-Type: [" << _contentType << "]" << std::endl;
-//   // ss << "----Body---" << std::endl << _body << std::endl << "-----------" << std::endl;
-//   return ss.str();
-// }
-
 bool CgiResponse::isExecuteError() { return _parsingState == CGI_ERROR; }
 bool CgiResponse::isReadError() { return _getLine.isReadError(); }
 
 bool CgiResponse::isParsingEnd() { return _parsingState == CGI_ERROR || _parsingState == CGI_PARSING_DONE; }
-
-// std::vector<std::string> CgiResponse::_split(const std::string& str, const std::string& delimiter) {
-//   std::vector<std::string> _result;
-//   std::string::size_type   _prev_pos = 0;
-//   std::string::size_type   _pos      = 0;
-
-//   while ((_pos = str.find(delimiter, _prev_pos)) != std::string::npos) {
-//     _result.push_back(str.substr(_prev_pos, _pos - _prev_pos));
-//     _prev_pos = _pos + delimiter.size();
-//   }
-//   _result.push_back(str.substr(_prev_pos));
-//   return _result;
-// }

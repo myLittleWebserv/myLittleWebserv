@@ -61,7 +61,7 @@ class HttpResponse {
   void        _makeResponse(vector::pointer body);
   bool        _sendingStateTransition(size_t total_size, size_t already_sent, HttpResponseSendingState state);
   template <typename T>
-  int _sendChunk(int fd, const T* base, size_t total_size, size_t& already_sent);
+  void _sendChunk(int fd, const T* base, size_t total_size, size_t& already_sent);
 
   // Constructor
  public:

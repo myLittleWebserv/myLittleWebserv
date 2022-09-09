@@ -26,13 +26,13 @@ void EventHandler::_appendNewEventToChangeList(int ident, int filter, int flag, 
 }
 
 void EventHandler::removeConnection(Event& event) {
-  int ret = close(event.clientFd);
+  int ret = close(event.toSendFd);
   if (event.type == CGI_RESPONSE_READABLE) {
-    FileManager::registerTempFileFd(event.keventId);
-    _appendNewEventToChangeList(event.keventId, EVFILT_READ, EV_DELETE, NULL);
+    FileManager::registerTempFileFd(event.fileFd);
+    _appendNewEventToChangeList(event.fileFd, EVFILT_READ, EV_DELETE, NULL);
   }
   Log::log().syscall(ret, LOG_LOCATION, "(SYSCALL) close done", "(SYSCALL) close error", INFILE);
-  Log::log()("closed fd", event.clientFd);
+  Log::log()("closed fd", event.toSendFd);
   Log::log().mark(ret != 0);
   _eventSet.erase(&event);
   delete &event;
@@ -94,7 +94,7 @@ void EventHandler::_routeEvent(Event& event) {
       break;
 
     case HTTP_REQUEST_READABLE:
-      event.httpRequest.storeChunk(event.clientFd);
+      event.httpRequest.storeChunk(event.toSendFd);
       gettimeofday(&event.timestamp, NULL);
       if (event.httpRequest.isConnectionClosed()) {
         removeConnection(event);
@@ -112,7 +112,7 @@ void EventHandler::_routeEvent(Event& event) {
       break;
 
     case CGI_RESPONSE_READABLE:
-      event.cgiResponse.readCgiResult(event.keventId, event.pid, event.baseClock);
+      event.cgiResponse.readCgiResult(event.fileFd, event.pid, event.baseClock);
       gettimeofday(&event.timestamp, NULL);
       if (event.cgiResponse.isReadError()) {
         removeConnection(event);
