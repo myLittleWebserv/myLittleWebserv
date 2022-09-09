@@ -46,6 +46,8 @@ class FileManager {
   // Constructor & Destructor
  public:
   FileManager() : _directory(NULL), _isExist(false), _isDirectoy(false) {}
+  FileManager(const std::string& file_path)
+      : _absolutePath(file_path), _directory(NULL), _isExist(false), _isDirectoy(false) {}
   FileManager(const std::string& uri, const LocationInfo& location_info);
   ~FileManager();
 
@@ -61,7 +63,7 @@ class FileManager {
   void openOutFile(std::ofstream::openmode opt = std::ofstream::out) { _outFile.open(_absolutePath.c_str(), opt); }
   void openDirectoy();
   void removeFile();
-  void addIndexToName(const std::string& indexFile);
+  void appendToPath(const std::string& indexFile);
   std::string readDirectoryEntry();
 };
 

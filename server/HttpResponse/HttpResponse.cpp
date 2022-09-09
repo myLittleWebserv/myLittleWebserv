@@ -10,11 +10,12 @@
 #include "Config.hpp"
 #include "FileManager.hpp"
 #include "HttpRequest.hpp"
+#include "syscall.hpp"
 
 // Constructor
 
 HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info)
-    : _sendingState(HTTP_SENDING_HEADER), _body(NULL), _bodySent(0), _headerSent(0), _statusCode(0), _contentLength(0) {
+    : _sendingState(HTTP_SENDING_HEADER), _bodyFd(-1), _bodySent(0), _headerSent(0), _statusCode(0), _contentLength(0) {
   if (request.isBadRequest()) {
     _makeErrorResponse(400, request, location_info);
     return;
@@ -62,7 +63,7 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info)
 }
 
 HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info)
-    : _sendingState(HTTP_SENDING_HEADER), _body(NULL), _bodySent(0), _headerSent(0), _statusCode(0), _contentLength(0) {
+    : _sendingState(HTTP_SENDING_HEADER), _bodyFd(-1), _bodySent(0), _headerSent(0), _statusCode(0), _contentLength(0) {
   if (cgi_response.isExecuteError()) {
     _makeErrorResponse(500, cgi_response, location_info);
   }
@@ -77,53 +78,79 @@ HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_inf
   _contentLength = cgi_response.bodySize();
   _contentType   = cgi_response.contentType();
 
-  CgiResponse::vector::pointer body_pos = cgi_response.body();
-  _makeResponse(body_pos);
+  _bodyFd = cgi_response.bodyFd();
+  _makeHeader();
 }
 
 // Interface
 
 void HttpResponse::sendResponse(int fd) {
-  const char*     header;
   int             remains;
   int             sent_size;
-  vector::pointer body;
+  int             read_size;
+  vector::pointer temp_body;
 
   switch (_sendingState) {
     case HTTP_SENDING_HEADER:
-      header    = _header.c_str() + _headerSent;
-      remains   = _header.size() - _headerSent;
-      sent_size = send(fd, header, remains, 0);
-      if (sent_size == -1) {
-        _sendingState = HTTP_SENDING_CONNECTION_CLOSED;
-        Log::log()(true, "errno", strerror(errno), INFILE);
-        return;
-      }
-      _headerSent += sent_size;
-      if (_headerSent != _header.size()) {
+      _sendChunk(fd, _header.c_str(), _header.size(), _headerSent);
+      if (!_sendingStateTransition(_header.size(), _headerSent, HTTP_SENDING_HEADER)) {
         break;
       }
-    case HTTP_SENDING_BODY:
-      body      = _body + _bodySent;
-      remains   = _contentLength - _bodySent;
-      sent_size = send(fd, body, remains, 0);
-      if (sent_size == -1) {
+
+    case HTTP_SENDING_TEMPBODY:
+      _sendChunk(fd, _tempBody.data(), _tempBody.size(), _bodySent);
+      if (!_sendingStateTransition(_tempBody.size(), _bodySent, HTTP_SENDING_TEMPBODY)) {
+        break;
+      }
+      if (_bodyFd == -1) {
+        _sendingState = HTTP_SENDING_DONE;
+        break;
+      }
+
+    case HTTP_SENDING_FILEBODY:
+      read_size = read(_bodyFd, Storage::buffer, READ_BUFFER_SIZE);
+      sent_size = send(fd, Storage::buffer, read_size, 0);
+      if (sent_size == -1 || read_size == -1) {
         _sendingState = HTTP_SENDING_CONNECTION_CLOSED;
-        Log::log()(true, "errno", strerror(errno), INFILE);
+        Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
         return;
       }
+      ft::syscall::lseek(_bodyFd, static_cast<off_t>((read_size - sent_size) * -1), SEEK_CUR);
       _bodySent += sent_size;
-      if (_bodySent != _contentLength) {
-        _sendingState = HTTP_SENDING_BODY;
+      if (!_sendingStateTransition(_contentLength, _bodySent, HTTP_SENDING_FILEBODY)) {
         break;
       }
+
     default:
       _sendingState = HTTP_SENDING_DONE;
+      close(_bodyFd);  // ?
       break;
   }
 }
 
 // Method
+template <typename T>
+int HttpResponse::_sendChunk(int fd, const T* base, size_t total_size, size_t& already_sent) {
+  T*  pos       = base + already_sent;
+  int remains   = total_size - already_sent;
+  int sent_size = send(fd, pos, remains, 0);
+  if (sent_size == -1) {
+    _sendingState = HTTP_SENDING_CONNECTION_CLOSED;
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
+    return;
+  }
+  already_sent += sent_size;
+}
+
+bool HttpResponse::_sendingStateTransition(size_t total_size, size_t already_sent,
+                                           HttpResponseSendingState current_state) {
+  if (already_sent != total_size) {
+    _sendingState = current_state;
+    return false;
+  }
+  return true;
+}
+
 void HttpResponse::_makeHeader() {
   std::stringstream response_stream;
 
@@ -140,19 +167,6 @@ void HttpResponse::_makeHeader() {
   _header = response_stream.str();
 }
 
-void HttpResponse::_fileToBody(std::ifstream& file) {
-  std::string line;
-
-  if (file.peek() == std::ifstream::traits_type::eof())
-    return;
-
-  while (!file.eof()) {
-    std::getline(file, line);
-    _tempBody.insert(_tempBody.end(), line.c_str(), line.c_str() + line.size());
-    _tempBody.insert(_tempBody.end(), '\n');
-  }
-}
-
 void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& location_info) {
   FileManager file_manager(request.uri(), location_info);
   bool        isAutoIndexOn = location_info.isAutoIndexOn;
@@ -163,9 +177,9 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
       _makeAutoIndexResponse(request, location_info, file_manager);
       return;
     } else if (index_page.empty()) {
-      file_manager.addIndexToName("index.html");
+      file_manager.appendToPath("index.html");
     } else {
-      file_manager.addIndexToName(location_info.indexPagePath);
+      file_manager.appendToPath(location_info.indexPagePath);
     }
   }
 
@@ -174,19 +188,19 @@ void HttpResponse::_processGetRequest(HttpRequest& request, LocationInfo& locati
     return;
   }
 
-  file_manager.openInFile();
-  _fileToBody(file_manager.inFile());
-  if (static_cast<int>(_tempBody.size()) > location_info.maxBodySize) {
+  _bodyFd        = open(file_manager.filePath().c_str(), O_RDONLY);
+  _contentLength = lseek(_bodyFd, 0, SEEK_END);  // error -> throw;
+  lseek(_bodyFd, 0, SEEK_SET);
+  if (_contentLength > static_cast<size_t>(location_info.maxBodySize)) {
     _makeErrorResponse(413, request, location_info);
   }
 
-  _httpVersion   = request.httpVersion();
-  _statusCode    = 200;
-  _message       = _getMessage(_statusCode);
-  _contentLength = _tempBody.size();
-  _contentType   = _getContentType(file_manager.filePath());
+  _httpVersion = request.httpVersion();
+  _statusCode  = 200;
+  _message     = _getMessage(_statusCode);
+  _contentType = _getContentType(file_manager.filePath());
   Log::log()(LOG_LOCATION, "Get request processed.");
-  _makeResponse(_tempBody.data());
+  _makeHeader();
 }
 
 void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info,
@@ -216,7 +230,7 @@ void HttpResponse::_makeAutoIndexResponse(HttpRequest& request, LocationInfo& lo
   _message       = _getMessage(_statusCode);
   _contentLength = _tempBody.size();
 
-  _makeResponse(_tempBody.data());
+  _makeHeader();
 }
 
 void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& location_info) {
@@ -229,9 +243,9 @@ void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& locat
       _makeAutoIndexResponse(request, location_info, file_manager);
       return;
     } else if (index_page.empty()) {
-      file_manager.addIndexToName("index.html");
+      file_manager.appendToPath("index.html");
     } else {
-      file_manager.addIndexToName(location_info.indexPagePath);
+      file_manager.appendToPath(location_info.indexPagePath);
     }
   }
 
@@ -275,7 +289,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
   _statusCode  = 201;
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Post request processed.");
-  _makeResponse(_tempBody.data());
+  _makeHeader();
 }
 
 void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& location_info) {
@@ -302,7 +316,7 @@ void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& locati
   _httpVersion = request.httpVersion();
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Put request processed.");
-  _makeResponse(_tempBody.data());
+  _makeHeader();
 }
 
 void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& location_info) {
@@ -320,39 +334,39 @@ void HttpResponse::_processDeleteRequest(HttpRequest& request, LocationInfo& loc
   _message     = _getMessage(_statusCode);
 
   Log::log()(LOG_LOCATION, "Delete request processed.");
-  _makeResponse(_tempBody.data());
+  _makeHeader();
 }
 
 void HttpResponse::_makeErrorResponse(int error_code, Request& request, LocationInfo& location_info) {
-  std::ifstream file;
-
+  int file_fd = -1;
   if (location_info.defaultErrorPages.count(error_code)) {
-    std::stringstream file_name;
-    file_name << location_info.root << location_info.defaultErrorPages[error_code];
-    file.open(file_name.str().c_str());
-    Log::log()(true, "file open STATUS", file.is_open(), INFILE);
-    Log::log()(true, "file name", file_name.str(), INFILE);
+    std::string file_name = location_info.root + location_info.defaultErrorPages[error_code];
+    file_fd               = open(file_name.c_str(), O_RDONLY);
+    Log::log()(true, "file open STATUS", file_fd, INFILE);
+    Log::log()(true, "file name", file_name, INFILE);
   }
 
-  if (!file.is_open()) {
+  if (file_fd == -1) {
     std::stringstream default_error_page;
     default_error_page << DEFAULT_ERROR_PAGE_DIR << '/' << error_code << ".html";
-    file.open(default_error_page.str().c_str());
-    Log::log()(true, "file open STATUS", file.is_open(), INFILE);
+    file_fd = open(default_error_page.str().c_str(), O_RDONLY);
+    Log::log()(true, "file open STATUS", file_fd, INFILE);
     Log::log()(true, "file name", default_error_page.str(), INFILE);
   }
 
   if (request.method() != HEAD) {
-    _fileToBody(file);
+    _bodyFd = file_fd;
   }
 
-  _httpVersion   = request.httpVersion();
-  _statusCode    = error_code;
-  _message       = _getMessage(_statusCode);
-  _contentLength = _tempBody.size();
+  _httpVersion = request.httpVersion();
+  _statusCode  = error_code;
+  _message     = _getMessage(_statusCode);
+  if (_bodyFd != -1) {
+    _contentLength = lseek(_bodyFd, 0, SEEK_END);
+    lseek(_bodyFd, 0, SEEK_SET);
+  }
   Log::log()(LOG_LOCATION, "Error page returned.");
-
-  _makeResponse(_tempBody.data());
+  _makeHeader();
 }
 
 void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info,
@@ -373,7 +387,7 @@ void HttpResponse::_makeRedirResponse(int redir_code, HttpRequest& request, Loca
 
   // add other field ?
   Log::log()(LOG_LOCATION, "Redirection address returned.");
-  _makeResponse(_tempBody.data());
+  _makeHeader();
 }
 
 bool HttpResponse::_isAllowedMethod(int method, std::vector<std::string>& allowed_methods) {
@@ -478,9 +492,4 @@ std::string HttpResponse::_getContentType(const std::string& file_name) {
     return "audio/mpeg";
   }
   return "text/plain";
-}
-
-void HttpResponse::_makeResponse(vector::pointer body) {
-  _makeHeader();
-  _body = body;
 }

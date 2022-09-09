@@ -1,7 +1,7 @@
 #include "CgiStorage.hpp"
 
 void CgiStorage::readFile(int fd) {
-  ssize_t read_size = read(fd, _buffer, READ_BUFFER_SIZE);
+  ssize_t read_size = read(fd, buffer, READ_BUFFER_SIZE);
 
   if (read_size == -1) {
     _isReadError = true;
@@ -11,7 +11,7 @@ void CgiStorage::readFile(int fd) {
     _isReadingEnd = true;
   }
   if (read_size > 0) {
-    insert(_buffer, _buffer + read_size);
+    insert(buffer, buffer + read_size);
   }
 }
 

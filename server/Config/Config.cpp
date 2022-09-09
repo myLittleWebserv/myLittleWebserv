@@ -16,9 +16,9 @@ void Config::_readConfigFile(const std::string& confFile) {
   std::ifstream _file(confFile.c_str());
 
   if (_file.is_open()) {
-    std::string _buffer;
-    while (std::getline(_file, _buffer)) {
-      _configContent.push_back(_buffer);
+    std::string buffer;
+    while (std::getline(_file, buffer)) {
+      _configContent.push_back(buffer);
     }
   } else {
     _error(LOG_LOCATION, "Error: Failed to open config file");

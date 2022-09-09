@@ -11,11 +11,12 @@
 #include <vector>
 
 #include "CgiStorage.hpp"
+#include "GetLine.hpp"
 #include "Request.hpp"
 
 class HttpRequest;
 
-enum CgiResponseParsingState { CGI_ERROR, CGI_RUNNING, CGI_READING, CGI_PARSING, CGI_PARSING_DONE };
+enum CgiResponseParsingState { CGI_ERROR, CGI_RUNNING, CGI_READING_HEADER, CGI_PARSING_DONE };
 
 class CgiResponse : public Request {
  public:
@@ -23,6 +24,7 @@ class CgiResponse : public Request {
 
  private:
   CgiResponseParsingState _parsingState;
+  GetLine                 _getLine;
   CgiStorage              _storage;
   std::string             _httpVersion;
   int                     _statusCode;
@@ -30,11 +32,14 @@ class CgiResponse : public Request {
   enum MethodType         _method;
   std::string             _contentType;
   vector::pointer         _body;
+  int                     _bodyFd;
+  int                     _bodySize;
   int                     _secretHeaderForTest;
 
   std::vector<std::string> _split(const std::string& str, const std::string& delimiter);
   void                     _parseCgiResponse(clock_t base_clock);
-  void                     _checkWaitPid(int pid, clock_t clock);
+  bool                     _isCgiExecutionEnd(int pid, clock_t clock);
+  bool                     _parseLine(const std::string& line);
 
   // Constructor
  public:
@@ -55,8 +60,10 @@ class CgiResponse : public Request {
   const std::string& contentType() const { return _contentType; }
   int                secretHeaderForTest() const { return _secretHeaderForTest; }
   vector::pointer    body() { return _body; }
-  size_t             bodySize() { return _storage.remains(); }
+  int                bodyFd() { return _bodyFd; }
+  size_t             bodySize() { return _bodySize; }
   std::string        CgiResponseResultString();
+  GetLine&           getLine() { return _getLine; }
 };
 
 #endif

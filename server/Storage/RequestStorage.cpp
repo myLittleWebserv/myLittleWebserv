@@ -5,7 +5,7 @@
 #include "Log.hpp"
 
 void RequestStorage::readFile(int fd) {
-  ssize_t read_size = recv(fd, _buffer, READ_BUFFER_SIZE, 0);
+  ssize_t read_size = recv(fd, buffer, READ_BUFFER_SIZE, 0);
 
   if (read_size <= 0) {
     _state = CONNECTION_CLOSED;
@@ -16,7 +16,7 @@ void RequestStorage::readFile(int fd) {
   }
 
   if (read_size > 0) {
-    insert(_buffer, _buffer + read_size);
+    insert(buffer, buffer + read_size);
   }
 }
 
