@@ -6,7 +6,6 @@
 
 #include "GetLine.hpp"
 #include "Request.hpp"
-#include "RequestStorage.hpp"
 
 #define TIME_OUT_HTTP_PARSING 10
 #define HTTP_DEFAULT_PORT 4242

@@ -9,6 +9,7 @@
 #include "CgiResponse.hpp"
 #include "Config.hpp"
 #include "FileManager.hpp"
+#include "GetLine.hpp"
 #include "HttpRequest.hpp"
 #include "syscall.hpp"
 
@@ -111,8 +112,8 @@ void HttpResponse::sendResponse(int fd) {
       }
 
     case HTTP_SENDING_FILEBODY:
-      read_size = read(_bodyFd, Storage::buffer, READ_BUFFER_SIZE);
-      sent_size = send(fd, Storage::buffer, read_size, 0);
+      read_size = read(_bodyFd, GetLine::publicBuffer, PUBLIC_BUFFER_SIZE);
+      sent_size = send(fd, GetLine::publicBuffer, read_size, 0);
       if (sent_size == -1 || read_size == -1) {
         _sendingState = HTTP_SENDING_CONNECTION_CLOSED;
         Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);

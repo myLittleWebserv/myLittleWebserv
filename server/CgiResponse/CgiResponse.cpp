@@ -6,14 +6,7 @@
 #include "syscall.hpp"
 
 CgiResponse::CgiResponse()
-    : _parsingState(CGI_RUNNING),
-      _storage(),
-      _httpVersion(),
-      _statusCode(0),
-      _statusMessage(),
-      _contentType(),
-      _body(NULL),
-      _bodyFd(-1) {}
+    : _parsingState(CGI_RUNNING), _httpVersion(), _statusCode(0), _statusMessage(), _contentType(), _bodyFd(-1) {}
 
 void CgiResponse::initialize() {
   _parsingState  = CGI_RUNNING;
@@ -21,9 +14,7 @@ void CgiResponse::initialize() {
   _httpVersion   = "";
   _statusMessage = "";
   _contentType   = "";
-  _storage.clear();
-  _body   = NULL;
-  _bodyFd = -1;
+  _bodyFd        = -1;
   _getLine.initialize();
 }
 
@@ -106,8 +97,6 @@ void CgiResponse::parseRequest(Event& event) {
   Log::log()("_parsingState", _parsingState, INFILE);
   Log::log()(true, "_bodySize", _bodySize, INFILE);
   Log::log()(true, "_bodyFd", _bodyFd, INFILE);
-  Log::log()(true, "_getline.getFd", _getLine.getFd(), INFILE);
-  Log::log()(true, "_getline.remainsCount", _getLine.remainsCount(), INFILE);
 }
 
 bool CgiResponse::isExecuteError() { return _parsingState == CGI_ERROR; }

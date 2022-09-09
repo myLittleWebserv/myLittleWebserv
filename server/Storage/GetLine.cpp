@@ -5,6 +5,7 @@
 #include "Log.hpp"
 
 unsigned char GetLine::_buffer[GETLINE_BUFFER_SIZE];
+unsigned char GetLine::publicBuffer[PUBLIC_BUFFER_SIZE];
 
 void GetLine::initialize() {
   _fd          = -1;

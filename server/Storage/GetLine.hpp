@@ -4,6 +4,7 @@
 #include <vector>
 
 #define GETLINE_BUFFER_SIZE 10
+#define PUBLIC_BUFFER_SIZE 1000000
 
 class GetLine : private std::vector<unsigned char> {
   // Types
@@ -12,6 +13,9 @@ class GetLine : private std::vector<unsigned char> {
 
  private:
   static unsigned char _buffer[GETLINE_BUFFER_SIZE];
+
+ public:
+  static unsigned char publicBuffer[PUBLIC_BUFFER_SIZE];
 
  private:
   int  _fd;

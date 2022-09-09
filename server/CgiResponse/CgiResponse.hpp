@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "CgiStorage.hpp"
 #include "GetLine.hpp"
 #include "Request.hpp"
 
@@ -19,19 +18,14 @@ class HttpRequest;
 enum CgiResponseParsingState { CGI_ERROR, CGI_RUNNING, CGI_READING_HEADER, CGI_PARSING_DONE };
 
 class CgiResponse : public Request {
- public:
-  typedef Storage::vector vector;
-
  private:
   CgiResponseParsingState _parsingState;
   GetLine                 _getLine;
-  CgiStorage              _storage;
   std::string             _httpVersion;
   int                     _statusCode;
   std::string             _statusMessage;
   enum MethodType         _method;
   std::string             _contentType;
-  vector::pointer         _body;
   int                     _bodyFd;
   int                     _bodySize;
   int                     _secretHeaderForTest;
@@ -59,7 +53,6 @@ class CgiResponse : public Request {
   const std::string& statusMessage() const { return _statusMessage; }
   const std::string& contentType() const { return _contentType; }
   int                secretHeaderForTest() const { return _secretHeaderForTest; }
-  vector::pointer    body() { return _body; }
   int                bodyFd() { return _bodyFd; }
   size_t             bodySize() { return _bodySize; }
   std::string        CgiResponseResultString();

@@ -1,5 +1,7 @@
 #include "Event.hpp"
 
+#include "Log.hpp"
+
 void Event::initialize() {
   type     = HTTP_REQUEST_READABLE;
   keventId = clientFd;

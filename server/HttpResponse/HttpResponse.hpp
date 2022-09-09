@@ -6,8 +6,6 @@
 
 #define DEFAULT_ERROR_PAGE_DIR "error_pages"
 
-#include "Storage.hpp"
-
 class Request;
 class HttpRequest;
 class CgiResponse;

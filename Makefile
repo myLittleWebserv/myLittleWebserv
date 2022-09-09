@@ -17,9 +17,6 @@ SRC :=	main.cpp\
 		HttpResponse.cpp\
 		CgiResponse.cpp\
 		FileManager.cpp\
-		Storage.cpp\
-		RequestStorage.cpp\
-		CgiStorage.cpp\
 		syscall.cpp\
 		GetLine.cpp
 
