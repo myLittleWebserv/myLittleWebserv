@@ -52,11 +52,11 @@ void VirtualServer::_processEvent(Event& event) {
 
 void VirtualServer::_finishResponse(Event& event) {
   if (event.keventId != event.toSendFd) {
-    FileManager::registerTempFileFd(event.fileFd);
+    FileManager::registerTempFileFd(event.toRecvFd);
     FileManager::removeFile(event.toSendFd);
   }
 
-  if (event.httpRequest.isKeepAlive() || !event.httpRequest.storage().empty()) {
+  if (event.httpRequest.isKeepAlive() /*|| !event.httpRequest.storage().empty()*/) {
     event.initialize();
     _eventHandler.disableWriteEvent(event.toSendFd, &event);
     _eventHandler.enableReadEvent(event.toSendFd, &event);
@@ -73,11 +73,11 @@ void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& loca
   if (event.httpRequest.isCgi(location_info.cgiExtension) && _callCgi(event)) {
     event.type = CGI_RESPONSE_READABLE;
     _eventHandler.disableReadEvent(event.toSendFd, &event);
-    _eventHandler.addReadEvent(event.fileFd, &event);
+    _eventHandler.addReadEvent(event.toRecvFd, &event);
   } else {
-    event.httpResponse = new HttpResponse(event.httpRequest, location_info);
+    event.httpResponse = new HttpResponse(event.httpRequest, location_info);  // ?
     event.type         = HTTP_RESPONSE_WRITABLE;
-    _eventHandler.disableReadEvent(event.toSendFd, &event);
+    _eventHandler.disableReadEvent(event.toRecvFd, &event);
     _eventHandler.enableWriteEvent(event.toSendFd, &event);
     Log::log()(LOG_LOCATION, "(DONE) making Http Response using HTTP REQUEST", INFILE);
   }
@@ -129,7 +129,7 @@ bool VirtualServer::_callCgi(Event& event) {
       return false;
     }
     fcntl(cgi_response, F_SETFL, O_NONBLOCK);
-    event.fileFd   = cgi_response;
+    event.toRecvFd = cgi_response;
     event.keventId = cgi_response;
     event.cgiResponse.setInfo(event.httpRequest);
     event.cgiResponse.getLine().setFd(cgi_response);

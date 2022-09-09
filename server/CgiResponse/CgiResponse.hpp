@@ -51,7 +51,7 @@ class CgiResponse : public Request {
   bool               isParsingEnd();
   bool               isExecuteError();
   bool               isReadError();
-  void               readCgiResult(int fd, int pid, clock_t clock);
+  void               parseRequest(Event& event);
   void               setInfo(const HttpRequest& http_request);
   MethodType         method() const { return _method; }
   const std::string& httpVersion() const { return _httpVersion; }

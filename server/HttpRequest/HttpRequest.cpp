@@ -4,8 +4,10 @@
 #include <cstdlib>
 #include <sstream>
 
+#include "Event.hpp"
+#include "GetLine.hpp"
 #include "Log.hpp"
-
+#include "syscall.hpp"
 // Interface
 
 void HttpRequest::initialize() {
@@ -23,12 +25,14 @@ void HttpRequest::initialize() {
   _isKeepAlive         = true;
   _chunkSize           = -1;
   _secretHeaderForTest = 0;
-  _body.clear();
-  _storage.preserveRemains();
+  _bodyFd              = -1;
+  _bodySize            = 0;
+  _getLine.clear();
 }
 
 bool HttpRequest::isParsingEnd() {
-  return _parsingState == HTTP_PARSING_DONE || _parsingState == BAD_REQUEST || _parsingState == TIME_OUT;
+  return _parsingState == HTTP_PARSING_DONE || _parsingState == HTTP_PARSING_BAD_REQUEST ||
+         _parsingState == HTTP_PARSING_TIME_OUT;
 }
 
 bool HttpRequest::isCgi(const std::string& ext) {
@@ -39,55 +43,63 @@ bool HttpRequest::isCgi(const std::string& ext) {
   return true;
 }
 
-void HttpRequest::storeChunk(int fd) {
-  _storage.readFile(fd);
-  if (_storage.state() != RECEIVE_DONE) {
-    return;
-  }
-
-  Log::log()(LOG_LOCATION, "(TRANSFER) socket buffer to _storage done", INFILE);
-
+void HttpRequest::parseRequest(Event& event) {
+  int         recv_fd = event.toRecvFd;
   std::string line;
+  int         curr;
+  int         file_size;
 
   switch (_parsingState) {
     case HTTP_PARSING_INIT:
-      line = _storage.getLine();  // 라인이 완성되어 있지 않으면 "" 리턴
+      line = _getLine.nextLine();  // 라인이 완성되어 있지 않으면 "" 리턴
       _parseStartLine(line);
       if (line.empty() || isParsingEnd())
         break;
 
     case HTTP_PARSING_HEADER:
-      while (_parsingState == HTTP_PARSING_HEADER && !(line = _storage.getLine()).empty()) {  // ㅎㅡㅁ ..
-        _parseHeaderField(line);
+      line = _getLine.nextLine();
+      while (_parseHeaderField(line)) {
+        line = _getLine.nextLine();
       }
       if (line.empty() || isParsingEnd())
         break;
 
     case HTTP_PARSING_BODY:
-      if (_isChunked) {
-        _parseChunk();
-      } else if (_storage.remains() > _contentLength) {
-        _storage.dataToBody(_body, _contentLength);
+      _bodyFd = recv_fd;
+      if (!_isChunked) {
+        curr      = ft::syscall::lseek(recv_fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
+        file_size = ft::syscall::lseek(recv_fd, 0, SEEK_END);
+        ft::syscall::lseek(recv_fd, curr, SEEK_SET);
+        _bodySize     = file_size - curr;
         _parsingState = HTTP_PARSING_DONE;
+        break;
       }
 
+    case HTTP_PARSING_BODY_CHUNK:
+      line = _getLine.nextLine();
+      if (line.empty()) {
+        _parsingState = HTTP_PARSING_BODY_CHUNK;
+        break;
+      }
+      ft::syscall::lseek(recv_fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
+      _bodySize = std::atoi(line.c_str());
+
     default:
+      _parsingState = HTTP_PARSING_DONE;
       _checkTimeOut();
       break;
   }
 
   Log::log()(LOG_LOCATION, "(STATE) CURRENT HTTP_PARSING STATE", INFILE);
   Log::log()("_parsingState", _parsingState, INFILE);
-  Log::log()(true, "_body.size", _body.size(), INFILE);
-  Log::log()(true, "_storage.size", _storage.size(), INFILE);
 }
 
 // Method
 
 void HttpRequest::_checkTimeOut() {
-  if (time(NULL) - _timeStamp >= HTTP_PARSING_TIME_OUT) {
+  if (time(NULL) - _timeStamp >= TIME_OUT_HTTP_PARSING) {
     Log::log()(LOG_LOCATION, "TIME OUT", INFILE);
-    _parsingState = TIME_OUT;
+    _parsingState = HTTP_PARSING_TIME_OUT;
   }
 }
 
@@ -98,7 +110,7 @@ void HttpRequest::_parseStartLine(const std::string& line) {
   if (*line.rbegin() != '\r' || std::count(line.begin(), line.end(), ' ') != 2) {
     Log::log()(LOG_LOCATION, "BAD_REQUEST", INFILE);
     Log::log()(true, "line", line, INFILE);
-    _parsingState = BAD_REQUEST;
+    _parsingState = HTTP_PARSING_BAD_REQUEST;
     return;
   }
 
@@ -129,23 +141,23 @@ void HttpRequest::_parseStartLine(const std::string& line) {
   if (ss.bad()) {
     Log::log()(LOG_LOCATION, "BAD_REQUEST", INFILE);
     Log::log()(true, "line", line, INFILE);
-    _parsingState = BAD_REQUEST;
+    _parsingState = HTTP_PARSING_BAD_REQUEST;
   } else {
     _parsingState = HTTP_PARSING_HEADER;
   }
 }
 
-void HttpRequest::_parseHeaderField(const std::string& line) {
+bool HttpRequest::_parseHeaderField(const std::string& line) {
   if (line.empty()) {
-    return;
+    return false;
   }
   if (line == "\r") {
     _parsingState = _isBodyExisted ? HTTP_PARSING_BODY : HTTP_PARSING_DONE;
-    return;
+    return false;
   }
   if (*line.rbegin() != '\r' || line.size() + 1 + _headerSize > HTTP_MAX_HEADER_SIZE) {
-    _parsingState = BAD_REQUEST;
-    return;
+    _parsingState = HTTP_PARSING_BAD_REQUEST;
+    return false;
   }
 
   _headerSize += line.size() + 1;
@@ -191,12 +203,13 @@ void HttpRequest::_parseHeaderField(const std::string& line) {
     ss >> word;
     Log::log()(true, "header-value", word);
   }
+  return true;
 }
 
 void HttpRequest::_parseChunk() {
   while (1) {
     if (_chunkSize == -1) {
-      std::string line = _storage.getLine();
+      std::string line = _getLine.nextLine();
       if (line.empty()) {
         return;
       }
@@ -204,7 +217,7 @@ void HttpRequest::_parseChunk() {
     }
 
     if (_chunkSize == 0) {
-      std::string line = _storage.getLine();
+      std::string line = _getLine.nextLine();
       if (line.empty()) {
         return;
       }
@@ -213,12 +226,12 @@ void HttpRequest::_parseChunk() {
       return;
     }
 
-    if (_storage.remains() > _chunkSize) {
-      _storage.dataToBody(_body, _chunkSize, _isChunked);
-      _chunkSize = -1;
-    } else {
-      break;
-    }
+    // if (_getLine.remains() > _chunkSize) {  // ?
+    //   _storage.dataToBody(_body, _chunkSize, _isChunked);
+    //   _chunkSize = -1;
+    // } else {
+    //   break;
+    // }
   }
   _timeStamp = time(NULL);
 }
@@ -227,7 +240,7 @@ size_t HttpRequest::_parseChunkSize(const std::string& line) {
   char*  p;
   size_t size = std::strtol(line.c_str(), &p, 16);  // chunk 최대 크기 몇?
   if (*p != '\r') {
-    _parsingState = BAD_REQUEST;
+    _parsingState = HTTP_PARSING_BAD_REQUEST;
     Log::log()(LOG_LOCATION, "BAD_REQUEST", INFILE);
     Log::log()(true, "line", line, INFILE);
     return 0;

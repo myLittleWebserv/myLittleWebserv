@@ -1,5 +1,6 @@
 #include "CgiResponse.hpp"
 
+#include "Event.hpp"
 #include "HttpRequest.hpp"
 #include "Log.hpp"
 #include "syscall.hpp"
@@ -67,7 +68,12 @@ bool CgiResponse::_parseLine(const std::string& line) {
   return true;
 }
 
-void CgiResponse::readCgiResult(int fd, int pid, clock_t base_clock) {
+void CgiResponse::parseRequest(Event& event) {
+  int         recv_fd    = event.toRecvFd;
+  int         pid        = event.pid;
+  clock_t     base_clock = event.baseClock;
+  int         curr;
+  int         file_size;
   std::string line;
   switch (_parsingState) {
     case CGI_RUNNING:
@@ -79,21 +85,21 @@ void CgiResponse::readCgiResult(int fd, int pid, clock_t base_clock) {
       while (_parseLine(line)) {
         line = _getLine.nextLine();
       }
-      Log::log()(true, "statMsg", _statusMessage);
-      Log::log()(true, "statcode", _statusCode);
-      Log::log()(true, "_contentType", _contentType);
       Log::log()(true, "line.size", line.size());
 
       if (line.empty() || _statusMessage.empty() || _statusCode == 0 || _contentType.empty())
         break;
 
-    default:
-      int curr      = ft::syscall::lseek(fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
-      int file_size = ft::syscall::lseek(fd, 0, SEEK_END);
-      ft::syscall::lseek(fd, curr, SEEK_SET);
+    case CGI_PARSING_DONE:
+      curr      = ft::syscall::lseek(recv_fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
+      file_size = ft::syscall::lseek(recv_fd, 0, SEEK_END);
+      ft::syscall::lseek(recv_fd, curr, SEEK_SET);
       _bodySize     = file_size - curr;
-      _bodyFd       = fd;
+      _bodyFd       = recv_fd;
       _parsingState = CGI_PARSING_DONE;
+      break;
+
+    default:
       break;
   }
   Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", INFILE);

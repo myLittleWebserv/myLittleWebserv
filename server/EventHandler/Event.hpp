@@ -16,7 +16,8 @@ struct Event {
   int            keventId;
   int            serverId;
   int            toSendFd;
-  int            fileFd;
+  int            toRecvFd;
+  int            clientFd;
   pid_t          pid;
   HttpRequest    httpRequest;
   CgiResponse    cgiResponse;
@@ -29,7 +30,8 @@ struct Event {
         keventId(kevent_id),
         serverId(-1),
         toSendFd(kevent_id),
-        fileFd(-1),
+        toRecvFd(kevent_id),
+        clientFd(kevent_id),
         pid(-1),
         httpRequest(),
         cgiResponse(),

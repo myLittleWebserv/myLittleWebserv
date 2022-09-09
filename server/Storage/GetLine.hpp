@@ -26,6 +26,7 @@ class GetLine : private std::vector<unsigned char> {
  private:
   // Interface
  public:
+  using vector::clear;
   void        setFd(int fd) { _fd = fd; }
   int         getFd() { return _fd; }
   bool        isReadError() { return _isReadError; }

@@ -36,6 +36,11 @@ HttpResponse::HttpResponse(HttpRequest& request, LocationInfo& location_info)
     _makeErrorResponse(500, request, location_info);
     return;
   }
+  if (static_cast<int>(request.body().size()) > location_info.maxBodySize) {
+    _makeErrorResponse(413, request, location_info);
+    return;
+  }
+
   if (location_info.redirStatus != -1) {
     _makeRedirResponse(location_info.redirStatus, request, location_info);
     return;
@@ -262,15 +267,6 @@ void HttpResponse::_processHeadRequest(HttpRequest& request, LocationInfo& locat
 }
 
 void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& location_info) {
-  // if (request.body().size() == 0) {
-  //   _makeErrorResponse(402, request, location_info);
-  //   return;
-  // }
-  if (static_cast<int>(request.body().size()) > location_info.maxBodySize) {
-    _makeErrorResponse(413, request, location_info);
-    return;
-  }
-
   FileManager file_manager(request.uri(), location_info);
 
   if (file_manager.isFileExist()) {
@@ -279,9 +275,12 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
     return;
   }
 
-  file_manager.openOutFile();
-  file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());  // ?
-  file_manager.outFile().close();
+  _bodyFd = request.bodyFd();
+  // event.toSendFd = open(file_manager.filePath(), O_RDONLY);
+
+  // file_manager.openOutFile();
+  // file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());  // ?
+  // file_manager.outFile().close();
 
   _httpVersion = request.httpVersion();
   _statusCode  = 201;

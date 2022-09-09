@@ -2,9 +2,10 @@
 
 void Event::initialize() {
   type     = HTTP_REQUEST_READABLE;
-  keventId = toSendFd;
+  keventId = clientFd;
+  toSendFd = clientFd;
+  toRecvFd = clientFd;
   serverId = -1;
-  fileFd   = -1;
   httpRequest.initialize();
   cgiResponse.initialize();
   delete httpResponse;
