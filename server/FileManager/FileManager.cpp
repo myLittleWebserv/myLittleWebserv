@@ -59,7 +59,7 @@ int FileManager::openFile(const char* file_path, int oflag, mode_t mode = 0644) 
   int fd = open(file_path, oflag, mode);
   if (fd == -1) {
     Log::log()(LOG_LOCATION, "");
-    throw Router::ServerSystemCallException();
+    throw Router::ServerSystemCallException("(SYSCALL) open");
   }
   return fd;
 }
@@ -82,7 +82,7 @@ void FileManager::removeFile(int key_fd) {
 
   if (unlink(temp_request.c_str()) == -1 || unlink(temp_response.c_str()) == -1) {
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
-    throw Router::ServerSystemCallException();
+    throw Router::ServerSystemCallException("(SYSCALL) unlink");
   }
   Log::log()(LOG_LOCATION, "(DONE) temporary file removed", INFILE);
 }

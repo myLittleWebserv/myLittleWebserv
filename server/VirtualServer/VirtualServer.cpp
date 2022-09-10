@@ -5,7 +5,9 @@
 
 #include <cstring>
 
+#include "DataMove.hpp"
 #include "FileManager.hpp"
+#include "ResponseFactory.hpp"
 
 VirtualServer::VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler)
     : _serverId(id), _serverInfo(info), _eventHandler(eventHandler) {}
@@ -26,21 +28,22 @@ void VirtualServer::_processEvent(Event& event) {
     case HTTP_REQUEST_READABLE:
       Log::log().printHttpRequest(event.httpRequest, INFILE);
       _processHttpRequestReadable(event, location_info);
-      Log::log()(true, "HTTP_REQUEST_READABLE  DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+      break;
+
+    case HTTP_REQUEST_UPLOAD:
+      _uploadFile(event, location_info);
       break;
 
     case CGI_RESPONSE_READABLE:
       _cgiResponseToHttpResponse(event, location_info);
-      Log::log()(true, "CGI_RESPONSE_READABLE  DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
       break;
 
     case HTTP_RESPONSE_WRITABLE:
       Log::log().printHttpResponse(*event.httpResponse, INFILE);
-      event.httpResponse->sendResponse(event.toSendFd);
+      event.httpResponse->sendResponse(event.toRecvFd, event.toSendFd);
       if (event.httpResponse->isConnectionClosed()) {
         _eventHandler.removeConnection(event);
       } else if (event.httpResponse->isSendingEnd()) {
-        Log::log()(true, "HTTP_RESPONSE_WRITABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
         _finishResponse(event);
       }
       break;
@@ -51,46 +54,99 @@ void VirtualServer::_processEvent(Event& event) {
 }
 
 void VirtualServer::_finishResponse(Event& event) {
-  if (event.keventId != event.toSendFd) {
-    FileManager::registerTempFileFd(event.toRecvFd);
-    FileManager::removeFile(event.toSendFd);
+  if (event.cgiResponse.pid() != -1) {  // ?
+    FileManager::removeFile(event.clientFd);
   }
 
-  if (event.httpRequest.isKeepAlive() /*|| !event.httpRequest.storage().empty()*/) {
+  if (event.toRecvFd != -1) {
+    close(event.toRecvFd);
+  }
+
+  Log::log()(true, "(DONE) sending Http Response", INFILE);
+  Log::log()(true, "HTTP_RESPONSE_WRITABLE DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+  if (event.httpRequest.isKeepAlive()) {
     event.initialize();
     _eventHandler.disableWriteEvent(event.toSendFd, &event);
     _eventHandler.enableReadEvent(event.toSendFd, &event);
   } else {
     _eventHandler.removeConnection(event);
   }
-  Log::log()(LOG_LOCATION, "(DONE) sending Http Response", INFILE);
   Log::log().increaseProcessedConnection();
   Log::log().printStatus();
   Log::log().mark();
 }
 
-void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& location_info) {
-  if (event.httpRequest.isCgi(location_info.cgiExtension) && _callCgi(event)) {
-    event.type = CGI_RESPONSE_READABLE;
-    _eventHandler.disableReadEvent(event.toSendFd, &event);
-    _eventHandler.addReadEvent(event.toRecvFd, &event);
-  } else {
-    event.httpResponse = new HttpResponse(event.httpRequest, location_info);  // ?
+void VirtualServer::_uploadFile(Event& event, LocationInfo& location_info) {
+  HttpRequest& request = event.httpRequest;
+  request.uploadRequest(event.toRecvFd, event.toSendFd, event.baseClock);
+  if (request.isRecvError()) {
+    _eventHandler.removeConnection(event);
+  } else if (request.isBadRequest()) {
+    delete event.httpResponse;
+    event.httpResponse = ResponseFactory::errorResponse(STATUS_BAD_REQUEST, request, location_info);
     event.type         = HTTP_RESPONSE_WRITABLE;
     _eventHandler.disableReadEvent(event.toRecvFd, &event);
-    _eventHandler.enableWriteEvent(event.toSendFd, &event);
-    Log::log()(LOG_LOCATION, "(DONE) making Http Response using HTTP REQUEST", INFILE);
+    _eventHandler.enableWriteEvent(event.clientFd, &event);
+    event.toRecvFd = event.httpResponse->fileFd();
+  } else if (request.isUploadEnd()) {
+    close(event.toSendFd);
+    if (request.isCgi(location_info.cgiExtension) && _callCgi(event, location_info)) {
+      event.type = CGI_RESPONSE_READABLE;
+      _eventHandler.disableReadEvent(event.clientFd, &event);
+      _eventHandler.addReadEvent(event.toRecvFd, &event);
+      event.toSendFd = event.clientFd;
+    } else {
+      event.type = HTTP_RESPONSE_WRITABLE;
+      _eventHandler.disableReadEvent(event.toRecvFd, &event);
+      _eventHandler.enableWriteEvent(event.clientFd, &event);
+      event.toRecvFd = -1;
+    }
+    Log::log()(true, "HTTP_REQUEST_UPLOAD    DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
   }
 }
 
-void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& location_info) {
-  event.httpResponse = new HttpResponse(event.cgiResponse, location_info);
-  event.type         = HTTP_RESPONSE_WRITABLE;
+void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& location_info) {
+  HttpRequest& request = event.httpRequest;
+  switch (request.method()) {
+    case POST:
+    case PUT:
+      if (request.isCgi(location_info.cgiExtension)) {
+        std::string req_filepath = TEMP_REQUEST_PREFIX + _intToString(event.clientFd);
+        event.toSendFd           = ft::syscall::open(req_filepath.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
+        event.type               = HTTP_REQUEST_UPLOAD;
+      } else {
+        event.httpResponse            = ResponseFactory::makeResponse(request, location_info);
+        HttpResponseStatusCode status = event.httpResponse->statusCode();
+        if (status == STATUS_OK || status == STATUS_CREATED) {
+          event.toSendFd = event.httpResponse->fileFd();
+          event.type     = HTTP_REQUEST_UPLOAD;
+        } else {  // error
+          _eventHandler.disableReadEvent(event.toRecvFd, &event);
+          _eventHandler.enableWriteEvent(event.toSendFd, &event);
+          event.toRecvFd = event.httpResponse->fileFd();
+          event.type     = HTTP_RESPONSE_WRITABLE;
+        }
+      }
+      break;
 
-  Log::log()(true, "CGI RES to HTTPRES     DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+    default:
+      _eventHandler.disableReadEvent(event.toRecvFd, &event);
+      _eventHandler.enableWriteEvent(event.toSendFd, &event);
+      event.httpResponse = ResponseFactory::makeResponse(request, location_info);
+      event.toRecvFd     = event.httpResponse->fileFd();
+      event.type         = HTTP_RESPONSE_WRITABLE;
+      break;
+  }
+  Log::log()(true, "HTTP_REQUEST_READABLE  DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
+}
+
+void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& location_info) {
+  event.httpResponse = ResponseFactory::makeResponse(event.cgiResponse, location_info);
+  event.type         = HTTP_RESPONSE_WRITABLE;
   _eventHandler.deleteReadEvent(event.keventId, NULL);
   _eventHandler.enableWriteEvent(event.toSendFd, &event);
-  Log::log()(LOG_LOCATION, "(DONE) making Http Response using CGI RESPONSE", INFILE);
+  Log::log()(true, "(DONE) making Http Response using CGI RESPONSE", INFILE);
+  Log::log()(true, "CGI_RESPONSE_READABLE  DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
 }
 
 LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpRequest) {
@@ -110,25 +166,21 @@ LocationInfo& VirtualServer::_findLocationInfo(HttpRequest& httpRequest) {
   return _serverInfo.locations["/"];
 }
 
-bool VirtualServer::_callCgi(Event& event) {
+bool VirtualServer::_callCgi(Event& event, LocationInfo& location_info) {
   std::string fd           = _intToString(event.toSendFd);
   std::string res_filepath = TEMP_RESPONSE_PREFIX + fd;
 
-  event.pid = fork();
-  if (event.pid == -1) {
-    event.httpRequest.setServerError(true);
+  pid_t pid = fork();
+  if (pid == -1) {
+    event.httpResponse = ResponseFactory::errorResponse(STATUS_INTERNAL_SERVER_ERROR, event.httpRequest, location_info);
     Log::log()(LOG_LOCATION, "(CGI) CALL FAILED", INFILE);
     return false;
-  } else if (event.pid == 0) {
+  } else if (pid == 0) {
     _execveCgi(event);  // child
   } else {              // parent
-    int cgi_response = open(res_filepath.c_str(), O_RDONLY | O_CREAT, 0644);
-    if (cgi_response == -1) {
-      event.httpRequest.setServerError(true);
-      Log::log()(LOG_LOCATION, "(CGI) CALL FAILED", INFILE);
-      return false;
-    }
-    fcntl(cgi_response, F_SETFL, O_NONBLOCK);
+    event.cgiResponse.setPid(pid);
+    int cgi_response = ft::syscall::open(res_filepath.c_str(), O_RDONLY | O_CREAT, 0644);
+    ft::syscall::fcntl(cgi_response, F_SETFL, O_NONBLOCK);
     event.toRecvFd = cgi_response;
     event.keventId = cgi_response;
     event.cgiResponse.setInfo(event.httpRequest);
@@ -140,28 +192,15 @@ bool VirtualServer::_callCgi(Event& event) {
 
 void VirtualServer::_execveCgi(Event& event) {
   event.baseClock          = clock();
-  std::string fd           = _intToString(event.toSendFd);
+  std::string fd           = _intToString(event.clientFd);
   std::string req_filepath = TEMP_REQUEST_PREFIX + fd;
   std::string res_filepath = TEMP_RESPONSE_PREFIX + fd;
-  int         cgi_request  = open(req_filepath.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
   int         cgi_response = open(res_filepath.c_str(), O_WRONLY | O_CREAT, 0644);
+  int         cgi_request  = open(req_filepath.c_str(), O_RDONLY, 0644);
 
   if (cgi_request == -1 || cgi_response == -1) {
-    unlink(res_filepath.c_str());
     unlink(req_filepath.c_str());
-    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after open", INFILE);
-    std::exit(EXIT_FAILURE);
-  }
-
-  if (write(cgi_request, event.httpRequest.body().data(), event.httpRequest.body().size()) == -1) {
-    Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after write", INFILE);
-    Log::log()(true, "errno", strerror(errno), INFILE);
-    std::exit(EXIT_FAILURE);
-  }
-
-  // int ret = lseek(cgi_request, 0, SEEK_SET);
-  cgi_request = open(req_filepath.c_str(), O_RDONLY, 0644);
-  if (cgi_request == -1) {
+    unlink(res_filepath.c_str());
     Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after open", INFILE);
     std::exit(EXIT_FAILURE);
   }

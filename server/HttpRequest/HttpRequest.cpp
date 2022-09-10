@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <sstream>
 
+#include "DataMove.hpp"
 #include "Event.hpp"
 #include "GetLine.hpp"
 #include "Log.hpp"
@@ -25,14 +26,18 @@ void HttpRequest::initialize() {
   _isKeepAlive         = true;
   _chunkSize           = -1;
   _secretHeaderForTest = 0;
-  _bodyFd              = -1;
-  _bodySize            = 0;
-  _getLine.clear();
+  _chunkSize           = 0;
+  _getLine.initialize();
 }
 
 bool HttpRequest::isParsingEnd() {
   return _parsingState == HTTP_PARSING_DONE || _parsingState == HTTP_PARSING_BAD_REQUEST ||
          _parsingState == HTTP_PARSING_TIME_OUT;
+}
+
+bool HttpRequest::isUploadEnd() {
+  return _parsingState == HTTP_UPLOADING_DONE; /* || _parsingState == HTTP_PARSING_BAD_REQUEST ||
+          _parsingState == HTTP_PARSING_TIME_OUT*/
 }
 
 bool HttpRequest::isCgi(const std::string& ext) {
@@ -43,11 +48,49 @@ bool HttpRequest::isCgi(const std::string& ext) {
   return true;
 }
 
-void HttpRequest::parseRequest(Event& event) {
-  int         recv_fd = event.toRecvFd;
+void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
+  (void)base_clock;
   std::string line;
-  int         curr;
-  int         file_size;
+  switch (_parsingState) {
+    case HTTP_UPLOADING_CHUNK:
+      DataMove::fileToFile(recv_fd, send_fd, _uploadedSize, _chunkSize - _uploadedSize);
+      if (DataMove::fail()) {
+        _parsingState = HTTP_PARSING_CONNECTION_CLOSED;
+        break;
+      }
+      if (_chunkSize != _uploadedSize) {
+        break;
+      }
+      if (!_isChunked) {
+        _parsingState = HTTP_UPLOADING_DONE;
+        break;
+      }
+      _parsingState = HTTP_PARSING_CHUNK_SIZE;
+    case HTTP_PARSING_CHUNK_SIZE:
+      line = _getLine.nextLine();
+      if (line.empty()) {
+        break;
+      }
+      if (line == "\r") {
+        _parsingState = HTTP_UPLOADING_CHUNK;
+        break;
+      }
+      ft::syscall::lseek(recv_fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
+      _chunkSize = std::atoi(line.c_str());
+      if (_chunkSize != 0) {
+        _parsingState = HTTP_UPLOADING_CHUNK;
+        break;
+      }
+      _parsingState = HTTP_UPLOADING_CHUNK_DONE;
+
+    default:
+      break;
+  }
+}
+
+void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
+  (void)base_clock;
+  std::string line;
 
   switch (_parsingState) {
     case HTTP_PARSING_INIT:
@@ -63,26 +106,26 @@ void HttpRequest::parseRequest(Event& event) {
       }
       if (line.empty() || isParsingEnd())
         break;
-
+      Log::log()(LOG_LOCATION, "(DONE) PARSING HEADER");
     case HTTP_PARSING_BODY:
-      _bodyFd = recv_fd;
+      _fileFd = recv_fd;
       if (!_isChunked) {
-        curr      = ft::syscall::lseek(recv_fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
-        file_size = ft::syscall::lseek(recv_fd, 0, SEEK_END);
-        ft::syscall::lseek(recv_fd, curr, SEEK_SET);
-        _bodySize     = file_size - curr;
+        ft::syscall::lseek(recv_fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
+        _chunkSize    = _contentLength;
         _parsingState = HTTP_PARSING_DONE;
         break;
       }
 
-    case HTTP_PARSING_BODY_CHUNK:
+    case HTTP_PARSING_CHUNK_SIZE:
       line = _getLine.nextLine();
       if (line.empty()) {
-        _parsingState = HTTP_PARSING_BODY_CHUNK;
+        _parsingState = HTTP_PARSING_CHUNK_SIZE;
         break;
       }
+      Log::log()(true, "_getline fd", _getLine.getFd());
+      Log::log()(true, "remainsCount", _getLine.remainsCount());
       ft::syscall::lseek(recv_fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
-      _bodySize = std::atoi(line.c_str());
+      _chunkSize = _parseChunkSize(line);
 
     default:
       _parsingState = HTTP_PARSING_DONE;
@@ -206,35 +249,35 @@ bool HttpRequest::_parseHeaderField(const std::string& line) {
   return true;
 }
 
-void HttpRequest::_parseChunk() {
-  while (1) {
-    if (_chunkSize == -1) {
-      std::string line = _getLine.nextLine();
-      if (line.empty()) {
-        return;
-      }
-      _chunkSize = _parseChunkSize(line);
-    }
+// void HttpRequest::_parseChunk() {
+//   while (1) {
+//     if (_chunkSize == -1) {
+//       std::string line = _getLine.nextLine();
+//       if (line.empty()) {
+//         return;
+//       }
+//       _chunkSize = _parseChunkSize(line);
+//     }
 
-    if (_chunkSize == 0) {
-      std::string line = _getLine.nextLine();
-      if (line.empty()) {
-        return;
-      }
-      _parsingState = HTTP_PARSING_DONE;
-      _chunkSize    = -1;
-      return;
-    }
+//     if (_chunkSize == 0) {
+//       std::string line = _getLine.nextLine();
+//       if (line.empty()) {
+//         return;
+//       }
+//       _parsingState = HTTP_PARSING_DONE;
+//       _chunkSize    = -1;
+//       return;
+//     }
 
-    // if (_getLine.remains() > _chunkSize) {  // ?
-    //   _storage.dataToBody(_body, _chunkSize, _isChunked);
-    //   _chunkSize = -1;
-    // } else {
-    //   break;
-    // }
-  }
-  _timeStamp = time(NULL);
-}
+//     // if (_getLine.remains() > _chunkSize) {  // ?
+//     //   _storage.dataToBody(_body, _chunkSize, _isChunked);
+//     //   _chunkSize = -1;
+//     // } else {
+//     //   break;
+//     // }
+//   }
+//   _timeStamp = time(NULL);
+// }
 
 size_t HttpRequest::_parseChunkSize(const std::string& line) {
   char*  p;

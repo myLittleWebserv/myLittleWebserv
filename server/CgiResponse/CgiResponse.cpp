@@ -6,10 +6,17 @@
 #include "syscall.hpp"
 
 CgiResponse::CgiResponse()
-    : _parsingState(CGI_RUNNING), _httpVersion(), _statusCode(0), _statusMessage(), _contentType(), _bodyFd(-1) {}
+    : _parsingState(CGI_RUNNING),
+      _pid(-1),
+      _httpVersion(),
+      _statusCode(0),
+      _statusMessage(),
+      _contentType(),
+      _bodyFd(-1) {}
 
 void CgiResponse::initialize() {
   _parsingState  = CGI_RUNNING;
+  _pid           = -1;
   _statusCode    = 0;
   _httpVersion   = "";
   _statusMessage = "";
@@ -24,13 +31,13 @@ void CgiResponse::setInfo(const HttpRequest& http_requset) {
   _secretHeaderForTest = http_requset.secretHeaderForTest();
 }
 
-bool CgiResponse::_isCgiExecutionEnd(int pid, clock_t base_clock) {
+bool CgiResponse::_isCgiExecutionEnd(clock_t base_clock) {
   int status;
-  int result = waitpid(pid, &status, WNOHANG);
-  Log::log()(true, "pid", pid, INFILE);
+  int result = waitpid(_pid, &status, WNOHANG);
+  Log::log()(true, "pid", _pid, INFILE);
   Log::log()(true, "result", result, INFILE);
 
-  if (result == pid) {
+  if (result == _pid) {
     _parsingState = CGI_READING_HEADER;
     Log::log()(true, "CGI EXECUTION          DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
     return true;
@@ -59,16 +66,13 @@ bool CgiResponse::_parseLine(const std::string& line) {
   return true;
 }
 
-void CgiResponse::parseRequest(Event& event) {
-  int         recv_fd    = event.toRecvFd;
-  int         pid        = event.pid;
-  clock_t     base_clock = event.baseClock;
+void CgiResponse::parseRequest(int recv_fd, clock_t base_clock) {
   int         curr;
   int         file_size;
   std::string line;
   switch (_parsingState) {
     case CGI_RUNNING:
-      if (!_isCgiExecutionEnd(pid, base_clock))
+      if (!_isCgiExecutionEnd(base_clock))
         break;
 
     case CGI_READING_HEADER:
@@ -98,8 +102,3 @@ void CgiResponse::parseRequest(Event& event) {
   Log::log()(true, "_bodySize", _bodySize, INFILE);
   Log::log()(true, "_bodyFd", _bodyFd, INFILE);
 }
-
-bool CgiResponse::isExecuteError() { return _parsingState == CGI_ERROR; }
-bool CgiResponse::isReadError() { return _getLine.isReadError(); }
-
-bool CgiResponse::isParsingEnd() { return _parsingState == CGI_ERROR || _parsingState == CGI_PARSING_DONE; }

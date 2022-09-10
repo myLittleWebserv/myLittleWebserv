@@ -22,8 +22,12 @@ class Router {
     virtual const char* what() const throw() { return "(ERROR) failed to init server sockets!"; }
   };
   class ServerSystemCallException : public std::exception {
+   private:
+    const char* _msg;
+
    public:
-    virtual const char* what() const throw() { return "(ERROR) failed to system-call!"; }
+    ServerSystemCallException(const char* msg) throw() : _msg(msg) {}
+    virtual const char* what() const throw() { return _msg; }
   };
 
  public:

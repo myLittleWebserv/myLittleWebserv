@@ -28,8 +28,8 @@ void EventHandler::_appendNewEventToChangeList(int ident, int filter, int flag, 
 void EventHandler::removeConnection(Event& event) {
   int ret = close(event.toSendFd);
   if (event.type == CGI_RESPONSE_READABLE) {
-    FileManager::registerTempFileFd(event.toRecvFd);
-    _appendNewEventToChangeList(event.toRecvFd, EVFILT_READ, EV_DELETE, NULL);
+    FileManager::registerTempFileFd(event.clientFd);
+    _appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DELETE, NULL);
   }
   Log::log().syscall(ret, LOG_LOCATION, "(SYSCALL) close done", "(SYSCALL) close error", INFILE);
   Log::log()("closed fd", event.toSendFd);
@@ -55,7 +55,7 @@ void EventHandler::_addConnection(int listen_fd) {
   _appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD, event);
   _appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD, event);
   _appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_DISABLE, event);  // 따로 해야 제대로 적용됨.
-
+  event->httpRequest.getLine().setFd(event->keventId);
   _eventSet.insert(event);
 }
 
@@ -85,46 +85,39 @@ void EventHandler::_updateEventsTimestamp(int num_kevents) {
   }
 }
 
+void EventHandler::_routeRecvEvent(Event& event, Request& request) {
+  request.parseRequest(event.toRecvFd, event.baseClock);
+  if (request.isRecvError()) {
+    removeConnection(event);
+  } else if (request.isParsingEnd()) {
+    if (event.serverId == -1) {
+      event.serverId = _router.findServerId(event.httpRequest);
+    }
+    _routedEvents[event.serverId].push_back(&event);
+  }
+}
+
 void EventHandler::_routeEvent(Event& event) {
   switch (event.type) {
     case CONNECTION_REQUEST:
       _checkConnectionTimeout(event.timestamp);
       _addConnection(event.keventId);
-      gettimeofday(&event.timestamp, NULL);
       break;
 
     case HTTP_REQUEST_READABLE:
-      event.httpRequest.parseRequest(event);
-      gettimeofday(&event.timestamp, NULL);
-      if (event.httpRequest.isConnectionClosed()) {
-        removeConnection(event);
-      } else if (event.httpRequest.isParsingEnd()) {
-        event.serverId = _router.findServerId(event.httpRequest);
-        _routedEvents[event.serverId].push_back(&event);
-        Log::log()(LOG_LOCATION, "(event routed) Http Request Readable", INFILE);
-      }
-      break;
-
-    case HTTP_RESPONSE_WRITABLE:
-      _routedEvents[event.serverId].push_back(&event);
-      gettimeofday(&event.timestamp, NULL);
-      Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", INFILE);
+      _routeRecvEvent(event, event.httpRequest);
       break;
 
     case CGI_RESPONSE_READABLE:
-      event.cgiResponse.parseRequest(event);
-      gettimeofday(&event.timestamp, NULL);
-      if (event.cgiResponse.isReadError()) {
-        removeConnection(event);
-      } else if (event.cgiResponse.isParsingEnd()) {
-        _routedEvents[event.serverId].push_back(&event);
-        Log::log()(LOG_LOCATION, "(event routed) Cgi Reponse Readable", INFILE);
-      }
+      _routeRecvEvent(event, event.cgiResponse);
       break;
 
     default:
+      _routedEvents[event.serverId].push_back(&event);
+      Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", INFILE);
       break;
   }
+  gettimeofday(&event.timestamp, NULL);
 }
 
 void EventHandler::routeEvents() {
@@ -153,6 +146,7 @@ void EventHandler::routeEvents() {
       removeConnection(event);
       continue;
     }
+
     _routeEvent(event);
   }
 }

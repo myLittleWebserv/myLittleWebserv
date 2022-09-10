@@ -1,3 +1,4 @@
+
 NAME := myLittleWebserv
 CLIENT := myLittleClient
 
@@ -18,13 +19,15 @@ SRC :=	main.cpp\
 		CgiResponse.cpp\
 		FileManager.cpp\
 		syscall.cpp\
+		ResponseFactory.cpp\
+		DataMove.cpp\
 		GetLine.cpp
 
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
 
 
-CXXFALGS += -std=c++98 -Wall -Werror -Wextra #-fsanitize=address -g
-LDFALGS  += #-fsanitize=address -g
+CXXFALGS += -std=c++98 -Wall -Werror -Wextra -fsanitize=address -g
+LDFALGS  += -fsanitize=address -g
 
 INCS := -I ./$(SRC_DIR)/Router\
 		-I ./$(SRC_DIR)/Log\
@@ -36,7 +39,9 @@ INCS := -I ./$(SRC_DIR)/Router\
 		-I ./$(SRC_DIR)/HttpResponse\
 		-I ./$(SRC_DIR)/CgiResponse\
 		-I ./$(SRC_DIR)/FileManager\
-		-I ./$(SRC_DIR)/Storage\
+		-I ./$(SRC_DIR)/GetLine\
+		-I ./$(SRC_DIR)/DataMove\
+		-I ./$(SRC_DIR)/ResponseFactory\
 		-I ./$(SRC_DIR)/syscall
 
 

@@ -13,8 +13,8 @@ int main(int argc, char** argv) {
   while (1) {
     try {
       router.start();
-    } catch (const std::string& error_message) {
-      std::cerr << "error : " << error_message << std::endl;
+    } catch (const std::exception& e) {
+      std::cerr << "error : " << e.what() << std::endl;
       std::cerr << "Server Reoot...!" << std::endl;
     }
   }

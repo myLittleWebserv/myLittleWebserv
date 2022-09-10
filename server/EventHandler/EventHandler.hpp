@@ -36,6 +36,7 @@ class EventHandler {
   void _checkConnectionTimeout(const timeval& base_time);
   void _updateEventsTimestamp(int num_kevents);
   void _routeEvent(Event& event);
+  void _routeRecvEvent(Event& event, Request& request);
   void _appendNewEventToChangeList(int ident, int filter, int flag, Event* event);
   void _addConnection(int listen_fd);
 

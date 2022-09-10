@@ -1,4 +1,4 @@
-#ifndef HTTPRESPONSE_HPP
+#pragma once
 
 #include <fstream>
 #include <string>
@@ -6,11 +6,39 @@
 
 #define DEFAULT_ERROR_PAGE_DIR "error_pages"
 
+struct Event;
 class Request;
 class HttpRequest;
 class CgiResponse;
 class FileManager;
 struct LocationInfo;
+
+enum HttpResponseStatusCode {
+  STATUS_CONTINUE                   = 100,
+  STATUS_SWITCHING_PROTOCOLS        = 101,
+  STATUS_OK                         = 200,
+  STATUS_CREATED                    = 201,
+  STATUS_ACCEPTED                   = 202,
+  STATUS_NO_CONTENT                 = 204,
+  STATUS_MULTIPLE_CHOICES           = 300,
+  STATUS_MOVED_PERMANENTLY          = 301,
+  STATUS_FOUND                      = 302,
+  STATUS_SEE_OTHER                  = 303,
+  STATUS_NOT_MODIFIED               = 304,
+  STATUS_USE_PROXY                  = 305,
+  STATUS_TEMPORARY_REDIRECT         = 307,
+  STATUS_BAD_REQUEST                = 400,
+  STATUS_PAYMENT_REQUIRED           = 402,
+  STATUS_NOT_FOUND                  = 404,
+  STATUS_METHOD_NOT_ALLOWED         = 405,
+  STATUS_PAYLOAD_TOO_LARGE          = 413,
+  STATUS_INTERNAL_SERVER_ERROR      = 500,
+  STATUS_NOT_IMPLEMENTED            = 501,
+  STATUS_BAD_GATEWAY                = 502,
+  STATUS_SERVICE_UNAVAILABLE        = 503,
+  STATUS_GATEWAY_TIMEOUT            = 504,
+  STATUS_HTTP_VERSION_NOT_SUPPORTED = 505
+};
 
 enum HttpResponseSendingState {
   HTTP_SENDING_HEADER,
@@ -21,59 +49,28 @@ enum HttpResponseSendingState {
 };
 
 class HttpResponse {
-  // Types
-  typedef std::vector<unsigned char> vector;
-
   // Member Variable
  private:
-  // vector::pointer               _body;
-  vector                        _tempBody;
   enum HttpResponseSendingState _sendingState;
-  int                           _bodyFd;
   size_t                        _bodySent;
   size_t                        _headerSent;
   std::string                   _header;
-  std::string                   _httpVersion;
-  int                           _statusCode;
-  std::string                   _message;
-  std::string                   _location;
+  enum HttpResponseStatusCode   _statusCode;
   size_t                        _contentLength;
-  std::string                   _contentType;  // default = plain/text;
-
-  // Method
- private:
-  void        _makeHeader();
-  void        _fileToBody(std::ifstream& file);
-  void        _processGetRequest(HttpRequest& request, LocationInfo& location_info);
-  void        _processHeadRequest(HttpRequest& request, LocationInfo& location_info);
-  void        _processPostRequest(HttpRequest& request, LocationInfo& location_info);
-  void        _processPutRequest(HttpRequest& request, LocationInfo& location_info);
-  void        _processDeleteRequest(HttpRequest& request, LocationInfo& location_info);
-  void        _makeAutoIndexResponse(HttpRequest& request, LocationInfo& location_info, FileManager& file_manager);
-  void        _makeErrorResponse(int error_code, Request& request, LocationInfo& location_info);
-  void        _makeRedirResponse(int redir_code, HttpRequest& request, LocationInfo& location_info,
-                                 const std::string& location_field = "");
-  bool        _isAllowedMethod(int method, std::vector<std::string>& allowed_method);
-  std::string _getMessage(int status_code);
-  std::string _getContentType(const std::string& file_name);
-  void        _makeResponse(vector::pointer body);
-  bool        _sendingStateTransition(size_t total_size, size_t already_sent, HttpResponseSendingState state);
-  template <typename T>
-  void _sendChunk(int fd, const T* base, size_t total_size, size_t& already_sent);
+  int                           _fileFd;
 
   // Constructor
  public:
-  HttpResponse(HttpRequest& request, LocationInfo& location_info);
-  HttpResponse(CgiResponse& cgi_response, LocationInfo& location_info);
+  HttpResponse(const std::string& header, HttpResponseStatusCode status_code, size_t content_length = 0,
+               int file_fd = -1);
+
   // Interface
  public:
-  bool               isConnectionClosed() { return _sendingState == HTTP_SENDING_CONNECTION_CLOSED; }
-  bool               isSendingEnd() { return _sendingState == HTTP_SENDING_DONE; }
-  void               sendResponse(int fd);
-  int                contentLength() { return _contentLength; }
-  const std::string& header() { return _header; }
-  int                bodyFd() { return _bodyFd; }
-  // vector::pointer    body() { return _body; }
+  bool                   isConnectionClosed() { return _sendingState == HTTP_SENDING_CONNECTION_CLOSED; }
+  bool                   isSendingEnd() { return _sendingState == HTTP_SENDING_DONE; }
+  void                   sendResponse(int recv_fd, int send_fd);
+  size_t                 contentLength() { return _contentLength; }
+  const std::string&     header() { return _header; }
+  int                    fileFd() { return _fileFd; }
+  HttpResponseStatusCode statusCode() { return _statusCode; }
 };
-
-#endif

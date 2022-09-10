@@ -20,11 +20,11 @@ class GetLine : private std::vector<unsigned char> {
  private:
   int  _fd;
   int  _readPos;
-  bool _isReadError;
+  bool _isRecvError;
 
   // Constructor
  public:
-  GetLine() : _fd(-1), _readPos(0), _isReadError(false) {}
+  GetLine() : _fd(-1), _readPos(0), _isRecvError(false) {}
 
   // Method
  private:
@@ -33,8 +33,9 @@ class GetLine : private std::vector<unsigned char> {
   using vector::clear;
   void        setFd(int fd) { _fd = fd; }
   int         getFd() { return _fd; }
-  bool        isReadError() { return _isReadError; }
+  bool        isRecvError() { return _isRecvError; }
   int         remainsCount() { return size() - _readPos; }
   void        initialize();
   std::string nextLine();  // 라인이 완성되지 않으면 "" 리턴
+  void        rewindFileOffset();
 };

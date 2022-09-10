@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "GetLine.hpp"
+#include "HttpResponse.hpp"
 #include "Request.hpp"
 
 class HttpRequest;
@@ -20,6 +21,7 @@ enum CgiResponseParsingState { CGI_ERROR, CGI_RUNNING, CGI_READING_HEADER, CGI_P
 class CgiResponse : public Request {
  private:
   CgiResponseParsingState _parsingState;
+  pid_t                   _pid;
   GetLine                 _getLine;
   std::string             _httpVersion;
   int                     _statusCode;
@@ -32,7 +34,7 @@ class CgiResponse : public Request {
 
   std::vector<std::string> _split(const std::string& str, const std::string& delimiter);
   void                     _parseCgiResponse(clock_t base_clock);
-  bool                     _isCgiExecutionEnd(int pid, clock_t clock);
+  bool                     _isCgiExecutionEnd(clock_t clock);
   bool                     _parseLine(const std::string& line);
 
   // Constructor
@@ -42,10 +44,10 @@ class CgiResponse : public Request {
   // Interface
  public:
   void               initialize();
-  bool               isParsingEnd();
-  bool               isExecuteError();
-  bool               isReadError();
-  void               parseRequest(Event& event);
+  bool               isParsingEnd() { return _parsingState == CGI_ERROR || _parsingState == CGI_PARSING_DONE; }
+  bool               isExecuteError() { return _parsingState == CGI_ERROR; }
+  bool               isRecvError() { return _getLine.isRecvError(); }
+  void               parseRequest(int recv_fd, clock_t base_clock);
   void               setInfo(const HttpRequest& http_request);
   MethodType         method() const { return _method; }
   const std::string& httpVersion() const { return _httpVersion; }
@@ -57,6 +59,8 @@ class CgiResponse : public Request {
   size_t             bodySize() { return _bodySize; }
   std::string        CgiResponseResultString();
   GetLine&           getLine() { return _getLine; }
+  void               setPid(pid_t pid) { _pid = pid; }
+  pid_t              pid() { return _pid; }
 };
 
 #endif
