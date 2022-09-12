@@ -85,10 +85,8 @@ HttpResponse::HttpResponse(CgiResponse& cgi_response, LocationInfo& location_inf
 // Interface
 
 void HttpResponse::sendResponse(int fd) {
-  int             remains;
-  int             sent_size;
-  int             read_size;
-  vector::pointer temp_body;
+  int sent_size;
+  int read_size;
 
   switch (_sendingState) {
     case HTTP_SENDING_HEADER:
@@ -130,10 +128,10 @@ void HttpResponse::sendResponse(int fd) {
 
 // Method
 template <typename T>
-int HttpResponse::_sendChunk(int fd, const T* base, size_t total_size, size_t& already_sent) {
-  T*  pos       = base + already_sent;
-  int remains   = total_size - already_sent;
-  int sent_size = send(fd, pos, remains, 0);
+void HttpResponse::_sendChunk(int fd, const T* base, size_t total_size, size_t& already_sent) {
+  const T* pos       = base + already_sent;
+  int      remains   = total_size - already_sent;
+  int      sent_size = send(fd, pos, remains, 0);
   if (sent_size == -1) {
     _sendingState = HTTP_SENDING_CONNECTION_CLOSED;
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
