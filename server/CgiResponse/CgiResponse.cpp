@@ -24,7 +24,7 @@ void CgiResponse::initialize() {
   _contentType   = "";
   _bodyFd        = -1;
   _bodySize      = 0;
-  _getLine.initialize();
+  _storage.clear();
 }
 
 void CgiResponse::setInfo(const HttpRequest& http_requset) {
@@ -40,7 +40,7 @@ bool CgiResponse::_isCgiExecutionEnd(clock_t base_clock) {
   Log::log()(true, "result", result, INFILE);
 
   if (result == _pid) {
-    _parsingState = CGI_READING_HEADER;
+    _parsingState = CGI_PARSING_HEADER;
     Log::log()(true, "CGI EXECUTION          DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
     return true;
   } else if (result == -1) {
@@ -77,24 +77,20 @@ void CgiResponse::parseRequest(int recv_fd, clock_t base_clock) {
       if (!_isCgiExecutionEnd(base_clock))
         break;
 
-    case CGI_READING_HEADER:
-      line = _getLine.nextLine();
+    case CGI_PARSING_HEADER:
+      line = _storage.getLineFile(recv_fd);
       while (_parseLine(line)) {
-        line = _getLine.nextLine();
+        line = _storage.getLineFile(recv_fd);
       }
-      Log::log()(true, "line.size", line.size());
 
       if (line.empty() || _statusMessage.empty() || _statusCode == 0 || _contentType.empty())
         break;
 
     case CGI_PARSING_DONE:
-      curr      = ft::syscall::lseek(recv_fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
+      curr      = ft::syscall::lseek(recv_fd, 0, SEEK_CUR);
       file_size = ft::syscall::lseek(recv_fd, 0, SEEK_END);
       ft::syscall::lseek(recv_fd, curr, SEEK_SET);
-      Log::log()(true, "curr offset", curr);
-      Log::log()(true, "file_size", file_size);
-      _bodySize     = file_size - curr;
-      _bodyFd       = recv_fd;
+      _bodySize     = file_size - curr + _storage.remains();
       _parsingState = CGI_PARSING_DONE;
       break;
 
@@ -103,6 +99,4 @@ void CgiResponse::parseRequest(int recv_fd, clock_t base_clock) {
   }
   Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", INFILE);
   Log::log()("_parsingState", _parsingState, INFILE);
-  Log::log()(true, "_bodySize", _bodySize, INFILE);
-  Log::log()(true, "_bodyFd", _bodyFd, INFILE);
 }

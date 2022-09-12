@@ -55,7 +55,7 @@ HttpResponse* ResponseFactory::makeResponse(HttpRequest& request, LocationInfo& 
 
 HttpResponse* ResponseFactory::makeResponse(CgiResponse& cgi_response, LocationInfo& location_info) {
   _initialize();
-  if (cgi_response.isExecuteError()) {
+  if (cgi_response.isExecError()) {
     return errorResponse(STATUS_INTERNAL_SERVER_ERROR, cgi_response, location_info);
   }
 
@@ -69,7 +69,7 @@ HttpResponse* ResponseFactory::makeResponse(CgiResponse& cgi_response, LocationI
   _contentType   = cgi_response.contentType();
 
   Log::log()(true, "_contentLengh.make_cgires", _contentLength);
-  return new HttpResponse(_makeHeader(), _statusCode, _contentLength, cgi_response.bodyFd());
+  return new HttpResponse(cgi_response.storage(), _makeHeader(), _statusCode, _contentLength, cgi_response.bodyFd());
 }
 
 HttpResponse* ResponseFactory::_getResponse(HttpRequest& request, LocationInfo& location_info) {
@@ -242,7 +242,7 @@ HttpResponse* ResponseFactory::errorResponse(HttpResponseStatusCode error_code, 
 
   if (fd == -1) {
     default_error_page << DEFAULT_ERROR_PAGE_DIR << '/' << error_code << ".html";
-    fd = ::open(default_error_page.str().c_str(), O_RDONLY | O_NONBLOCK);
+    fd = ft::syscall::open(default_error_page.str().c_str(), O_RDONLY | O_NONBLOCK);
     Log::log()(true, "file open STATUS", fd, INFILE);
     Log::log()(true, "file name", default_error_page.str(), INFILE);
   }
@@ -279,7 +279,6 @@ HttpResponse* ResponseFactory::_redirResponse(HttpResponseStatusCode redir_code,
     _location = location_field;
   }
 
-  // add other field ?
   Log::log()(LOG_LOCATION, "Redirection address returned.");
   return new HttpResponse(_makeHeader(), _statusCode);
 }

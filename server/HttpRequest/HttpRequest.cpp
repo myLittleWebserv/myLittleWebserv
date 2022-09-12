@@ -5,9 +5,7 @@
 #include <cstdlib>
 #include <sstream>
 
-#include "DataMove.hpp"
 #include "Event.hpp"
-#include "GetLine.hpp"
 #include "Log.hpp"
 #include "Storage.hpp"
 #include "syscall.hpp"
@@ -34,7 +32,7 @@ void HttpRequest::initialize() {
 }
 
 bool HttpRequest::isParsingEnd() {
-  return _parsingState == HTTP_PARSING_CHUNK_INIT || _parsingState == HTTP_UPLOADING_INIT ||
+  return _parsingState == HTTP_UPLOADING_CHUNK_INIT || _parsingState == HTTP_UPLOADING_INIT ||
          _parsingState == HTTP_PARSING_BAD_REQUEST || _parsingState == HTTP_PARSING_TIME_OUT;
 }
 
@@ -60,35 +58,35 @@ void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
   Log::log()(true, "(START) uploadRequest _parsingState", _parsingState);
 
   switch (_parsingState) {
-    case HTTP_PARSING_CHUNK_INIT:
-    case HTTP_PARSING_READ_LINE:
-      line = _storage.getLine(recv_fd);
+    case HTTP_UPLOADING_CHUNK_INIT:
+    case HTTP_UPLOADING_READ_LINE:
+      line = _storage.getLineSock(recv_fd);
       if (_storage.fail()) {
         _parsingState = HTTP_PARSING_CONNECTION_CLOSED;
         break;
       }
       if (line == "\r" && _chunkSize == 0) {
-        Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_DONE");
         _parsingState = HTTP_UPLOADING_DONE;
+        Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_DONE");
         break;
       }
       if (line == "\r") {
         break;
       }
-      _parsingState = HTTP_PARSING_READ_LINE;
-      Log::log()(LOG_LOCATION, "(DONE) HTTP_PARSING_READ_LINE");
+      _parsingState = HTTP_UPLOADING_READ_LINE;
+      Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_READ_LINE");
 
-    case HTTP_PARSING_CHUNK_SIZE:
+    case HTTP_UPLOADING_CHUNK_SIZE:
       _chunkSize = _parseChunkSize(line);
       if (line.empty() || isParsingEnd())
         break;
       if (_chunkSize == 0) {
-        _parsingState = HTTP_PARSING_READ_LINE;
+        _parsingState = HTTP_UPLOADING_READ_LINE;
         break;
       }
       _uploadedSize = 0;
       _parsingState = HTTP_UPLOADING_INIT;
-      Log::log()(LOG_LOCATION, "(DONE) HTTP_PARSING_CHUNK_SIZE");
+      Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_CHUNK_SIZE");
 
     case HTTP_UPLOADING_INIT:
       moved = _storage.dataToFile(recv_fd, send_fd, _chunkSize - _uploadedSize);
@@ -99,7 +97,7 @@ void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
       _uploadedSize += moved;
       _uploadedTotalSize += moved;
       if (_isChunked && _chunkSize == _uploadedSize)
-        _parsingState = HTTP_PARSING_READ_LINE;
+        _parsingState = HTTP_UPLOADING_READ_LINE;
       else if (!_isChunked && _chunkSize == _uploadedSize)
         _parsingState = HTTP_UPLOADING_DONE;
       else
@@ -118,16 +116,16 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
 
   switch (_parsingState) {
     case HTTP_PARSING_INIT:
-      line = _storage.getLine(recv_fd);
+      line = _storage.getLineSock(recv_fd);
       _parseStartLine(line);
       if (line.empty() || isParsingEnd())
         break;
       _parsingState = HTTP_PARSING_HEADER;
 
     case HTTP_PARSING_HEADER:
-      line = _storage.getLine(recv_fd);
+      line = _storage.getLineSock(recv_fd);
       while (_parseHeaderField(line)) {
-        line = _storage.getLine(recv_fd);
+        line = _storage.getLineSock(recv_fd);
       }
       if (line.empty() || isParsingEnd())
         break;
@@ -143,7 +141,7 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
       }
 
     default:
-      _parsingState = HTTP_PARSING_CHUNK_INIT;
+      _parsingState = HTTP_UPLOADING_CHUNK_INIT;
       _checkTimeOut();
       break;
   }

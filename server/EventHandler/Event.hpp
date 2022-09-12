@@ -1,4 +1,3 @@
-
 #pragma once
 #define Event_hpp
 

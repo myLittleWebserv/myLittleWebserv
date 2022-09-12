@@ -8,10 +8,8 @@
 
 #include "CgiResponse.hpp"
 #include "Config.hpp"
-#include "DataMove.hpp"
 #include "Event.hpp"
 #include "FileManager.hpp"
-#include "GetLine.hpp"
 #include "HttpRequest.hpp"
 #include "Log.hpp"
 #include "syscall.hpp"
@@ -19,14 +17,25 @@
 // Constructor
 HttpResponse::HttpResponse(const std::string& header, HttpResponseStatusCode status_code, size_t content_length,
                            int file_fd)
-    : _sendingState(HTTP_SENDING_HEADER),
-      _bodySent(0),
-      _headerSent(0),
-      _header(header),
+    : _sendingState(HTTP_SENDING_STORAGE),
+      _storage(header.begin(), header.end()),
+      _sentSize(0),
       _statusCode(status_code),
-      _contentLength(content_length),
+      _goalSize(content_length + header.size()),
       _fileFd(file_fd) {}
 
+HttpResponse::HttpResponse(const Storage& storage, const std::string& header, HttpResponseStatusCode status_code,
+                           size_t content_length, int file_fd)
+    : _sendingState(HTTP_SENDING_STORAGE),
+      _storage(header.begin(), header.end()),
+      _sentSize(0),
+      _statusCode(status_code),
+      _goalSize(content_length + header.size()),
+      _fileFd(file_fd) {
+  _storage.insertBack(storage);
+}
+
+// Destructor
 HttpResponse::~HttpResponse() {
   if (_fileFd != -1)
     FileManager::registerFileFdToClose(_fileFd);
@@ -39,39 +48,22 @@ void HttpResponse::sendResponse(int recv_fd, int send_fd) {
   Log::log()(true, "recv_fd", recv_fd);
   Log::log()(true, "send_fd", send_fd);
   Log::log()(true, "_sendingState", _sendingState);
+  ssize_t moved;
   switch (_sendingState) {
-    case HTTP_SENDING_HEADER:
-      DataMove::memToFile(_header.c_str(), _header.size(), send_fd, _headerSent);
-      Log::log()(true, "_headerSent", _headerSent);
-      if (DataMove::fail()) {
+    case HTTP_SENDING_STORAGE:
+      moved = _storage.dataToSock(recv_fd, send_fd, _goalSize - _sentSize);
+      if (moved == -1) {
         _sendingState = HTTP_SENDING_CONNECTION_CLOSED;
         break;
       }
-      if (_header.size() != _headerSent) {
-        break;
-      }
-      if (recv_fd == -1) {
+      _sentSize += moved;
+      Log::log()(true, "_sentSize", _sentSize);
+      Log::log()(true, "moved", moved);
+      Log::log()(true, "_goalSize", _goalSize);
+      if (_goalSize == _sentSize)
         _sendingState = HTTP_SENDING_DONE;
-      } else {
-        _sendingState = HTTP_SENDING_FILEBODY;
-      }
-
-    case HTTP_SENDING_FILEBODY:
-      DataMove::fileToFile(recv_fd, send_fd, _bodySent);
-      if (DataMove::fail()) {
-        _sendingState = HTTP_SENDING_CONNECTION_CLOSED;
-        break;
-      }
-      Log::log()(true, "_bodySent", _bodySent);
-      Log::log()(true, "_contentLength", _contentLength);
-      if (_contentLength != _bodySent) {
-        break;
-      }
-      _sendingState = HTTP_SENDING_DONE;
 
     default:
-      // close(recv_fd);  // ?
-      // close(send_fd);  // ?
       break;
   }
 }

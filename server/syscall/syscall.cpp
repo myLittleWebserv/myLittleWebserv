@@ -32,11 +32,11 @@ int ft::syscall::open(const char *path, int oflag, mode_t mode) {
   return ret;
 }
 
-void ft::syscall::fcntl(int fd, int cmd, int oflag) {
+void ft::syscall::fcntl(int fd, int cmd, int oflag, const std::exception &e) {
   int ret = ::fcntl(fd, cmd, oflag);
   if (ret == -1) {
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
-    throw Router::ServerSystemCallException("(SYSCALL) fcntl");
+    throw e;
   }
   return;
 }
@@ -87,4 +87,19 @@ int ft::syscall::kevent(int fd, struct kevent *changelist, int nchanges, struct 
     throw Router::ServerSystemCallException("(SYSCALL) kevent");
   }
   return ret;
+}
+
+void ft::syscall::listen(int fd, int back_log) {
+  int ret = ::listen(fd, back_log);
+  if (ret == -1) {
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    throw Router::ServerSocketInitException();
+  }
+}
+
+void ft::syscall::bind(int fd, ::sockaddr *addr, socklen_t len) {
+  int ret = ::bind(fd, addr, len);
+  if (ret < 0) {
+    throw Router::ServerSocketInitException();
+  }
 }

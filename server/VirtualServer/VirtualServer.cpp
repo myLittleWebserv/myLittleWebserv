@@ -5,9 +5,9 @@
 
 #include <cstring>
 
-#include "DataMove.hpp"
 #include "FileManager.hpp"
 #include "ResponseFactory.hpp"
+#include "syscall.hpp"
 
 VirtualServer::VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler)
     : _serverId(id), _serverInfo(info), _eventHandler(eventHandler) {}
@@ -161,7 +161,7 @@ void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& loca
     case PUT:
       if (request.isCgi(location_info.cgiExtension)) {
         tempfile_path = TEMP_REQUEST_PREFIX + _intToString(event.clientFd);
-        tempfile_fd   = ft::syscall::open(tempfile_path.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
+        tempfile_fd   = ft::syscall::open(tempfile_path.c_str(), O_RDWR | O_CREAT | O_TRUNC | O_NONBLOCK, 0644);
         event.type    = HTTP_REQUEST_UPLOAD;
         event.setDataFlow(event.clientFd, tempfile_fd);
         _eventHandler.addWriteEvent(event.toSendFd, &event);
@@ -238,7 +238,6 @@ bool VirtualServer::_callCgi(Event& event, LocationInfo& location_info) {
     FileManager::registerFileFdToClose(event.toSendFd);
     event.setDataFlow(cgi_response, event.clientFd);
     event.cgiResponse.setInfo(event.httpRequest);
-    event.cgiResponse.getLine().setFd(cgi_response);  // ?
   }
   Log::log()(LOG_LOCATION, "(CGI) CALL SUCCESS", INFILE);
   return true;

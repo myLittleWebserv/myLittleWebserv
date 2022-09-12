@@ -4,14 +4,16 @@
 #include <string>
 #include <vector>
 
+#include "Storage.hpp"
+
 #define DEFAULT_ERROR_PAGE_DIR "error_pages"
 
 struct Event;
+struct LocationInfo;
 class Request;
 class HttpRequest;
 class CgiResponse;
 class FileManager;
-struct LocationInfo;
 
 enum HttpResponseStatusCode {
   STATUS_CONTINUE                   = 100,
@@ -40,23 +42,16 @@ enum HttpResponseStatusCode {
   STATUS_HTTP_VERSION_NOT_SUPPORTED = 505
 };
 
-enum HttpResponseSendingState {
-  HTTP_SENDING_HEADER,
-  HTTP_SENDING_TEMPBODY,
-  HTTP_SENDING_FILEBODY,
-  HTTP_SENDING_DONE,
-  HTTP_SENDING_CONNECTION_CLOSED
-};
+enum HttpResponseSendingState { HTTP_SENDING_STORAGE, HTTP_SENDING_DONE, HTTP_SENDING_CONNECTION_CLOSED };
 
 class HttpResponse {
   // Member Variable
  private:
   enum HttpResponseSendingState _sendingState;
-  size_t                        _bodySent;
-  size_t                        _headerSent;
-  std::string                   _header;
+  Storage                       _storage;
+  size_t                        _sentSize;
   enum HttpResponseStatusCode   _statusCode;
-  size_t                        _contentLength;
+  size_t                        _goalSize;
   int                           _fileFd;
 
   // Constructor
@@ -64,14 +59,15 @@ class HttpResponse {
   ~HttpResponse();
   HttpResponse(const std::string& header, HttpResponseStatusCode status_code, size_t content_length = 0,
                int file_fd = -1);
+  HttpResponse(const Storage& storage, const std::string& header, HttpResponseStatusCode status_code,
+               size_t content_length = 0, int file_fd = -1);
 
   // Interface
  public:
   bool                   isConnectionClosed() { return _sendingState == HTTP_SENDING_CONNECTION_CLOSED; }
   bool                   isSendingEnd() { return _sendingState == HTTP_SENDING_DONE; }
   void                   sendResponse(int recv_fd, int send_fd);
-  size_t                 contentLength() { return _contentLength; }
-  const std::string&     header() { return _header; }
   int                    fileFd() { return _fileFd; }
   HttpResponseStatusCode statusCode() { return _statusCode; }
+  void                   _headerToSocket(int send_fd);
 };

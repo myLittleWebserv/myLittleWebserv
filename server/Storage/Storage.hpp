@@ -26,34 +26,42 @@ class Storage : private std::vector<unsigned char> {
   // Constructor
  public:
   Storage() : _readPos(0), _writePos(0) {}
-  virtual ~Storage() {}
+  Storage(const Storage& storage);
+  template <typename BeginIter, typename EndIter>
+  Storage(BeginIter bi, EndIter ei);
 
   // Interface
  public:
-  using vector::data;
-  void            clear();
-  size_t          size() { return _writePos; }
-  size_t          capacity() { return vector::size(); }
-  void            moveReadPos(ssize_t move);
-  int             remains() { return _writePos - _readPos; }
-  bool            empty() const { return _writePos == _readPos; }
-  vector::pointer currentReadPos() { return data() + _readPos; }
-  vector::pointer currentWritePos() { return data() + _writePos; }
-  std::string     getLine(int fd);
-  void            preserveRemains();
-  bool            fail() { return _fail; }
-  ssize_t         memToFile(int file_fd, size_t goal_size);
-  ssize_t         sockToFile(int recv_fd, int send_fd, size_t goal_size);
-  ssize_t         dataToFile(int recv_fd, int send_fd, size_t goal_size);
+  void        print();
+  void        clear();
+  size_t      size() { return _writePos; }
+  size_t      capacity() { return vector::size(); }
+  int         remains() { return _writePos - _readPos; }
+  bool        empty() const { return _writePos == _readPos; }
+  std::string getLineSock(int fd);
+  std::string getLineFile(int fd);
+  void        preserveRemains();
+  bool        fail() { return _fail; }
+  ssize_t     memToFile(int file_fd, size_t goal_size);
+  ssize_t     sockToFile(int recv_fd, int send_fd, size_t goal_size);
+  ssize_t     fileToSock(int recv_fd, int send_fd, size_t goal_size);
+  ssize_t     dataToFile(int recv_fd, int send_fd, size_t goal_size);
+  ssize_t     dataToSock(int recv_fd, int send_fd, size_t goal_size);
+  void        insertBack(const Storage& storage);
   template <typename BeginIter, typename EndIter>
-  void insert(BeginIter bi, EndIter ei);
+  void insertBack(BeginIter bi, EndIter ei);
 };
 
 template <typename BeginIter, typename EndIter>
-void Storage::insert(BeginIter bi, EndIter ei) {
-  Log::log()(LOG_LOCATION, "");
-  Log::log()(true, "_writePos", _writePos);
-  Log::log()(true, "capacity()", capacity());
+Storage::Storage(BeginIter bi, EndIter ei) : vector(bi, ei), _readPos(0) {
+  _writePos = vector::size();
+}
+
+template <typename BeginIter, typename EndIter>
+void Storage::insertBack(BeginIter bi, EndIter ei) {
+  // Log::log()(LOG_LOCATION, "");
+  // Log::log()(true, "_writePos", _writePos);
+  // Log::log()(true, "capacity()", capacity());
   for (; _writePos != capacity() && bi != ei; ++_writePos, ++bi) {
     (*this)[_writePos] = *bi;
   }

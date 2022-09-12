@@ -38,7 +38,7 @@ void EventHandler::_addConnection(int listen_fd) {
   socklen_t   alen;
   int         client_fd = ft::syscall::accept(listen_fd, (struct sockaddr*)&addr, &alen);
 
-  ft::syscall::fcntl(client_fd, F_SETFL, O_NONBLOCK);
+  ft::syscall::fcntl(client_fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("(SYSCALL) fcntl"));
   Event* event = new Event(HTTP_REQUEST_READABLE, client_fd);
 
   _appendNewEventToChangeList(event->clientFd, EVFILT_READ, EV_ADD, event);
