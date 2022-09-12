@@ -63,7 +63,12 @@ void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
     case HTTP_PARSING_CHUNK_INIT:
     case HTTP_PARSING_READ_LINE:
       line = _storage.getLine(recv_fd);
+      if (_storage.fail()) {
+        _parsingState = HTTP_PARSING_CONNECTION_CLOSED;
+        break;
+      }
       if (line == "\r" && _chunkSize == 0) {
+        Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_DONE");
         _parsingState = HTTP_UPLOADING_DONE;
         break;
       }
@@ -86,7 +91,6 @@ void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
       Log::log()(LOG_LOCATION, "(DONE) HTTP_PARSING_CHUNK_SIZE");
 
     case HTTP_UPLOADING_INIT:
-      Log::log()(LOG_LOCATION, "(INIT) HTTP_UPLOADING_INIT");
       moved = _storage.dataToFile(recv_fd, send_fd, _chunkSize - _uploadedSize);
       if (moved == -1) {
         _parsingState = HTTP_PARSING_CONNECTION_CLOSED;
@@ -127,7 +131,6 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
       }
       if (line.empty() || isParsingEnd())
         break;
-      Log::log()(LOG_LOCATION, "(DONE) PARSING HEADER");
       _parsingState = HTTP_PARSING_BODY;
 
     case HTTP_PARSING_BODY:

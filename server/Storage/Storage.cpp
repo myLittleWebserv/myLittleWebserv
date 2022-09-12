@@ -42,6 +42,7 @@ std::string Storage::getLine(int fd) {
       return line;
     }
   }
+  _fail = false;
   return "";
 }
 
@@ -95,8 +96,8 @@ ssize_t Storage::sockToFile(int recv_fd, int send_fd, size_t goal_size) {
 }
 
 ssize_t Storage::memToFile(int file_fd, size_t goal_size) {
-  size_t  to_write  = goal_size < _writePos - _readPos ? goal_size : _writePos - _readPos;
-  ssize_t send_size = write(file_fd, data() + _readPos, to_write);
+  size_t  small_one = goal_size < (_writePos - _readPos) ? goal_size : (_writePos - _readPos);
+  ssize_t send_size = write(file_fd, data() + _readPos, small_one);
   if (send_size == -1) {
     _fail = true;
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);

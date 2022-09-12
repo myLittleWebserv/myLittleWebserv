@@ -248,6 +248,7 @@ HttpResponse* ResponseFactory::errorResponse(HttpResponseStatusCode error_code, 
   }
 
   if (request.method() == HEAD) {
+    ft::syscall::close(fd);
     fd = -1;
   }
 

@@ -18,27 +18,25 @@
 class FileManager {
   // Types
  public:
-  typedef std::set<int> TempFileFds;
+  typedef std::set<int> FdSet;
 
   // Static
  private:
-  static TempFileFds _tempFileFd;
+  static FdSet _fileFdSet;
 
  public:
-  static void clearTempFileFd();
-  static void registerFileFdToClose(int fd) { _tempFileFd.insert(fd); }
+  static void clearFileFds();
+  static void registerFileFdToClose(int fd);
   static void removeTempFileByKey(int key_fd);
   static void removeFile(const std::string& file_name);
 
   // Member Variable
  private:
-  std::string   _absolutePath;
-  std::ifstream _inFile;
-  std::ofstream _outFile;
-  DIR*          _directory;
-  dirent*       _entry;
-  bool          _isExist;
-  bool          _isDirectoy;
+  std::string _absolutePath;
+  DIR*        _directory;
+  dirent*     _entry;
+  bool        _isExist;
+  bool        _isDirectoy;
 
   // Method
  private:

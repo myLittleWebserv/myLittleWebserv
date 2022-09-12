@@ -1,8 +1,8 @@
 #include "FileManager.hpp"
 
-#include "Router.hpp"
+#include "syscall.hpp"
 
-FileManager::TempFileFds FileManager::_tempFileFd;
+FileManager::FdSet FileManager::_fileFdSet;
 
 FileManager::~FileManager() {
   if (_directory)
@@ -56,14 +56,14 @@ void FileManager::removeFile() {
   }
 }
 
-void FileManager::clearTempFileFd() {
-  for (TempFileFds::iterator it = _tempFileFd.begin(); it != _tempFileFd.end(); ++it) {
-    close(*it);
+void FileManager::clearFileFds() {
+  for (FdSet::iterator it = _fileFdSet.begin(); it != _fileFdSet.end(); ++it) {
+    ft::syscall::close(*it);
   }
-  if (_tempFileFd.size() > 0) {
+  if (_fileFdSet.size() > 0) {
     Log::log()(LOG_LOCATION, "(DONE) fds of temporary file closed", INFILE);
   }
-  _tempFileFd.clear();
+  _fileFdSet.clear();
 }
 
 void FileManager::removeTempFileByKey(int key_fd) {
@@ -72,19 +72,14 @@ void FileManager::removeTempFileByKey(int key_fd) {
   std::string temp_request  = TEMP_REQUEST_PREFIX + key.str();
   std::string temp_response = TEMP_RESPONSE_PREFIX + key.str();
 
-  if (unlink(temp_request.c_str()) == -1 || unlink(temp_response.c_str()) == -1) {
-    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
-    throw Router::ServerSystemCallException("(SYSCALL) unlink");
-  }
+  ft::syscall::unlink(temp_request.c_str());
+  ft::syscall::unlink(temp_response.c_str());
   Log::log()(LOG_LOCATION, "(DONE) temporary file removed", INFILE);
 }
 
 void FileManager::removeFile(const std::string& file_name) {
-  if (unlink(file_name.c_str()) == -1) {
-    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
-    throw Router::ServerSystemCallException("(SYSCALL) unlink");
-  }
-  Log::log()(LOG_LOCATION, "(DONE) /temp/trash removed", INFILE);
+  ft::syscall::unlink(file_name.c_str());
+  Log::log()(LOG_LOCATION, "(DONE) temporary file removed", INFILE);
 }
 
 void FileManager::_appendFileName(std::string back) {
@@ -109,4 +104,9 @@ void FileManager::_updateFileInfo() {
 
   _isExist    = true;
   _isDirectoy = S_ISDIR(buf.st_mode);
+}
+
+void FileManager::registerFileFdToClose(int fd) {
+  _fileFdSet.insert(fd);
+  Log::log()(true, "registered fd", fd);
 }

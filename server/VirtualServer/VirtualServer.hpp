@@ -26,6 +26,7 @@ class VirtualServer {
   void          _cgiResponseToHttpResponse(Event& event, LocationInfo& location_info);
   void          _uploadFile(Event& event, LocationInfo& location_info);
   void          _flushSocket(Event& event, LocationInfo& location_info);
+  void          _redirectUploadError(Event& event);
 
  public:
   VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler);

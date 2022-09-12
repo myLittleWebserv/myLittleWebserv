@@ -2,6 +2,7 @@
 
 #include <fcntl.h>
 #include <string.h>
+#include <sys/event.h>
 #include <unistd.h>
 
 #include "Log.hpp"
@@ -38,4 +39,52 @@ void ft::syscall::fcntl(int fd, int cmd, int oflag) {
     throw Router::ServerSystemCallException("(SYSCALL) fcntl");
   }
   return;
+}
+void ft::syscall::unlink(const char *file_path) {
+  int ret = ::unlink(file_path);
+  if (ret == -1) {
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    throw Router::ServerSystemCallException("(SYSCALL) unlink");
+  }
+  return;
+}
+
+void ft::syscall::close(int fd) {
+  int ret = ::close(fd);
+  if (ret == -1) {
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    throw Router::ServerSystemCallException("(SYSCALL) close");
+  }
+  Log::log()(true, "closed fd", fd);
+  return;
+}
+
+int ft::syscall::accept(int fd, ::sockaddr *addr, ::socklen_t *alen) {
+  int ret = ::accept(fd, addr, alen);
+  if (ret == -1) {
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    throw Router::ServerSystemCallException("(SYSCALL) accept");
+  }
+  Log::log()("Server Socket fd", fd, INFILE);
+  Log::log()("Client Socket fd", ret, INFILE);
+  return ret;
+}
+
+int ft::syscall::kqueue() {
+  int ret = ::kqueue();
+  if (ret == -1) {
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    throw Router::ServerSystemCallException("(SYSCALL) kqueue");
+  }
+  return ret;
+}
+
+int ft::syscall::kevent(int fd, struct kevent *changelist, int nchanges, struct kevent *eventlist, int nevents,
+                        timespec *timeout) {
+  int ret = ::kevent(fd, changelist, nchanges, eventlist, nevents, timeout);
+  if (ret == -1) {
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    throw Router::ServerSystemCallException("(SYSCALL) kevent");
+  }
+  return ret;
 }

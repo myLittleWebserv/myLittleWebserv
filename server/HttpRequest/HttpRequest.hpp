@@ -81,25 +81,26 @@ class HttpRequest : public Request {
 
   // Interface
  public:
-  void               uploadRequest(int recv_fd, int send_fd, clock_t base_clock);
-  void               parseRequest(int recv_fd, clock_t base_clock);
-  bool               isUploadEnd();
-  bool               isParsingEnd();
-  bool               isRecvError();
-  bool               isBadRequest() { return _parsingState == HTTP_PARSING_BAD_REQUEST; }
-  bool               isKeepAlive() { return _isKeepAlive; }
-  bool               isCgi(const std::string& ext);
-  void               initialize();
-  int                hostPort() const { return _hostPort; }
-  const std::string& hostName() const { return _hostName; }
-  const std::string& httpVersion() const { return _httpVersion; }
-  int                contentLength() const { return _contentLength; }
-  const std::string& contentType() const { return _contentType; }
-  MethodType         method() const { return _method; }
-  const std::string& uri() const { return _uri; }
-  int                secretHeaderForTest() const { return _secretHeaderForTest; }
-  int                chunkSize() { return _chunkSize; }
-  bool               isChunked() { return _isChunked; }
-  size_t             uploadedTotalSize() { return _uploadedTotalSize; }
+  void                    uploadRequest(int recv_fd, int send_fd, clock_t base_clock);
+  void                    parseRequest(int recv_fd, clock_t base_clock);
+  bool                    isUploadEnd();
+  bool                    isParsingEnd();
+  bool                    isRecvError();
+  bool                    isBadRequest() { return _parsingState == HTTP_PARSING_BAD_REQUEST; }
+  bool                    isKeepAlive() { return _isKeepAlive; }
+  bool                    isCgi(const std::string& ext);
+  void                    initialize();
+  int                     hostPort() const { return _hostPort; }
+  const std::string&      hostName() const { return _hostName; }
+  const std::string&      httpVersion() const { return _httpVersion; }
+  int                     contentLength() const { return _contentLength; }
+  const std::string&      contentType() const { return _contentType; }
+  MethodType              method() const { return _method; }
+  const std::string&      uri() const { return _uri; }
+  int                     secretHeaderForTest() const { return _secretHeaderForTest; }
+  int                     chunkSize() { return _chunkSize; }
+  bool                    isChunked() { return _isChunked; }
+  size_t                  uploadedTotalSize() { return _uploadedTotalSize; }
+  HttpRequestParsingState state() { return _parsingState; }
   // Storage&           storage() { return _storage; }
 };
