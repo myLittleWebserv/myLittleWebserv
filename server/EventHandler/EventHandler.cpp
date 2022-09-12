@@ -28,7 +28,7 @@ void EventHandler::_appendNewEventToChangeList(int ident, int filter, int flag, 
 void EventHandler::removeConnection(Event& event) {
   int ret = close(event.toSendFd);
   if (event.type == CGI_RESPONSE_READABLE) {
-    FileManager::registerTempFileFd(event.clientFd);
+    FileManager::registerFileFdToClose(event.clientFd);
     _appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DELETE, NULL);
   }
   Log::log().syscall(ret, LOG_LOCATION, "(SYSCALL) close done", "(SYSCALL) close error", INFILE);
@@ -114,7 +114,8 @@ void EventHandler::_routeEvent(Event& event) {
 
     default:
       _routedEvents[event.serverId].push_back(&event);
-      Log::log()(LOG_LOCATION, "(event routed) Http Response Writable", INFILE);
+      Log::log()(LOG_LOCATION, "(event routed)", INFILE);
+      Log::log()(true, "event.type", event.type, INFILE);
       break;
   }
   gettimeofday(&event.timestamp, NULL);
@@ -142,6 +143,7 @@ void EventHandler::routeEvents() {
     int    flags = _keventList[i].flags;
 
     if (flags & EV_EOF) {
+      Log::log()(LOG_LOCATION, "ev_eof", ALL);
       Log::log()(LOG_LOCATION, "ev_eof", ALL);
       removeConnection(event);
       continue;

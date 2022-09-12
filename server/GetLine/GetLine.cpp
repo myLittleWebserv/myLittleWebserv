@@ -46,7 +46,6 @@ std::string GetLine::nextLine() {
   it = bi + before_size;
 
   for (; it != end(); ++it) {
-    std::cerr << (int)*it << std::endl;
     if (*it == '\n') {
       std::string line(bi + _readPos, it);
       _readPos += (it - bi) - _readPos + 1;

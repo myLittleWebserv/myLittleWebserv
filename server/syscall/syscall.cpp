@@ -22,7 +22,10 @@ off_t ft::syscall::lseek(int fd, off_t offset, int whence) {
 int ft::syscall::open(const char *path, int oflag, mode_t mode) {
   int ret = ::open(path, oflag, mode);
   if (ret == -1) {
-    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno), ALL));
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), ALL);
+    Log::log()(true, "path", path);
+    Log::log()(true, "oflag", oflag);
+    Log::log()(true, "mode", mode);
     throw Router::ServerSystemCallException("(SYSCALL) open");
   }
   return ret;

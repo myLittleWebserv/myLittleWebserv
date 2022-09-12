@@ -12,7 +12,8 @@ CgiResponse::CgiResponse()
       _statusCode(0),
       _statusMessage(),
       _contentType(),
-      _bodyFd(-1) {}
+      _bodyFd(-1),
+      _bodySize(0) {}
 
 void CgiResponse::initialize() {
   _parsingState  = CGI_RUNNING;
@@ -22,6 +23,7 @@ void CgiResponse::initialize() {
   _statusMessage = "";
   _contentType   = "";
   _bodyFd        = -1;
+  _bodySize      = 0;
   _getLine.initialize();
 }
 
@@ -89,6 +91,8 @@ void CgiResponse::parseRequest(int recv_fd, clock_t base_clock) {
       curr      = ft::syscall::lseek(recv_fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
       file_size = ft::syscall::lseek(recv_fd, 0, SEEK_END);
       ft::syscall::lseek(recv_fd, curr, SEEK_SET);
+      Log::log()(true, "curr offset", curr);
+      Log::log()(true, "file_size", file_size);
       _bodySize     = file_size - curr;
       _bodyFd       = recv_fd;
       _parsingState = CGI_PARSING_DONE;

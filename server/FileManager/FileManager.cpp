@@ -12,7 +12,8 @@ FileManager::~FileManager() {
 FileManager::FileManager(const std::string& uri, const LocationInfo& location_info)
     : _absolutePath(location_info.root), _directory(NULL), _isExist(false), _isDirectoy(false) {
   std::string file_name = uri.substr(location_info.id.size());
-  _appendFileName(file_name);
+  if (!file_name.empty())
+    _appendFileName(file_name);
 
   Log::log()(true, "File path", _absolutePath);
   Log::log()(true, "File name", file_name);
@@ -85,6 +86,14 @@ void FileManager::removeFile(int key_fd) {
     throw Router::ServerSystemCallException("(SYSCALL) unlink");
   }
   Log::log()(LOG_LOCATION, "(DONE) temporary file removed", INFILE);
+}
+
+void FileManager::removeFile(const std::string& file_name) {
+  if (unlink(file_name.c_str()) == -1) {
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    throw Router::ServerSystemCallException("(SYSCALL) unlink");
+  }
+  Log::log()(LOG_LOCATION, "(DONE) /temp/trash removed", INFILE);
 }
 
 void FileManager::_appendFileName(std::string back) {

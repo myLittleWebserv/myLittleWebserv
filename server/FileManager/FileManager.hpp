@@ -13,6 +13,7 @@
 
 #define TEMP_REQUEST_PREFIX "temp/request"
 #define TEMP_RESPONSE_PREFIX "temp/response"
+#define TEMP_TRASH "temp/trash"
 
 class FileManager {
   // Types
@@ -25,8 +26,9 @@ class FileManager {
 
  public:
   static void clearTempFileFd();
-  static void registerTempFileFd(int fd) { _tempFileFd.push_back(fd); }
+  static void registerFileFdToClose(int fd) { _tempFileFd.push_back(fd); }
   static void removeFile(int key_fd);
+  static void removeFile(const std::string& file_name);
 
   // Member Variable
  private:

@@ -1,3 +1,4 @@
+
 #include "HttpRequest.hpp"
 
 #include <algorithm>
@@ -8,6 +9,7 @@
 #include "Event.hpp"
 #include "GetLine.hpp"
 #include "Log.hpp"
+#include "Storage.hpp"
 #include "syscall.hpp"
 // Interface
 
@@ -26,8 +28,10 @@ void HttpRequest::initialize() {
   _isKeepAlive         = true;
   _chunkSize           = -1;
   _secretHeaderForTest = 0;
-  _chunkSize           = 0;
+  _uploadedSize        = 0;
+  _uploadedTotalSize   = 0;
   _getLine.initialize();
+  _storage.preserveRemains();
 }
 
 bool HttpRequest::isParsingEnd() {
@@ -35,10 +39,7 @@ bool HttpRequest::isParsingEnd() {
          _parsingState == HTTP_PARSING_TIME_OUT;
 }
 
-bool HttpRequest::isUploadEnd() {
-  return _parsingState == HTTP_UPLOADING_DONE; /* || _parsingState == HTTP_PARSING_BAD_REQUEST ||
-          _parsingState == HTTP_PARSING_TIME_OUT*/
-}
+bool HttpRequest::isUploadEnd() { return _parsingState == HTTP_UPLOADING_DONE; }
 
 bool HttpRequest::isCgi(const std::string& ext) {
   std::string::size_type ext_delim = _uri.rfind('.');
@@ -51,41 +52,58 @@ bool HttpRequest::isCgi(const std::string& ext) {
 void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
   (void)base_clock;
   std::string line;
+  ssize_t     moved;
+
+  if (_parsingState == HTTP_PARSING_DONE && !_isChunked)
+    _parsingState = HTTP_UPLOADING_INIT;
+  if (_parsingState == HTTP_PARSING_DONE && _isChunked)
+    _parsingState = HTTP_PARSING_READ_LINE;
+
   switch (_parsingState) {
-    case HTTP_UPLOADING_CHUNK:
-      DataMove::fileToFile(recv_fd, send_fd, _uploadedSize, _chunkSize - _uploadedSize);
-      if (DataMove::fail()) {
-        _parsingState = HTTP_PARSING_CONNECTION_CLOSED;
-        break;
-      }
-      if (_chunkSize != _uploadedSize) {
-        break;
-      }
-      if (!_isChunked) {
+    case HTTP_PARSING_READ_LINE:
+      line = _storage.getLine(recv_fd);
+      if (line == "\r" && _chunkSize == 0) {
         _parsingState = HTTP_UPLOADING_DONE;
         break;
       }
-      _parsingState = HTTP_PARSING_CHUNK_SIZE;
-    case HTTP_PARSING_CHUNK_SIZE:
-      line = _getLine.nextLine();
-      if (line.empty()) {
-        break;
-      }
       if (line == "\r") {
-        _parsingState = HTTP_UPLOADING_CHUNK;
         break;
       }
-      ft::syscall::lseek(recv_fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
-      _chunkSize = std::atoi(line.c_str());
-      if (_chunkSize != 0) {
-        _parsingState = HTTP_UPLOADING_CHUNK;
+      Log::log()(LOG_LOCATION, "(DONE) HTTP_PARSING_READ_LINE");
+
+    case HTTP_PARSING_CHUNK_SIZE:
+      _chunkSize = _parseChunkSize(line);
+      if (line.empty() || isParsingEnd())
+        break;
+      if (_chunkSize == 0) {
+        _parsingState = HTTP_PARSING_READ_LINE;
         break;
       }
-      _parsingState = HTTP_UPLOADING_CHUNK_DONE;
+      _uploadedSize = 0;
+      Log::log()(LOG_LOCATION, "(DONE) HTTP_PARSING_CHUNK_SIZE");
+
+    case HTTP_UPLOADING_INIT:
+      Log::log()(LOG_LOCATION, "(INIT) HTTP_UPLOADING_INIT");
+      moved = _storage.dataToFile(recv_fd, send_fd, _chunkSize - _uploadedSize);
+      if (moved == -1) {
+        _parsingState = HTTP_PARSING_CONNECTION_CLOSED;
+        break;
+      }
+      _uploadedSize += moved;
+      if (_isChunked && _chunkSize == _uploadedSize) {
+        _uploadedTotalSize += _uploadedSize;
+        _parsingState = HTTP_PARSING_READ_LINE;
+      } else if (!_isChunked && _chunkSize == _uploadedSize) {
+        _uploadedTotalSize += _uploadedSize;
+        _parsingState = HTTP_UPLOADING_DONE;
+      } else
+        _parsingState = HTTP_UPLOADING_INIT;
 
     default:
       break;
   }
+  Log::log()(true, "_parsingState.up", _parsingState);
+  _checkTimeOut();
 }
 
 void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
@@ -94,38 +112,37 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
 
   switch (_parsingState) {
     case HTTP_PARSING_INIT:
-      line = _getLine.nextLine();  // 라인이 완성되어 있지 않으면 "" 리턴
+      line = _storage.getLine(recv_fd);
       _parseStartLine(line);
       if (line.empty() || isParsingEnd())
         break;
+      _parsingState = HTTP_PARSING_HEADER;
 
     case HTTP_PARSING_HEADER:
-      line = _getLine.nextLine();
+      line = _storage.getLine(recv_fd);
       while (_parseHeaderField(line)) {
-        line = _getLine.nextLine();
+        line = _storage.getLine(recv_fd);
       }
       if (line.empty() || isParsingEnd())
         break;
       Log::log()(LOG_LOCATION, "(DONE) PARSING HEADER");
+      _parsingState = HTTP_PARSING_BODY;
+
     case HTTP_PARSING_BODY:
       _fileFd = recv_fd;
       if (!_isChunked) {
-        ft::syscall::lseek(recv_fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
         _chunkSize    = _contentLength;
         _parsingState = HTTP_PARSING_DONE;
         break;
       }
+      _storage.preserveRemains();
+      // _parsingState = HTTP_PARSING_CHUNK_SIZE;
 
-    case HTTP_PARSING_CHUNK_SIZE:
-      line = _getLine.nextLine();
-      if (line.empty()) {
-        _parsingState = HTTP_PARSING_CHUNK_SIZE;
-        break;
-      }
-      Log::log()(true, "_getline fd", _getLine.getFd());
-      Log::log()(true, "remainsCount", _getLine.remainsCount());
-      ft::syscall::lseek(recv_fd, static_cast<off_t>(_getLine.remainsCount() * -1), SEEK_CUR);
-      _chunkSize = _parseChunkSize(line);
+      // case HTTP_PARSING_CHUNK_SIZE:
+      //   line       = _storage.getLine(recv_fd);
+      //   _chunkSize = _parseChunkSize(line);
+      //   if (line.empty() || isParsingEnd())
+      //     break;
 
     default:
       _parsingState = HTTP_PARSING_DONE;
@@ -280,6 +297,9 @@ bool HttpRequest::_parseHeaderField(const std::string& line) {
 // }
 
 size_t HttpRequest::_parseChunkSize(const std::string& line) {
+  if (line.empty()) {
+    return 0;
+  }
   char*  p;
   size_t size = std::strtol(line.c_str(), &p, 16);  // chunk 최대 크기 몇?
   if (*p != '\r') {

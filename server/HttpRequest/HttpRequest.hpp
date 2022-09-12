@@ -6,8 +6,9 @@
 
 #include "GetLine.hpp"
 #include "Request.hpp"
+#include "Storage.hpp"
 
-#define TIME_OUT_HTTP_PARSING 10
+#define TIME_OUT_HTTP_PARSING 100000
 #define HTTP_DEFAULT_PORT 4242
 #define HTTP_MAX_HEADER_SIZE 8192
 
@@ -19,9 +20,10 @@ enum HttpRequestParsingState {
   HTTP_PARSING_DONE,
   HTTP_PARSING_BAD_REQUEST,
   HTTP_PARSING_TIME_OUT,
-  HTTP_UPLOADING_CHUNK,
-  HTTP_UPLOADING_CHUNK_DONE,
+  HTTP_PARSING_READ_LINE,
+  HTTP_PARSING_READ_LINE_TWICE,
   HTTP_UPLOADING_DONE,
+  HTTP_UPLOADING_INIT,
   HTTP_PARSING_CONNECTION_CLOSED
 };
 
@@ -29,7 +31,8 @@ class HttpRequest : public Request {
   // Member Variable
  private:
   HttpRequestParsingState _parsingState;
-  // RequestStorage             _storage;
+  // RequestStorage
+  Storage _storage;
   GetLine _getLine;
   int     _fileFd;
   int     _headerSize;
@@ -41,6 +44,7 @@ class HttpRequest : public Request {
   bool    _serverError;
   int     _secretHeaderForTest;
   size_t  _uploadedSize;
+  size_t  _uploadedTotalSize;
 
   // HttpRequest Variable
   MethodType  _method;
@@ -65,7 +69,7 @@ class HttpRequest : public Request {
       : _parsingState(HTTP_PARSING_INIT),
         _fileFd(-1),
         _headerSize(0),
-        _chunkSize(0),
+        _chunkSize(-1),
         _timeStamp(time(NULL)),
         _isBodyExisted(false),
         _isChunked(false),
@@ -73,6 +77,7 @@ class HttpRequest : public Request {
         _serverError(false),
         _secretHeaderForTest(0),
         _uploadedSize(0),
+        _uploadedTotalSize(0),
         _method(NOT_IMPL),
         _contentLength(0),
         _hostPort(HTTP_DEFAULT_PORT) {}
@@ -84,7 +89,7 @@ class HttpRequest : public Request {
   void               parseRequest(int recv_fd, clock_t base_clock);
   bool               isParsingEnd();
   bool               isTimeOut() { return _parsingState == HTTP_PARSING_TIME_OUT; }
-  bool               isRecvError() { return _getLine.isRecvError() || _parsingState == HTTP_PARSING_CONNECTION_CLOSED; }
+  bool               isRecvError() { return _storage.fail() || _parsingState == HTTP_PARSING_CONNECTION_CLOSED; }
   bool               isBadRequest() { return _parsingState == HTTP_PARSING_BAD_REQUEST; }
   bool               isInternalServerError() { return _serverError; }
   void               setServerError(bool state) { _serverError = state; }
@@ -102,6 +107,7 @@ class HttpRequest : public Request {
   int                fileFd() { return _fileFd; }
   int                chunkSize() { return _chunkSize; }
   bool               isChunked() { return _isChunked; }
-  void               setState(HttpRequestParsingState state) { _parsingState = state; }
+  size_t             uploadedTotalSize() { return _uploadedTotalSize; }
   GetLine&           getLine() { return _getLine; }
+  Storage&           storage() { return _storage; }
 };

@@ -9,8 +9,8 @@
 #include "FileManager.hpp"
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
+#include "Log.hpp"
 #include "syscall.hpp"
-
 std::string                 ResponseFactory::_httpVersion;
 enum HttpResponseStatusCode ResponseFactory::_statusCode;
 std::string                 ResponseFactory::_message;
@@ -31,12 +31,6 @@ HttpResponse* ResponseFactory::makeResponse(HttpRequest& request, LocationInfo& 
   }
   if (!_isAllowedMethod(request.method(), location_info.allowedMethods)) {
     return errorResponse(STATUS_METHOD_NOT_ALLOWED, request, location_info);
-  }
-  if (request.isInternalServerError()) {
-    return errorResponse(STATUS_INTERNAL_SERVER_ERROR, request, location_info);
-  }
-  if (static_cast<int>(request.chunkSize()) > location_info.maxBodySize) {
-    return errorResponse(STATUS_PAYLOAD_TOO_LARGE, request, location_info);
   }
 
   if (location_info.redirStatus != -1) {
@@ -74,7 +68,8 @@ HttpResponse* ResponseFactory::makeResponse(CgiResponse& cgi_response, LocationI
   _contentLength = cgi_response.bodySize();
   _contentType   = cgi_response.contentType();
 
-  return new HttpResponse(_makeHeader(), _statusCode, cgi_response.bodyFd());
+  Log::log()(true, "_contentLengh.make_cgires", _contentLength);
+  return new HttpResponse(_makeHeader(), _statusCode, _contentLength, cgi_response.bodyFd());
 }
 
 HttpResponse* ResponseFactory::_getResponse(HttpRequest& request, LocationInfo& location_info) {
@@ -96,7 +91,7 @@ HttpResponse* ResponseFactory::_getResponse(HttpRequest& request, LocationInfo& 
     return errorResponse(STATUS_NOT_FOUND, request, location_info);
   }
 
-  int fd         = open(file_manager.filePath().c_str(), O_RDONLY);
+  int fd         = open(file_manager.filePath().c_str(), O_RDONLY | O_NONBLOCK);
   _contentLength = ft::syscall::lseek(fd, 0, SEEK_END);  // error -> throw;
   ft::syscall::lseek(fd, 0, SEEK_SET);
   if (_contentLength > static_cast<size_t>(location_info.maxBodySize)) {
@@ -176,7 +171,7 @@ HttpResponse* ResponseFactory::_postResponse(HttpRequest& request, LocationInfo&
     return _redirResponse(STATUS_MOVED_PERMANENTLY, request, location_info, file_name);
   }
 
-  fd = ft::syscall::open(file_manager.filePath().c_str(), O_RDONLY);
+  fd = ft::syscall::open(file_manager.filePath().c_str(), O_WRONLY | O_CREAT | O_NONBLOCK);
 
   _httpVersion = request.httpVersion();
   _statusCode  = STATUS_CREATED;
@@ -198,12 +193,14 @@ HttpResponse* ResponseFactory::_putResponse(HttpRequest& request, LocationInfo& 
   int         fd;
 
   if (file_manager.isFileExist()) {
-    fd          = ft::syscall::open(file_manager.filePath().c_str(), O_RDONLY);
+    fd          = ft::syscall::open(file_manager.filePath().c_str(), O_WRONLY | O_TRUNC | O_NONBLOCK);
     _statusCode = STATUS_OK;
   } else {
-    fd          = ft::syscall::open(file_manager.filePath().c_str(), O_RDONLY);
+    fd          = ft::syscall::open(file_manager.filePath().c_str(), O_WRONLY | O_CREAT | O_NONBLOCK);
     _statusCode = STATUS_CREATED;
   }
+
+  Log::log()(true, "put file fd", fd);
 
   _httpVersion = request.httpVersion();
   _message     = _getMessage(_statusCode);
@@ -238,14 +235,14 @@ HttpResponse* ResponseFactory::errorResponse(HttpResponseStatusCode error_code, 
   if (location_info.defaultErrorPages.count(error_code)) {
     FileManager file_manager(location_info.root);
     file_manager.appendToPath(location_info.defaultErrorPages[error_code]);
-    fd = ::open(file_manager.filePath().c_str(), O_RDONLY);
+    fd = ::open(file_manager.filePath().c_str(), O_RDONLY | O_NONBLOCK);
     Log::log()(true, "file open STATUS", fd, INFILE);
     Log::log()(true, "file name", file_name, INFILE);
   }
 
   if (fd == -1) {
     default_error_page << DEFAULT_ERROR_PAGE_DIR << '/' << error_code << ".html";
-    fd = ::open(default_error_page.str().c_str(), O_RDONLY);
+    fd = ::open(default_error_page.str().c_str(), O_RDONLY | O_NONBLOCK);
     Log::log()(true, "file open STATUS", fd, INFILE);
     Log::log()(true, "file name", default_error_page.str(), INFILE);
   }

@@ -25,10 +25,7 @@ HttpResponse::HttpResponse(const std::string& header, HttpResponseStatusCode sta
       _header(header),
       _statusCode(status_code),
       _contentLength(content_length),
-      _fileFd(file_fd) {
-  Log::log()(true, "_contentLength.constuct", _contentLength);
-  Log::log()(true, "_fd.constuct", _fileFd);
-}
+      _fileFd(file_fd) {}
 
 // Interface
 
@@ -56,7 +53,6 @@ void HttpResponse::sendResponse(int recv_fd, int send_fd) {
 
     case HTTP_SENDING_FILEBODY:
       DataMove::fileToFile(recv_fd, send_fd, _bodySent);
-      Log::log()(true, "_bodySent", _bodySent);
       if (DataMove::fail()) {
         _sendingState = HTTP_SENDING_CONNECTION_CLOSED;
         break;
