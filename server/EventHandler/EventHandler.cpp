@@ -26,13 +26,13 @@ void EventHandler::_appendNewEventToChangeList(int ident, int filter, int flag, 
 }
 
 void EventHandler::removeConnection(Event& event) {
-  int ret = close(event.toSendFd);
+  int ret = close(event.clientFd);
   if (event.type == CGI_RESPONSE_READABLE) {
-    FileManager::registerFileFdToClose(event.clientFd);
-    _appendNewEventToChangeList(event.clientFd, EVFILT_READ, EV_DELETE, NULL);
+    FileManager::registerFileFdToClose(event.toRecvFd);  // ?
+    _appendNewEventToChangeList(event.toRecvFd, EVFILT_READ, EV_DELETE, NULL);
   }
   Log::log().syscall(ret, LOG_LOCATION, "(SYSCALL) close done", "(SYSCALL) close error", INFILE);
-  Log::log()("closed fd", event.toSendFd);
+  Log::log()("closed fd", event.clientFd);
   Log::log().mark(ret != 0);
   _eventSet.erase(&event);
   delete &event;
@@ -52,10 +52,9 @@ void EventHandler::_addConnection(int listen_fd) {
   fcntl(client_fd, F_SETFL, O_NONBLOCK);
   Event* event = new Event(HTTP_REQUEST_READABLE, client_fd);
 
-  _appendNewEventToChangeList(event->keventId, EVFILT_READ, EV_ADD, event);
-  _appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_ADD, event);
-  _appendNewEventToChangeList(event->keventId, EVFILT_WRITE, EV_DISABLE, event);  // 따로 해야 제대로 적용됨.
-  event->httpRequest.getLine().setFd(event->keventId);
+  _appendNewEventToChangeList(event->clientFd, EVFILT_READ, EV_ADD, event);
+  _appendNewEventToChangeList(event->clientFd, EVFILT_WRITE, EV_ADD, event);
+  _appendNewEventToChangeList(event->clientFd, EVFILT_WRITE, EV_DISABLE, event);  // 따로 해야 제대로 적용됨.
   _eventSet.insert(event);
 }
 
@@ -101,7 +100,7 @@ void EventHandler::_routeEvent(Event& event) {
   switch (event.type) {
     case CONNECTION_REQUEST:
       _checkConnectionTimeout(event.timestamp);
-      _addConnection(event.keventId);
+      _addConnection(event.toRecvFd);
       break;
 
     case HTTP_REQUEST_READABLE:
@@ -143,7 +142,6 @@ void EventHandler::routeEvents() {
     int    flags = _keventList[i].flags;
 
     if (flags & EV_EOF) {
-      Log::log()(LOG_LOCATION, "ev_eof", ALL);
       Log::log()(LOG_LOCATION, "ev_eof", ALL);
       removeConnection(event);
       continue;

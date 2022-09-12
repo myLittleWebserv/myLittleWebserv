@@ -20,7 +20,6 @@ enum EventType {
 
 struct Event {
   enum EventType type;
-  int            keventId;
   int            serverId;
   int            toSendFd;
   int            toRecvFd;
@@ -34,4 +33,5 @@ struct Event {
   Event(enum EventType t, int kevent_id);
   ~Event() { delete httpResponse; }
   void initialize();
+  void setDataFlow(int from_fd, int to_fd);
 };

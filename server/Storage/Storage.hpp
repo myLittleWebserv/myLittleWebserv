@@ -54,8 +54,6 @@ void Storage::insert(BeginIter bi, EndIter ei) {
   Log::log()(LOG_LOCATION, "");
   Log::log()(true, "_writePos", _writePos);
   Log::log()(true, "capacity()", capacity());
-  // Log::log()(true, "bi", bi);
-  // Log::log()(true, "ei", ei);
   for (; _writePos != capacity() && bi != ei; ++_writePos, ++bi) {
     (*this)[_writePos] = *bi;
   }

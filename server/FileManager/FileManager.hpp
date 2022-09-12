@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #include <fstream>
-#include <vector>
+#include <set>
 
 #include "Config.hpp"
 
@@ -18,7 +18,7 @@
 class FileManager {
   // Types
  public:
-  typedef std::vector<int> TempFileFds;
+  typedef std::set<int> TempFileFds;
 
   // Static
  private:
@@ -26,8 +26,8 @@ class FileManager {
 
  public:
   static void clearTempFileFd();
-  static void registerFileFdToClose(int fd) { _tempFileFd.push_back(fd); }
-  static void removeFile(int key_fd);
+  static void registerFileFdToClose(int fd) { _tempFileFd.insert(fd); }
+  static void removeTempFileByKey(int key_fd);
   static void removeFile(const std::string& file_name);
 
   // Member Variable
@@ -57,16 +57,11 @@ class FileManager {
  public:
   bool               isFileExist() { return _isExist; }
   bool               isDirectory() { return _isDirectoy; }
-  std::ifstream&     inFile() { return _inFile; }
-  std::ofstream&     outFile() { return _outFile; }
   const std::string& filePath() { return _absolutePath; }
-  int                openFile(const char* file_path, int oflags, mode_t mode);
-  void               openInFile() { _inFile.open(_absolutePath.c_str()); }
-  void openOutFile(std::ofstream::openmode opt = std::ofstream::out) { _outFile.open(_absolutePath.c_str(), opt); }
-  void openDirectoy();
-  void removeFile();
-  void appendToPath(const std::string& indexFile);
-  std::string readDirectoryEntry();
+  void               openDirectoy();
+  void               removeFile();
+  void               appendToPath(const std::string& indexFile);
+  std::string        readDirectoryEntry();
 };
 
 #endif

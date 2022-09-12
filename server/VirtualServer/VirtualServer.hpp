@@ -21,6 +21,7 @@ class VirtualServer {
   void          _setEnv(const HttpRequest& http_request, const std::string& cgi_path, char** envp) const;
   void          _setFd(int request, int response) const;
   void          _finishResponse(Event& event);
+  void          _sendResponse(Event& event);
   void          _processHttpRequestReadable(Event& event, LocationInfo& location_info);
   void          _cgiResponseToHttpResponse(Event& event, LocationInfo& location_info);
   void          _uploadFile(Event& event, LocationInfo& location_info);

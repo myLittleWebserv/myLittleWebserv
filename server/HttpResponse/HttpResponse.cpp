@@ -27,6 +27,11 @@ HttpResponse::HttpResponse(const std::string& header, HttpResponseStatusCode sta
       _contentLength(content_length),
       _fileFd(file_fd) {}
 
+HttpResponse::~HttpResponse() {
+  if (_fileFd != -1)
+    FileManager::registerFileFdToClose(_fileFd);
+}
+
 // Interface
 
 void HttpResponse::sendResponse(int recv_fd, int send_fd) {

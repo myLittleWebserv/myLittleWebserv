@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "GetLine.hpp"
 #include "Request.hpp"
 #include "Storage.hpp"
 
@@ -16,12 +15,12 @@ enum HttpRequestParsingState {
   HTTP_PARSING_INIT,
   HTTP_PARSING_HEADER,
   HTTP_PARSING_BODY,
-  HTTP_PARSING_CHUNK_SIZE,
   HTTP_PARSING_DONE,
   HTTP_PARSING_BAD_REQUEST,
   HTTP_PARSING_TIME_OUT,
   HTTP_PARSING_READ_LINE,
-  HTTP_PARSING_READ_LINE_TWICE,
+  HTTP_PARSING_CHUNK_INIT,
+  HTTP_PARSING_CHUNK_SIZE,
   HTTP_UPLOADING_DONE,
   HTTP_UPLOADING_INIT,
   HTTP_PARSING_CONNECTION_CLOSED
@@ -33,7 +32,6 @@ class HttpRequest : public Request {
   HttpRequestParsingState _parsingState;
   // RequestStorage
   Storage _storage;
-  GetLine _getLine;
   int     _fileFd;
   int     _headerSize;
   size_t  _chunkSize;
@@ -67,7 +65,6 @@ class HttpRequest : public Request {
  public:
   HttpRequest()
       : _parsingState(HTTP_PARSING_INIT),
-        _fileFd(-1),
         _headerSize(0),
         _chunkSize(-1),
         _timeStamp(time(NULL)),
@@ -85,14 +82,11 @@ class HttpRequest : public Request {
   // Interface
  public:
   void               uploadRequest(int recv_fd, int send_fd, clock_t base_clock);
-  bool               isUploadEnd();
   void               parseRequest(int recv_fd, clock_t base_clock);
+  bool               isUploadEnd();
   bool               isParsingEnd();
-  bool               isTimeOut() { return _parsingState == HTTP_PARSING_TIME_OUT; }
-  bool               isRecvError() { return _storage.fail() || _parsingState == HTTP_PARSING_CONNECTION_CLOSED; }
+  bool               isRecvError();
   bool               isBadRequest() { return _parsingState == HTTP_PARSING_BAD_REQUEST; }
-  bool               isInternalServerError() { return _serverError; }
-  void               setServerError(bool state) { _serverError = state; }
   bool               isKeepAlive() { return _isKeepAlive; }
   bool               isCgi(const std::string& ext);
   void               initialize();
@@ -104,10 +98,8 @@ class HttpRequest : public Request {
   MethodType         method() const { return _method; }
   const std::string& uri() const { return _uri; }
   int                secretHeaderForTest() const { return _secretHeaderForTest; }
-  int                fileFd() { return _fileFd; }
   int                chunkSize() { return _chunkSize; }
   bool               isChunked() { return _isChunked; }
   size_t             uploadedTotalSize() { return _uploadedTotalSize; }
-  GetLine&           getLine() { return _getLine; }
-  Storage&           storage() { return _storage; }
+  // Storage&           storage() { return _storage; }
 };

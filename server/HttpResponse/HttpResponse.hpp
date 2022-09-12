@@ -61,6 +61,7 @@ class HttpResponse {
 
   // Constructor
  public:
+  ~HttpResponse();
   HttpResponse(const std::string& header, HttpResponseStatusCode status_code, size_t content_length = 0,
                int file_fd = -1);
 

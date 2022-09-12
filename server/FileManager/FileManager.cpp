@@ -56,15 +56,6 @@ void FileManager::removeFile() {
   }
 }
 
-int FileManager::openFile(const char* file_path, int oflag, mode_t mode = 0644) {
-  int fd = open(file_path, oflag, mode);
-  if (fd == -1) {
-    Log::log()(LOG_LOCATION, "");
-    throw Router::ServerSystemCallException("(SYSCALL) open");
-  }
-  return fd;
-}
-
 void FileManager::clearTempFileFd() {
   for (TempFileFds::iterator it = _tempFileFd.begin(); it != _tempFileFd.end(); ++it) {
     close(*it);
@@ -75,7 +66,7 @@ void FileManager::clearTempFileFd() {
   _tempFileFd.clear();
 }
 
-void FileManager::removeFile(int key_fd) {
+void FileManager::removeTempFileByKey(int key_fd) {
   std::stringstream key;
   key << key_fd;
   std::string temp_request  = TEMP_REQUEST_PREFIX + key.str();

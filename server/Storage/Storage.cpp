@@ -66,7 +66,8 @@ ssize_t Storage::dataToFile(int recv_fd, int send_fd, size_t goal_size) {
     Log::log()(LOG_LOCATION, "(INIT) memToFile");
     return memToFile(send_fd, goal_size);
   } else {
-    Log::log()(LOG_LOCATION, "(INIT) sockFile");
+    clear();
+    Log::log()(LOG_LOCATION, "(INIT) sockToFile");
     return sockToFile(recv_fd, send_fd, goal_size);
   }
 }
