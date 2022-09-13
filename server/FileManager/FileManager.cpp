@@ -143,7 +143,9 @@ bool FileManager::isConflict() {
       mkdir(path.c_str(), 0777);
     }
     delim = _absolutePath.find('/', delim + 1);
-    path  = _absolutePath.substr(0, delim);
+    if (delim == std::string::npos)
+      break;
+    path = _absolutePath.substr(0, delim);
   }
 
   return _isConflict;
