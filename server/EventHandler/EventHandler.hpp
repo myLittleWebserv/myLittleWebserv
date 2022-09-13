@@ -11,8 +11,8 @@
 #include "Event.hpp"
 
 #define MAX_EVENTS 2000
-#define KEVENT_TIMEOUT_MILISEC 10000
-#define CONNECTION_TIMEOUT_MILISEC 10000  // KEVENT_TIMEOUT_MILISEC 보다 크거나 같음.
+#define KEVENT_TIMEOUT_MILISEC 5000
+#define CONNECTION_TIMEOUT_MILISEC 5000  // KEVENT_TIMEOUT_MILISEC 보다 크거나 같음.
 
 class Router;
 
@@ -36,6 +36,7 @@ class EventHandler {
   void _checkConnectionTimeout(const timeval& base_time);
   void _updateEventsTimestamp(int num_kevents);
   void _routeEvent(Event& event);
+  void _routeRecvEvent(Event& event, Request& request);
   void _appendNewEventToChangeList(int ident, int filter, int flag, Event* event);
   void _addConnection(int listen_fd);
 
@@ -46,7 +47,9 @@ class EventHandler {
   void enableReadEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_READ, EV_ENABLE, event); }
   void enableWriteEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_WRITE, EV_ENABLE, event); }
   void addReadEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_READ, EV_ADD, event); }
+  void addWriteEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_WRITE, EV_ADD, event); }
   void deleteReadEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_READ, EV_DELETE, event); }
+  void deleteWriteEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_WRITE, EV_DELETE, event); }
   void removeConnection(Event& event);
   void routeEvents();
   std::vector<Event*>& getRoutedEvents(int server_id);

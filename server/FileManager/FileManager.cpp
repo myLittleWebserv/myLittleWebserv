@@ -1,8 +1,8 @@
 #include "FileManager.hpp"
 
-#include "Router.hpp"
+#include "syscall.hpp"
 
-FileManager::TempFileFds FileManager::_tempFileFd;
+FileManager::FdSet FileManager::_fileFdSet;
 
 FileManager::~FileManager() {
   if (_directory)
@@ -10,9 +10,10 @@ FileManager::~FileManager() {
 }
 
 FileManager::FileManager(const std::string& uri, const LocationInfo& location_info)
-    : _absolutePath(location_info.root), _directory(NULL), _isExist(false), _isDirectoy(false) {
+    : _absolutePath(location_info.root), _directory(NULL), _isExist(false), _isDirectoy(false), _isConflict(false) {
   std::string file_name = uri.substr(location_info.id.size());
-  _appendFileName(file_name);
+  if (!file_name.empty())
+    _appendFileName(file_name);
 
   Log::log()(true, "File path", _absolutePath);
   Log::log()(true, "File name", file_name);
@@ -55,35 +56,29 @@ void FileManager::removeFile() {
   }
 }
 
-int FileManager::openFile(const char* file_path, int oflag, mode_t mode = 0644) {
-  int fd = open(file_path, oflag, mode);
-  if (fd == -1) {
-    Log::log()(LOG_LOCATION, "");
-    throw Router::ServerSystemCallException();
+void FileManager::clearFileFds() {
+  for (FdSet::iterator it = _fileFdSet.begin(); it != _fileFdSet.end(); ++it) {
+    ft::syscall::close(*it);
   }
-  return fd;
-}
-
-void FileManager::clearTempFileFd() {
-  for (TempFileFds::iterator it = _tempFileFd.begin(); it != _tempFileFd.end(); ++it) {
-    close(*it);
-  }
-  if (_tempFileFd.size() > 0) {
+  if (_fileFdSet.size() > 0) {
     Log::log()(LOG_LOCATION, "(DONE) fds of temporary file closed", INFILE);
   }
-  _tempFileFd.clear();
+  _fileFdSet.clear();
 }
 
-void FileManager::removeFile(int key_fd) {
+void FileManager::removeTempFileByKey(int key_fd) {
   std::stringstream key;
   key << key_fd;
   std::string temp_request  = TEMP_REQUEST_PREFIX + key.str();
   std::string temp_response = TEMP_RESPONSE_PREFIX + key.str();
 
-  if (unlink(temp_request.c_str()) == -1 || unlink(temp_response.c_str()) == -1) {
-    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
-    throw Router::ServerSystemCallException();
-  }
+  ft::syscall::unlink(temp_request.c_str());
+  ft::syscall::unlink(temp_response.c_str());
+  Log::log()(LOG_LOCATION, "(DONE) temporary file removed", INFILE);
+}
+
+void FileManager::removeFile(const std::string& file_name) {
+  ft::syscall::unlink(file_name.c_str());
   Log::log()(LOG_LOCATION, "(DONE) temporary file removed", INFILE);
 }
 
@@ -109,4 +104,49 @@ void FileManager::_updateFileInfo() {
 
   _isExist    = true;
   _isDirectoy = S_ISDIR(buf.st_mode);
+}
+
+bool FileManager::_isDirExist(const std::string& file_path) {
+  struct stat buf;
+  int         ret = lstat(file_path.c_str(), &buf);
+
+  if (ret == -1) {
+    return false;
+  }
+
+  if (!S_ISDIR(buf.st_mode)) {
+    Log::log()(true, "path.isConflict", file_path);
+    _isConflict = true;
+    return false;
+  }
+  return true;
+}
+
+void FileManager::registerFileFdToClose(int fd) {
+  _fileFdSet.insert(fd);
+  Log::log()(true, "registered fd", fd);
+}
+
+bool FileManager::isConflict() {
+  Log::log()(LOG_LOCATION, "");
+  _isConflict       = false;
+  size_t      delim = _absolutePath.find('/');
+  std::string path  = _absolutePath.substr(0, delim);
+
+  while (1) {
+    Log::log()(true, "path.isConflict", path);
+    if (_isDirExist(path)) {
+      ;
+    } else if (_isConflict) {
+      break;
+    } else {
+      mkdir(path.c_str(), 0777);
+    }
+    delim = _absolutePath.find('/', delim + 1);
+    if (delim == std::string::npos)
+      break;
+    path = _absolutePath.substr(0, delim);
+  }
+
+  return _isConflict;
 }

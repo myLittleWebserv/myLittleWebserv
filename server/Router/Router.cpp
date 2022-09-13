@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "Log.hpp"
+#include "syscall.hpp"
 
 #define BACKLOG 1024
 
@@ -21,7 +22,7 @@ void Router::start() {
     _serverSocketsInit();
   } catch (const std::exception& e) {
     Log::log()(LOG_LOCATION, e.what(), ALL);
-    exit(1);
+    std::exit(1);
   }
 
   while (1) {
@@ -62,26 +63,9 @@ void Router::_serverSocketsInit() {
             },
     };
 
-    ret = bind(server_socket, (sockaddr*)&server_addr, sizeof(server_addr));
-    if (ret < 0) {
-      Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) bind error", ALL);
-      Log::log()(ret == -1, "port", *port);
-      Log::log()(ret == -1, "addr", inet_ntoa(server_addr.sin_addr));
-      Log::log()(ret == -1, "socket fd", server_socket);
-      throw ServerSocketInitException();
-    }
-
-    ret = listen(server_socket, BACKLOG);
-    if (ret < 0) {
-      Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) listen error", ALL);
-      throw ServerSocketInitException();
-    }
-
-    ret = fcntl(server_socket, F_SETFL, O_NONBLOCK);
-    if (ret < 0) {
-      Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) fcntl error", ALL);
-      throw ServerSocketInitException();
-    }
+    ft::syscall::bind(server_socket, (sockaddr*)&server_addr, sizeof(server_addr));
+    ft::syscall::listen(server_socket, BACKLOG);
+    ft::syscall::fcntl(server_socket, F_SETFL, O_NONBLOCK, ServerSocketInitException());
 
     Event* event = new Event(CONNECTION_REQUEST, server_socket);
     _eventHandler.addReadEvent(server_socket, event);

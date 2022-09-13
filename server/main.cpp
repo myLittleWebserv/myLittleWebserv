@@ -1,3 +1,4 @@
+#include <csignal>
 #include <iostream>
 
 #include "Router/Router.hpp"
@@ -8,13 +9,15 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  std::signal(SIGPIPE, SIG_IGN);
+
   Router router(argv[1]);
 
   while (1) {
     try {
       router.start();
-    } catch (const std::string& error_message) {
-      std::cerr << "error : " << error_message << std::endl;
+    } catch (const std::exception& e) {  // bind?
+      std::cerr << "error : " << e.what() << std::endl;
       std::cerr << "Server Reoot...!" << std::endl;
     }
   }
