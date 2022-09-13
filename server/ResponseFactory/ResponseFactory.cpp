@@ -103,7 +103,6 @@ HttpResponse* ResponseFactory::_getResponse(HttpRequest& request, LocationInfo& 
   _message     = _getMessage(_statusCode);
   _contentType = _getContentType(file_manager.filePath());
   Log::log()(LOG_LOCATION, "Get request processed.");
-  Log::log()(true, "_contentLength.fact", _contentLength);
   return new HttpResponse(_makeHeader(), _statusCode, _contentLength, fd);
 }
 
@@ -166,9 +165,18 @@ HttpResponse* ResponseFactory::_postResponse(HttpRequest& request, LocationInfo&
   FileManager file_manager(request.uri(), location_info);
   int         fd;
 
+  // if (request.body().size() == 0) {
+  //   _makeErrorResponse(402, request, location_info);
+  //   return;
+  //
+
   if (file_manager.isFileExist()) {
     std::string file_name = request.uri().substr(location_info.id.size());
     return _redirResponse(STATUS_MOVED_PERMANENTLY, request, location_info, file_name);
+  }
+
+  if (file_manager.isConflict()) {
+    return errorResponse(STATUS_CONFLICT, request, location_info);
   }
 
   fd = ft::syscall::open(file_manager.filePath().c_str(), O_WRONLY | O_CREAT | O_NONBLOCK);
@@ -185,9 +193,6 @@ HttpResponse* ResponseFactory::_putResponse(HttpRequest& request, LocationInfo& 
   //   _makeErrorResponse(402, request, location_info);
   //   return;
   //
-  if (static_cast<int>(request.chunkSize()) > location_info.maxBodySize) {
-    return errorResponse(STATUS_PAYLOAD_TOO_LARGE, request, location_info);
-  }
 
   FileManager file_manager(request.uri(), location_info);
   int         fd;
@@ -195,9 +200,11 @@ HttpResponse* ResponseFactory::_putResponse(HttpRequest& request, LocationInfo& 
   if (file_manager.isFileExist()) {
     fd          = ft::syscall::open(file_manager.filePath().c_str(), O_WRONLY | O_TRUNC | O_NONBLOCK);
     _statusCode = STATUS_OK;
-  } else {
+  } else if (!file_manager.isConflict()) {
     fd          = ft::syscall::open(file_manager.filePath().c_str(), O_WRONLY | O_CREAT | O_NONBLOCK);
     _statusCode = STATUS_CREATED;
+  } else {
+    return errorResponse(STATUS_CONFLICT, request, location_info);
   }
 
   Log::log()(true, "put file fd", fd);

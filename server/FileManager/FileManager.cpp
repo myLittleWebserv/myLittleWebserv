@@ -10,7 +10,7 @@ FileManager::~FileManager() {
 }
 
 FileManager::FileManager(const std::string& uri, const LocationInfo& location_info)
-    : _absolutePath(location_info.root), _directory(NULL), _isExist(false), _isDirectoy(false) {
+    : _absolutePath(location_info.root), _directory(NULL), _isExist(false), _isDirectoy(false), _isConflict(false) {
   std::string file_name = uri.substr(location_info.id.size());
   if (!file_name.empty())
     _appendFileName(file_name);
@@ -106,7 +106,45 @@ void FileManager::_updateFileInfo() {
   _isDirectoy = S_ISDIR(buf.st_mode);
 }
 
+bool FileManager::_isDirExist(const std::string& file_path) {
+  struct stat buf;
+  int         ret = lstat(file_path.c_str(), &buf);
+
+  if (ret == -1) {
+    return false;
+  }
+
+  if (!S_ISDIR(buf.st_mode)) {
+    Log::log()(true, "path.isConflict", file_path);
+    _isConflict = true;
+    return false;
+  }
+  return true;
+}
+
 void FileManager::registerFileFdToClose(int fd) {
   _fileFdSet.insert(fd);
   Log::log()(true, "registered fd", fd);
+}
+
+bool FileManager::isConflict() {
+  Log::log()(LOG_LOCATION, "");
+  _isConflict       = false;
+  size_t      delim = _absolutePath.find('/');
+  std::string path  = _absolutePath.substr(0, delim);
+
+  while (1) {
+    Log::log()(true, "path.isConflict", path);
+    if (_isDirExist(path)) {
+      ;
+    } else if (_isConflict) {
+      break;
+    } else {
+      mkdir(path.c_str(), 0777);
+    }
+    delim = _absolutePath.find('/', delim + 1);
+    path  = _absolutePath.substr(0, delim);
+  }
+
+  return _isConflict;
 }

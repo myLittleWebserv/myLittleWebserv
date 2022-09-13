@@ -37,11 +37,13 @@ class FileManager {
   dirent*     _entry;
   bool        _isExist;
   bool        _isDirectoy;
+  bool        _isConflict;
 
   // Method
  private:
   void _updateFileInfo();
   void _appendFileName(std::string file);
+  bool _isDirExist(const std::string& file_path);
 
   // Constructor & Destructor
  public:
@@ -55,6 +57,7 @@ class FileManager {
  public:
   bool               isFileExist() { return _isExist; }
   bool               isDirectory() { return _isDirectoy; }
+  bool               isConflict();
   const std::string& filePath() { return _absolutePath; }
   void               openDirectoy();
   void               removeFile();

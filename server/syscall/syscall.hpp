@@ -9,7 +9,7 @@ namespace ft {
 
 namespace syscall {
 off_t lseek(int fd, off_t offset, int whence);
-int   open(const char* path, int oflag, mode_t mode = 666);
+int   open(const char* path, int oflag, mode_t mode = 0666);
 void  fcntl(int fd, int cmd, int oflag, const std::exception& e);
 void  unlink(const char* file_path);
 void  close(int fd);

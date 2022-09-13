@@ -65,7 +65,7 @@ void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
         _parsingState = HTTP_PARSING_CONNECTION_CLOSED;
         break;
       }
-      if (line == "\r" && _chunkSize == 0) {
+      if (line == "\r" && _chunkSize == 0) {  // ?
         _parsingState = HTTP_UPLOADING_DONE;
         Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_DONE");
         break;
@@ -262,17 +262,17 @@ bool HttpRequest::_parseHeaderField(const std::string& line) {
   return true;
 }
 
-size_t HttpRequest::_parseChunkSize(const std::string& line) {
+ssize_t HttpRequest::_parseChunkSize(const std::string& line) {
   if (line.empty()) {
-    return 0;
+    return -1;
   }
-  char*  p;
-  size_t size = std::strtol(line.c_str(), &p, 16);  // chunk 최대 크기 몇?
+  char*   p;
+  ssize_t size = std::strtol(line.c_str(), &p, 16);  // chunk 최대 크기 몇?
   if (*p != '\r') {
     _parsingState = HTTP_PARSING_BAD_REQUEST;
     Log::log()(LOG_LOCATION, "BAD_REQUEST", INFILE);
     Log::log()(true, "line", line, INFILE);
-    return 0;
+    return -1;
   }
   return size;
 }

@@ -33,6 +33,7 @@ enum HttpResponseStatusCode {
   STATUS_PAYMENT_REQUIRED           = 402,
   STATUS_NOT_FOUND                  = 404,
   STATUS_METHOD_NOT_ALLOWED         = 405,
+  STATUS_CONFLICT                   = 409,
   STATUS_PAYLOAD_TOO_LARGE          = 413,
   STATUS_INTERNAL_SERVER_ERROR      = 500,
   STATUS_NOT_IMPLEMENTED            = 501,

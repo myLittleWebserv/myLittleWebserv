@@ -1,3 +1,4 @@
+#include <csignal>
 #include <iostream>
 
 #include "Router/Router.hpp"
@@ -7,6 +8,8 @@ int main(int argc, char** argv) {
     std::cerr << "please check arguments" << std::endl;
     return 1;
   }
+
+  std::signal(SIGPIPE, SIG_IGN);
 
   Router router(argv[1]);
 

@@ -33,15 +33,15 @@ class HttpRequest : public Request {
   Storage                 _storage;
   int                     _fileFd;
   int                     _headerSize;
-  size_t                  _chunkSize;
+  ssize_t                 _chunkSize;
   time_t                  _timeStamp;  // 생성자에서 초기화
   bool                    _isBodyExisted;
   bool                    _isChunked;
   bool                    _isKeepAlive;
   bool                    _serverError;
   int                     _secretHeaderForTest;
-  size_t                  _uploadedSize;
-  size_t                  _uploadedTotalSize;
+  ssize_t                 _uploadedSize;
+  ssize_t                 _uploadedTotalSize;
 
   // HttpRequest Variable
   MethodType  _method;
@@ -54,11 +54,11 @@ class HttpRequest : public Request {
 
   // Method
  private:
-  void   _parseStartLine(const std::string& line);
-  bool   _parseHeaderField(const std::string& line);
-  void   _parseChunk();
-  void   _checkTimeOut();
-  size_t _parseChunkSize(const std::string& line);
+  void    _parseStartLine(const std::string& line);
+  bool    _parseHeaderField(const std::string& line);
+  void    _parseChunk();
+  void    _checkTimeOut();
+  ssize_t _parseChunkSize(const std::string& line);
 
   // Constructor
  public:

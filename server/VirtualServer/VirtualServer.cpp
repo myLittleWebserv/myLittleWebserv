@@ -91,6 +91,7 @@ void VirtualServer::_uploadFile(Event& event, LocationInfo& location_info) {
   switch (request.state()) {
     case HTTP_PARSING_CONNECTION_CLOSED:
       FileManager::registerFileFdToClose(event.toSendFd);
+      _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
       _eventHandler.removeConnection(event);
       break;
 
@@ -126,6 +127,7 @@ void VirtualServer::_flushSocket(Event& event, LocationInfo& location_info) {
     case HTTP_PARSING_CONNECTION_CLOSED:
       FileManager::removeFile(TEMP_TRASH);
       FileManager::registerFileFdToClose(event.toSendFd);
+      _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
       _eventHandler.removeConnection(event);
       break;
 
