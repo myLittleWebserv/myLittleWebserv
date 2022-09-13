@@ -14,6 +14,10 @@ class Storage : private std::vector<unsigned char> {
  public:
   typedef std::vector<unsigned char> vector;
 
+  // Static
+ public:
+  static unsigned char buffer[READ_BUFFER_SIZE];
+
   // Member Variable
  public:
   static unsigned char _buffer[READ_BUFFER_SIZE];
