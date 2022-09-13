@@ -341,6 +341,8 @@ std::string ResponseFactory::_getMessage(HttpResponseStatusCode status_code) {
       return "Not Found";
     case STATUS_METHOD_NOT_ALLOWED:
       return "Method Not Allowed";
+    case STATUS_CONFLICT:
+      return "Conflict";
     case STATUS_PAYLOAD_TOO_LARGE:
       return "Payload Too Large";
     case STATUS_INTERNAL_SERVER_ERROR:

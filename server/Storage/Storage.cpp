@@ -126,7 +126,7 @@ ssize_t Storage::fileToSock(int recv_fd, int send_fd, size_t goal_size) {
   Log::log()(true, "goal_size", goal_size);
 
   size_t  small_one = goal_size < PUBLIC_BUFFER_SIZE ? goal_size : PUBLIC_BUFFER_SIZE;
-  ssize_t recv_size = read(recv_fd, publicBuffer, small_one);  // ret == 0 -> eof
+  ssize_t recv_size = read(recv_fd, publicBuffer, small_one);  // ret -> 0, eof
   if (recv_size == -1) {
     _fail = true;
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
