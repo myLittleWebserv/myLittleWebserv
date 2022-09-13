@@ -20,7 +20,6 @@ void HttpRequest::initialize() {
   _hostPort            = HTTP_DEFAULT_PORT;
   _parsingState        = HTTP_PARSING_INIT;
   _headerSize          = 0;
-  _timeStamp           = time(NULL);
   _isBodyExisted       = false;
   _isChunked           = false;
   _isKeepAlive         = true;
@@ -29,6 +28,7 @@ void HttpRequest::initialize() {
   _uploadedSize        = 0;
   _uploadedTotalSize   = 0;
   _storage.preserveRemains();
+  gettimeofday(&_timestamp, NULL);
 }
 
 bool HttpRequest::isParsingEnd() {
@@ -65,7 +65,7 @@ void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
         _parsingState = HTTP_PARSING_CONNECTION_CLOSED;
         break;
       }
-      if (line == "\r" && _chunkSize == 0) {  // ?
+      if (line == "\r" && _chunkSize == 0) {
         _parsingState = HTTP_UPLOADING_DONE;
         Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_DONE");
         break;
@@ -80,6 +80,7 @@ void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
       _chunkSize = _parseChunkSize(line);
       if (line.empty() || isParsingEnd())
         break;
+      gettimeofday(&_timestamp, NULL);
       if (_chunkSize == 0) {
         _parsingState = HTTP_UPLOADING_READ_LINE;
         break;
@@ -94,6 +95,7 @@ void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
         _parsingState = HTTP_PARSING_CONNECTION_CLOSED;
         break;
       }
+      gettimeofday(&_timestamp, NULL);
       _uploadedSize += moved;
       _uploadedTotalSize += moved;
       if (_isChunked && _chunkSize == _uploadedSize)
@@ -153,7 +155,12 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
 // Method
 
 void HttpRequest::_checkTimeOut() {
-  if (time(NULL) - _timeStamp >= TIME_OUT_HTTP_PARSING) {
+  timeval current;
+  gettimeofday(&current, NULL);
+  int interval;
+  interval = (current.tv_sec - _timestamp.tv_sec) * 1000 + (current.tv_usec - _timestamp.tv_usec) / 1000;
+
+  if (interval >= TIME_OUT_HTTP_PARSING) {
     Log::log()(LOG_LOCATION, "TIME OUT", INFILE);
     _parsingState = HTTP_PARSING_TIME_OUT;
   }
@@ -171,7 +178,7 @@ void HttpRequest::_parseStartLine(const std::string& line) {
   }
 
   _headerSize += line.size() + 1;
-  _timeStamp = time(NULL);
+  gettimeofday(&_timestamp, NULL);
 
   std::stringstream ss(line);
   std::string       word;
@@ -217,7 +224,7 @@ bool HttpRequest::_parseHeaderField(const std::string& line) {
   }
 
   _headerSize += line.size() + 1;
-  _timeStamp = time(NULL);
+  gettimeofday(&_timestamp, NULL);
 
   std::stringstream ss(line);
   std::string       word;

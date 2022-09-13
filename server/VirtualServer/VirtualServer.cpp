@@ -89,6 +89,7 @@ void VirtualServer::_uploadFile(Event& event, LocationInfo& location_info) {
   Log::log()(true, "uploadedTotalSize", event.httpRequest.uploadedTotalSize());
 
   switch (request.state()) {
+    case HTTP_PARSING_TIME_OUT:
     case HTTP_PARSING_CONNECTION_CLOSED:
       FileManager::registerFileFdToClose(event.toSendFd);
       _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
@@ -124,6 +125,7 @@ void VirtualServer::_flushSocket(Event& event, LocationInfo& location_info) {
   request.uploadRequest(event.toRecvFd, event.toSendFd, event.baseClock);
 
   switch (request.state()) {
+    case HTTP_PARSING_TIME_OUT:
     case HTTP_PARSING_CONNECTION_CLOSED:
       FileManager::removeFile(TEMP_TRASH);
       FileManager::registerFileFdToClose(event.toSendFd);
@@ -163,7 +165,7 @@ void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& loca
     case PUT:
       if (request.isCgi(location_info.cgiExtension)) {
         tempfile_path = TEMP_REQUEST_PREFIX + _intToString(event.clientFd);
-        tempfile_fd   = ft::syscall::open(tempfile_path.c_str(), O_RDWR | O_CREAT | O_TRUNC | O_NONBLOCK, 0644);
+        tempfile_fd   = ft::syscall::open(tempfile_path.c_str(), O_RDWR | O_CREAT | O_TRUNC | O_NONBLOCK, 0666);
         event.type    = HTTP_REQUEST_UPLOAD;
         event.setDataFlow(event.clientFd, tempfile_fd);
         _eventHandler.addWriteEvent(event.toSendFd, &event);
@@ -237,7 +239,7 @@ bool VirtualServer::_callCgi(Event& event, LocationInfo& location_info) {
     _execveCgi(event);  // child
   } else {              // parent
     event.cgiResponse.setPid(pid);
-    int cgi_response = ft::syscall::open(res_filepath.c_str(), O_RDONLY | O_TRUNC | O_CREAT | O_NONBLOCK, 0644);
+    int cgi_response = ft::syscall::open(res_filepath.c_str(), O_RDONLY | O_TRUNC | O_CREAT | O_NONBLOCK, 0666);
     FileManager::registerFileFdToClose(event.toSendFd);
     event.setDataFlow(cgi_response, event.clientFd);
     event.cgiResponse.setInfo(event.httpRequest);
@@ -251,8 +253,8 @@ void VirtualServer::_execveCgi(Event& event) {
   std::string fd           = _intToString(event.clientFd);
   std::string req_filepath = TEMP_REQUEST_PREFIX + fd;
   std::string res_filepath = TEMP_RESPONSE_PREFIX + fd;
-  int         cgi_response = ::open(res_filepath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-  int         cgi_request  = ::open(req_filepath.c_str(), O_RDONLY | O_CREAT, 0644);
+  int         cgi_response = ::open(res_filepath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+  int         cgi_request  = ::open(req_filepath.c_str(), O_RDONLY | O_CREAT, 0666);
 
   if (cgi_request == -1 || cgi_response == -1) {
     unlink(req_filepath.c_str());

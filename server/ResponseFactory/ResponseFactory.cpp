@@ -184,7 +184,7 @@ HttpResponse* ResponseFactory::_postResponse(HttpRequest& request, LocationInfo&
   _httpVersion = request.httpVersion();
   _statusCode  = STATUS_CREATED;
   _message     = _getMessage(_statusCode);
-  Log::log()(LOG_LOCATION, "Put request processed.");
+  Log::log()(LOG_LOCATION, "Post request processed.");
   return new HttpResponse(_makeHeader(), _statusCode, 0, fd);
 }
 

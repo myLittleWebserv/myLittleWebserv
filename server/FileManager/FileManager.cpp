@@ -114,12 +114,12 @@ bool FileManager::_isDirExist(const std::string& file_path) {
     return false;
   }
 
-  if (!S_ISDIR(buf.st_mode)) {
-    Log::log()(true, "path.isConflict", file_path);
-    _isConflict = true;
-    return false;
+  if (S_ISDIR(buf.st_mode)) {
+    return true;
   }
-  return true;
+  Log::log()(true, "path.isConflict", file_path);
+  _isConflict = true;
+  return false;
 }
 
 void FileManager::registerFileFdToClose(int fd) {

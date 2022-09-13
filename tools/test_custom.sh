@@ -11,6 +11,9 @@ CGI_TEST="client/CGI_TEST"
 
 # # POST TEST
 
+echo "====================================== POST TEST ======================================"
+read input
+
 # ./myLittleClient $PORT1 $POST_TEST/PostRequest_0.infile
 # echo $NEXT_TEST_MSG
 # read input
@@ -39,42 +42,46 @@ CGI_TEST="client/CGI_TEST"
 # echo $NEXT_TEST_MSG
 # read input
 
+./myLittleClient $PORT1 $POST_TEST/PostRequest_7.infile
+echo $NEXT_TEST_MSG
+read input
+
 
 # GET TEST
 
-echo "====================================== GET TEST ======================================"
+# echo "====================================== GET TEST ======================================"
 
-./myLittleClient $PORT1 $GET_TEST/GetRequest_0.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $GET_TEST/GetRequest_0.infile
+# echo $NEXT_TEST_MSG
+# read input
 
-./myLittleClient $PORT1 $GET_TEST/GetRequest_1.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $GET_TEST/GetRequest_1.infile
+# echo $NEXT_TEST_MSG
+# read input
 
-./myLittleClient $PORT1 $GET_TEST/GetRequest_2.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $GET_TEST/GetRequest_2.infile
+# echo $NEXT_TEST_MSG
+# read input
 
-./myLittleClient $PORT1 $GET_TEST/GetRequest_3.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $GET_TEST/GetRequest_3.infile
+# echo $NEXT_TEST_MSG
+# read input
 
-./myLittleClient $PORT1 $GET_TEST/GetRequest_4.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $GET_TEST/GetRequest_4.infile
+# echo $NEXT_TEST_MSG
+# read input
 
-./myLittleClient $PORT1 $GET_TEST/GetRequest_5.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $GET_TEST/GetRequest_5.infile
+# echo $NEXT_TEST_MSG
+# read input
 
-./myLittleClient $PORT1 $GET_TEST/GetRequest_6.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $GET_TEST/GetRequest_6.infile
+# echo $NEXT_TEST_MSG
+# read input
 
-./myLittleClient $PORT1 $GET_TEST/GetRequest_7.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $GET_TEST/GetRequest_7.infile
+# echo $NEXT_TEST_MSG
+# read input
 
 
 
