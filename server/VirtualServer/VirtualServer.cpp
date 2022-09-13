@@ -199,6 +199,7 @@ void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& locat
   event.type         = HTTP_RESPONSE_WRITABLE;
   _eventHandler.deleteReadEvent(event.toRecvFd, NULL);
   _eventHandler.enableWriteEvent(event.clientFd, &event);
+  event.httpResponse->setFileFd(event.toRecvFd);
   event.setDataFlow(event.toRecvFd, event.clientFd);
   Log::log()(true, "(DONE) making Http Response using CGI RESPONSE", INFILE);
   Log::log()(true, "CGI_RESPONSE_READABLE  DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, ALL);
@@ -234,7 +235,7 @@ bool VirtualServer::_callCgi(Event& event, LocationInfo& location_info) {
     _execveCgi(event);  // child
   } else {              // parent
     event.cgiResponse.setPid(pid);
-    int cgi_response = ft::syscall::open(res_filepath.c_str(), O_RDONLY | O_CREAT | O_NONBLOCK, 0644);
+    int cgi_response = ft::syscall::open(res_filepath.c_str(), O_RDONLY | O_TRUNC | O_CREAT | O_NONBLOCK, 0644);
     FileManager::registerFileFdToClose(event.toSendFd);
     event.setDataFlow(cgi_response, event.clientFd);
     event.cgiResponse.setInfo(event.httpRequest);
@@ -248,8 +249,8 @@ void VirtualServer::_execveCgi(Event& event) {
   std::string fd           = _intToString(event.clientFd);
   std::string req_filepath = TEMP_REQUEST_PREFIX + fd;
   std::string res_filepath = TEMP_RESPONSE_PREFIX + fd;
-  int         cgi_response = open(res_filepath.c_str(), O_WRONLY | O_CREAT, 0644);
-  int         cgi_request  = open(req_filepath.c_str(), O_RDONLY, 0644);
+  int         cgi_response = ::open(res_filepath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  int         cgi_request  = ::open(req_filepath.c_str(), O_RDONLY | O_CREAT, 0644);
 
   if (cgi_request == -1 || cgi_response == -1) {
     unlink(req_filepath.c_str());

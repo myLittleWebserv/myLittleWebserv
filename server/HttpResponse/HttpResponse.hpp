@@ -68,6 +68,7 @@ class HttpResponse {
   bool                   isSendingEnd() { return _sendingState == HTTP_SENDING_DONE; }
   void                   sendResponse(int recv_fd, int send_fd);
   int                    fileFd() { return _fileFd; }
+  void                   setFileFd(int fd) { _fileFd = fd; }
   HttpResponseStatusCode statusCode() { return _statusCode; }
   void                   _headerToSocket(int send_fd);
 };
