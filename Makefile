@@ -18,17 +18,9 @@ SRC :=	main.cpp\
 		HttpResponse.cpp\
 		CgiResponse.cpp\
 		FileManager.cpp\
-<<<<<<< HEAD
 		syscall.cpp\
 		ResponseFactory.cpp\
 		Storage.cpp
-=======
-		Storage.cpp\
-		RequestStorage.cpp\
-		CgiStorage.cpp\
-		syscall.cpp\
-		GetLine.cpp
->>>>>>> 9464c77f3dc58756865f289c0627cbf34dfcfa2c
 
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
 
@@ -47,10 +39,7 @@ INCS := -I ./$(SRC_DIR)/Router\
 		-I ./$(SRC_DIR)/CgiResponse\
 		-I ./$(SRC_DIR)/FileManager\
 		-I ./$(SRC_DIR)/Storage\
-<<<<<<< HEAD
 		-I ./$(SRC_DIR)/ResponseFactory\
-=======
->>>>>>> 9464c77f3dc58756865f289c0627cbf34dfcfa2c
 		-I ./$(SRC_DIR)/syscall
 
 

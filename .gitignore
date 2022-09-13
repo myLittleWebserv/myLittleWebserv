@@ -9,9 +9,5 @@ myLittleClient
 file_should_exist_after
 multiple_same
 temp
-<<<<<<< HEAD
 *.dSYM
 post_body
-=======
-*.dSYM
->>>>>>> 9464c77f3dc58756865f289c0627cbf34dfcfa2c
