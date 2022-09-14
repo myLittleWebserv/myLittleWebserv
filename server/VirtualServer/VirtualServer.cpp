@@ -80,7 +80,8 @@ void VirtualServer::_finishResponse(Event& event) {
 }
 
 void VirtualServer::_redirectUploadError(Event& event) {
-  _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
+  // _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
+  _eventHandler.disableReadEvent(event.toRecvFd, &event);
   _eventHandler.enableWriteEvent(event.clientFd, &event);
   event.setDataFlow(event.httpResponse->fileFd(), event.clientFd);
   event.type = HTTP_RESPONSE_WRITABLE;
@@ -95,7 +96,7 @@ void VirtualServer::_uploadFile(Event& event, LocationInfo& location_info) {
     case HTTP_PARSING_TIME_OUT:
     case HTTP_PARSING_CONNECTION_CLOSED:
       FileManager::registerFileFdToClose(event.toSendFd);
-      _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
+      // _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
       Log::log()(LOG_LOCATION, "CLOSE BECAUSE PARSING CONNECTION CLOSED in uploadFile");
       _eventHandler.removeConnection(event);
       break;
@@ -107,12 +108,13 @@ void VirtualServer::_uploadFile(Event& event, LocationInfo& location_info) {
       break;
 
     case HTTP_UPLOADING_DONE:
-      _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
+      // _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
       if (request.isCgi(location_info.cgiExtension) && _callCgi(event, location_info)) {  // CGI ERROR?
         _eventHandler.addReadEvent(event.toRecvFd, &event);
         event.type = CGI_RESPONSE_READABLE;
       } else {
         _eventHandler.enableWriteEvent(event.clientFd, &event);
+        _eventHandler.disableWriteEvent(event.toRecvFd, &event);
         event.setDataFlow(-1, event.clientFd);
         event.type = HTTP_RESPONSE_WRITABLE;
       }
@@ -133,7 +135,7 @@ void VirtualServer::_flushSocket(Event& event, LocationInfo& location_info) {
     case HTTP_PARSING_CONNECTION_CLOSED:
       FileManager::removeFile(TEMP_TRASH);
       FileManager::registerFileFdToClose(event.toSendFd);
-      _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
+      // _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
       Log::log()(LOG_LOCATION, "CLOSE BECAUSE PARSING CONNECTION CLOSED in flushSocket");
       _eventHandler.removeConnection(event);
       break;
@@ -174,8 +176,8 @@ void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& loca
         ft::syscall::fcntl(tempfile_fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("fcntl"));
         event.type = HTTP_REQUEST_UPLOAD;
         event.setDataFlow(event.clientFd, tempfile_fd);
-        _eventHandler.addWriteEvent(event.toSendFd, &event);
-        _eventHandler.disableReadEvent(event.toRecvFd, &event);
+        // _eventHandler.addWriteEvent(event.toSendFd, &event);
+        // _eventHandler.disableReadEvent(event.toRecvFd, &event);
         break;
       } else {
         event.httpResponse            = ResponseFactory::makeResponse(request, location_info);
@@ -189,8 +191,8 @@ void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& loca
           event.type = SOCKET_FLSUH;
           event.setDataFlow(event.clientFd, tempfile_fd);
         }
-        _eventHandler.disableReadEvent(event.toRecvFd, &event);
-        _eventHandler.addWriteEvent(event.toSendFd, &event);
+        // _eventHandler.disableReadEvent(event.toRecvFd, &event);
+        // _eventHandler.addWriteEvent(event.toSendFd, &event);
         break;
       }
 

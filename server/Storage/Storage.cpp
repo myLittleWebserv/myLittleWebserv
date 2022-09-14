@@ -38,14 +38,9 @@ std::string Storage::getLineSock(int fd) {
     }
   }
   ssize_t recv_size = recv(fd, _buffer, READ_BUFFER_SIZE, 0);
-  if (recv_size == -1) {
+  if (recv_size == -1 || recv_size == 0) {
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
     _fail = true;
-    return "";
-  }
-  if (recv_size == 0) {
-    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
-    // _fail = true;
     return "";
   }
   insertBack(_buffer, _buffer + recv_size);
@@ -161,7 +156,7 @@ ssize_t Storage::sockToFile(int recv_fd, int send_fd, size_t goal_size) {
   ssize_t recv_size = recv(recv_fd, publicBuffer, goal_size, 0);
   if (recv_size == -1) {
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
-    return 0;
+    return -1;
   }
 
   ssize_t send_size = write(send_fd, publicBuffer, recv_size);

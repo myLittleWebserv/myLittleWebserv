@@ -129,11 +129,11 @@ void EventHandler::routeEvents() {
   for (int i = 0; i < num_kevents; ++i) {
     Event& event = *(Event*)_keventList[i].udata;
     int    flags = _keventList[i].flags;
-    int    ident = _keventList[i].flags;
+    // int    ident = _keventList[i].ident;
 
     if (flags & EV_EOF) {  // file ?
       Log::log()(LOG_LOCATION, "ev_eof", ALL);
-      Log::log()(true, "ident", ident, ALL);
+      // Log::log()(true, "ident", ident, ALL);
       removeConnection(event);
       continue;
     }
