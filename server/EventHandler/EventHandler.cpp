@@ -27,7 +27,6 @@ void EventHandler::_appendNewEventToChangeList(int ident, int filter, int flag, 
 }
 
 void EventHandler::removeConnection(Event& event) {
-  Log::log()(true, "closed fd in removeConnection", event.clientFd);
   ft::syscall::close(event.clientFd);
   _eventSet.erase(&event);
   delete &event;
@@ -77,6 +76,7 @@ void EventHandler::_routeRecvEvent(Event& event, Request& request) {
   request.parseRequest(event.toRecvFd, event.baseClock);
 
   if (request.isRecvError()) {
+    Log::log()(LOG_LOCATION, "CLOSE BECAUSE RECV ERROR");
     removeConnection(event);
   } else if (request.isParsingEnd()) {
     if (event.serverId == -1) {
@@ -129,9 +129,11 @@ void EventHandler::routeEvents() {
   for (int i = 0; i < num_kevents; ++i) {
     Event& event = *(Event*)_keventList[i].udata;
     int    flags = _keventList[i].flags;
+    int    ident = _keventList[i].flags;
 
     if (flags & EV_EOF) {  // file ?
       Log::log()(LOG_LOCATION, "ev_eof", ALL);
+      Log::log()(true, "ident", ident, ALL);
       removeConnection(event);
       continue;
     }

@@ -122,6 +122,7 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
       _parseStartLine(line);
       if (line.empty() || isParsingEnd())
         break;
+      gettimeofday(&_timestamp, NULL);
       _parsingState = HTTP_PARSING_HEADER;
 
     case HTTP_PARSING_HEADER:
@@ -131,11 +132,13 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
       }
       if (line.empty() || isParsingEnd())
         break;
+      gettimeofday(&_timestamp, NULL);
       _parsingState = HTTP_PARSING_BODY;
 
     case HTTP_PARSING_BODY:
       _fileFd = recv_fd;
       _storage.preserveRemains();
+      gettimeofday(&_timestamp, NULL);
       if (!_isChunked) {
         _chunkSize    = _contentLength;
         _parsingState = HTTP_UPLOADING_INIT;
@@ -144,12 +147,12 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
 
     default:
       _parsingState = HTTP_UPLOADING_CHUNK_INIT;
-      _checkTimeOut();
       break;
   }
 
   Log::log()(LOG_LOCATION, "(STATE) CURRENT HTTP_PARSING STATE", INFILE);
   Log::log()("_parsingState", _parsingState, INFILE);
+  _checkTimeOut();
 }
 
 // Method

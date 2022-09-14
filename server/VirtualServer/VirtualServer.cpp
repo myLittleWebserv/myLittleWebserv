@@ -7,6 +7,7 @@
 
 #include "FileManager.hpp"
 #include "ResponseFactory.hpp"
+#include "Router.hpp"
 #include "syscall.hpp"
 
 VirtualServer::VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler)
@@ -55,6 +56,7 @@ void VirtualServer::_processEvent(Event& event) {
 void VirtualServer::_sendResponse(Event& event) {
   event.httpResponse->sendResponse(event.toRecvFd, event.toSendFd);
   if (event.httpResponse->isConnectionClosed()) {
+    Log::log()(LOG_LOCATION, "CLOSE BECAUSE CONNECTION CLOSED FOR SENDING");
     _eventHandler.removeConnection(event);
   } else if (event.httpResponse->isSendingEnd()) {
     _finishResponse(event);
@@ -69,6 +71,7 @@ void VirtualServer::_finishResponse(Event& event) {
     _eventHandler.disableWriteEvent(event.clientFd, &event);
     _eventHandler.enableReadEvent(event.clientFd, &event);
   } else {
+    Log::log()(LOG_LOCATION, "CLOSE BECAUSE SENDING RESPONSE DONE");
     _eventHandler.removeConnection(event);
   }
   Log::log().increaseProcessedConnection();
@@ -93,6 +96,7 @@ void VirtualServer::_uploadFile(Event& event, LocationInfo& location_info) {
     case HTTP_PARSING_CONNECTION_CLOSED:
       FileManager::registerFileFdToClose(event.toSendFd);
       _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
+      Log::log()(LOG_LOCATION, "CLOSE BECAUSE PARSING CONNECTION CLOSED in uploadFile");
       _eventHandler.removeConnection(event);
       break;
 
@@ -130,6 +134,7 @@ void VirtualServer::_flushSocket(Event& event, LocationInfo& location_info) {
       FileManager::removeFile(TEMP_TRASH);
       FileManager::registerFileFdToClose(event.toSendFd);
       _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
+      Log::log()(LOG_LOCATION, "CLOSE BECAUSE PARSING CONNECTION CLOSED in flushSocket");
       _eventHandler.removeConnection(event);
       break;
 
@@ -165,8 +170,9 @@ void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& loca
     case PUT:
       if (request.isCgi(location_info.cgiExtension)) {
         tempfile_path = TEMP_REQUEST_PREFIX + _intToString(event.clientFd);
-        tempfile_fd   = ft::syscall::open(tempfile_path.c_str(), O_RDWR | O_CREAT | O_TRUNC | O_NONBLOCK, 0666);
-        event.type    = HTTP_REQUEST_UPLOAD;
+        tempfile_fd   = ft::syscall::open(tempfile_path.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0666);
+        ft::syscall::fcntl(tempfile_fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("fcntl"));
+        event.type = HTTP_REQUEST_UPLOAD;
         event.setDataFlow(event.clientFd, tempfile_fd);
         _eventHandler.addWriteEvent(event.toSendFd, &event);
         _eventHandler.disableReadEvent(event.toRecvFd, &event);
@@ -178,8 +184,9 @@ void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& loca
           event.type = HTTP_REQUEST_UPLOAD;
           event.setDataFlow(event.clientFd, event.httpResponse->fileFd());
         } else {
-          tempfile_fd = ft::syscall::open(TEMP_TRASH, O_WRONLY | O_NONBLOCK | O_TRUNC | O_CREAT);
-          event.type  = SOCKET_FLSUH;
+          tempfile_fd = ft::syscall::open(TEMP_TRASH, O_WRONLY | O_TRUNC | O_CREAT);
+          ft::syscall::fcntl(tempfile_fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("fcntl"));
+          event.type = SOCKET_FLSUH;
           event.setDataFlow(event.clientFd, tempfile_fd);
         }
         _eventHandler.disableReadEvent(event.toRecvFd, &event);
@@ -239,7 +246,8 @@ bool VirtualServer::_callCgi(Event& event, LocationInfo& location_info) {
     _execveCgi(event);  // child
   } else {              // parent
     event.cgiResponse.setPid(pid);
-    int cgi_response = ft::syscall::open(res_filepath.c_str(), O_RDONLY | O_TRUNC | O_CREAT | O_NONBLOCK, 0666);
+    int cgi_response = ft::syscall::open(res_filepath.c_str(), O_RDONLY | O_TRUNC | O_CREAT, 0666);
+    ft::syscall::fcntl(cgi_response, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("fcntl"));
     FileManager::registerFileFdToClose(event.toSendFd);
     event.setDataFlow(cgi_response, event.clientFd);
     event.cgiResponse.setInfo(event.httpRequest);

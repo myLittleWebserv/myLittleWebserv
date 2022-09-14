@@ -40,11 +40,12 @@ std::string Storage::getLineSock(int fd) {
   ssize_t recv_size = recv(fd, _buffer, READ_BUFFER_SIZE, 0);
   if (recv_size == -1) {
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    _fail = true;
     return "";
   }
   if (recv_size == 0) {
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
-    _fail = true;
+    // _fail = true;
     return "";
   }
   insertBack(_buffer, _buffer + recv_size);

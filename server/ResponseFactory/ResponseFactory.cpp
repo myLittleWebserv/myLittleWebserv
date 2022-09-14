@@ -10,6 +10,7 @@
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
 #include "Log.hpp"
+#include "Router.hpp"
 #include "syscall.hpp"
 std::string                 ResponseFactory::_httpVersion;
 enum HttpResponseStatusCode ResponseFactory::_statusCode;
@@ -91,7 +92,8 @@ HttpResponse* ResponseFactory::_getResponse(HttpRequest& request, LocationInfo& 
     return errorResponse(STATUS_NOT_FOUND, request, location_info);
   }
 
-  int fd         = open(file_manager.filePath().c_str(), O_RDONLY | O_NONBLOCK);
+  int fd = ft::syscall::open(file_manager.filePath().c_str(), O_RDONLY);
+  ft::syscall::fcntl(fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("fcntl"));
   _contentLength = ft::syscall::lseek(fd, 0, SEEK_END);  // error -> throw;
   ft::syscall::lseek(fd, 0, SEEK_SET);
   if (_contentLength > static_cast<size_t>(location_info.maxBodySize)) {
@@ -179,7 +181,8 @@ HttpResponse* ResponseFactory::_postResponse(HttpRequest& request, LocationInfo&
     return errorResponse(STATUS_CONFLICT, request, location_info);
   }
 
-  fd = ft::syscall::open(file_manager.filePath().c_str(), O_WRONLY | O_CREAT | O_NONBLOCK);
+  fd = ft::syscall::open(file_manager.filePath().c_str(), O_WRONLY | O_CREAT);
+  ft::syscall::fcntl(fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("fcntl"));
 
   _httpVersion = request.httpVersion();
   _statusCode  = STATUS_CREATED;
@@ -198,10 +201,12 @@ HttpResponse* ResponseFactory::_putResponse(HttpRequest& request, LocationInfo& 
   int         fd;
 
   if (file_manager.isFileExist()) {
-    fd          = ft::syscall::open(file_manager.filePath().c_str(), O_WRONLY | O_TRUNC | O_NONBLOCK);
+    fd = ft::syscall::open(file_manager.filePath().c_str(), O_WRONLY | O_TRUNC);
+    ft::syscall::fcntl(fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("fcntl"));
     _statusCode = STATUS_OK;
   } else if (!file_manager.isConflict()) {
-    fd          = ft::syscall::open(file_manager.filePath().c_str(), O_WRONLY | O_CREAT | O_NONBLOCK);
+    fd = ft::syscall::open(file_manager.filePath().c_str(), O_WRONLY | O_CREAT);
+    ft::syscall::fcntl(fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("fcntl"));
     _statusCode = STATUS_CREATED;
   } else {
     return errorResponse(STATUS_CONFLICT, request, location_info);
@@ -242,14 +247,16 @@ HttpResponse* ResponseFactory::errorResponse(HttpResponseStatusCode error_code, 
   if (location_info.defaultErrorPages.count(error_code)) {
     FileManager file_manager(location_info.root);
     file_manager.appendToPath(location_info.defaultErrorPages[error_code]);
-    fd = ::open(file_manager.filePath().c_str(), O_RDONLY | O_NONBLOCK);
+    fd = ::open(file_manager.filePath().c_str(), O_RDONLY);
+    ft::syscall::fcntl(fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("fcntl"));
     Log::log()(true, "file open STATUS", fd, INFILE);
     Log::log()(true, "file name", file_name, INFILE);
   }
 
   if (fd == -1) {
     default_error_page << DEFAULT_ERROR_PAGE_DIR << '/' << error_code << ".html";
-    fd = ft::syscall::open(default_error_page.str().c_str(), O_RDONLY | O_NONBLOCK);
+    fd = ft::syscall::open(default_error_page.str().c_str(), O_RDONLY);
+    ft::syscall::fcntl(fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("fcntl"));
     Log::log()(true, "file open STATUS", fd, INFILE);
     Log::log()(true, "file name", default_error_page.str(), INFILE);
   }

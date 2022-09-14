@@ -108,7 +108,7 @@ void FileManager::_updateFileInfo() {
 
 bool FileManager::_isDirExist(const std::string& file_path) {
   struct stat buf;
-  int         ret = lstat(file_path.c_str(), &buf);
+  int         ret = ::lstat(file_path.c_str(), &buf);
 
   if (ret == -1) {
     return false;
