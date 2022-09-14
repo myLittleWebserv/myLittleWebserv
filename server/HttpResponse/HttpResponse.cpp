@@ -269,6 +269,7 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
 
   if (file_manager.isConflict()) {
     _makeErrorResponse(409, request, location_info);
+    return;
   }
 
   file_manager.openOutFile();
@@ -301,6 +302,7 @@ void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& locati
   } else {
     if (file_manager.isConflict()) {
       _makeErrorResponse(409, request, location_info);
+      return;
     }
     file_manager.openOutFile();
     file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
