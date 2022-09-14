@@ -267,6 +267,10 @@ void HttpResponse::_processPostRequest(HttpRequest& request, LocationInfo& locat
     return;
   }
 
+  if (file_manager.isConflict()) {
+    _makeErrorResponse(409, request, location_info);
+  }
+
   file_manager.openOutFile();
   file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());  // ?
   file_manager.outFile().close();
@@ -295,6 +299,9 @@ void HttpResponse::_processPutRequest(HttpRequest& request, LocationInfo& locati
     file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
     _statusCode = 200;
   } else {
+    if (file_manager.isConflict()) {
+      _makeErrorResponse(409, request, location_info);
+    }
     file_manager.openOutFile();
     file_manager.outFile().write(reinterpret_cast<const char*>(request.body().data()), request.body().size());
     _statusCode = 201;

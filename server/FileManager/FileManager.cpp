@@ -106,3 +106,43 @@ void FileManager::_updateFileInfo() {
   _isExist    = true;
   _isDirectoy = S_ISDIR(buf.st_mode);
 }
+
+bool FileManager::_isDirExist(const std::string& file_path) {
+  struct stat buf;
+  int         ret = ::lstat(file_path.c_str(), &buf);
+
+  if (ret == -1) {
+    return false;
+  }
+
+  if (S_ISDIR(buf.st_mode)) {
+    return true;
+  }
+  Log::log()(true, "path.isConflict", file_path);
+  _isConflict = true;
+  return false;
+}
+
+bool FileManager::isConflict() {
+  Log::log()(LOG_LOCATION, "");
+  _isConflict       = false;
+  size_t      delim = _absolutePath.find('/');
+  std::string path  = _absolutePath.substr(0, delim);
+
+  while (1) {
+    Log::log()(true, "path.isConflict", path);
+    if (_isDirExist(path)) {
+      ;
+    } else if (_isConflict) {
+      break;
+    } else {
+      mkdir(path.c_str(), 0777);
+    }
+    delim = _absolutePath.find('/', delim + 1);
+    if (delim == std::string::npos)
+      break;
+    path = _absolutePath.substr(0, delim);
+  }
+
+  return _isConflict;
+}
