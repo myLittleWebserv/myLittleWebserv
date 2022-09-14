@@ -43,33 +43,47 @@ enum HttpResponseStatusCode {
   STATUS_HTTP_VERSION_NOT_SUPPORTED = 505
 };
 
-enum HttpResponseSendingState { HTTP_SENDING_STORAGE, HTTP_SENDING_DONE, HTTP_SENDING_CONNECTION_CLOSED };
+enum HttpResponseSendingState {
+  HTTP_DOWNLOADING_INIT,
+  HTTP_SENDING_STORAGE,
+  HTTP_SENDING_DONE,
+  HTTP_SENDING_CONNECTION_CLOSED,
+  HTTP_SENDING_TIME_OUT
+};
 
 class HttpResponse {
   // Member Variable
  private:
   enum HttpResponseSendingState _sendingState;
-  Storage                       _storage;
-  size_t                        _sentSize;
-  enum HttpResponseStatusCode   _statusCode;
-  size_t                        _goalSize;
-  int                           _fileFd;
+
+ public:
+  Storage                     _storage;
+  size_t                      _sentSize;
+  enum HttpResponseStatusCode _statusCode;
+  size_t                      _goalSize;
+  size_t                      _contentLength;
+  size_t                      _downloadedSize;
+  int                         _fileFd;
 
   // Constructor
  public:
   ~HttpResponse();
-  HttpResponse(const std::string& header, HttpResponseStatusCode status_code, size_t content_length = 0,
-               int file_fd = -1);
-  HttpResponse(const Storage& storage, const std::string& header, HttpResponseStatusCode status_code,
+  HttpResponse(HttpResponseSendingState state, const std::string& header, HttpResponseStatusCode status_code,
                size_t content_length = 0, int file_fd = -1);
+  HttpResponse(HttpResponseSendingState state, const Storage& storage, const std::string& header,
+               HttpResponseStatusCode status_code, size_t content_length = 0, int file_fd = -1);
 
   // Interface
  public:
-  bool                   isConnectionClosed() { return _sendingState == HTTP_SENDING_CONNECTION_CLOSED; }
-  bool                   isSendingEnd() { return _sendingState == HTTP_SENDING_DONE; }
-  void                   sendResponse(int recv_fd, int send_fd);
-  int                    fileFd() { return _fileFd; }
-  void                   setFileFd(int fd) { _fileFd = fd; }
-  HttpResponseStatusCode statusCode() { return _statusCode; }
-  void                   _headerToSocket(int send_fd);
+  size_t                   contentLength() { return _contentLength; }
+  bool                     isConnectionClosed() { return _sendingState == HTTP_SENDING_CONNECTION_CLOSED; }
+  bool                     isSendingEnd() { return _sendingState == HTTP_SENDING_DONE; }
+  void                     sendResponse(int send_fd);
+  int                      fileFd() { return _fileFd; }
+  void                     setFileFd(int fd) { _fileFd = fd; }
+  HttpResponseStatusCode   statusCode() { return _statusCode; }
+  void                     downloadResponse(int recv_fd, clock_t base_clock);
+  void                     _headerToSocket(int send_fd);
+  HttpResponseSendingState state() { return _sendingState; }
+  void                     setState(HttpResponseSendingState state) { _sendingState = state; }
 };

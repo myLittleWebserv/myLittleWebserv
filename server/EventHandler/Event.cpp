@@ -21,7 +21,7 @@ Event::Event(EventType t, int kevent_id)
 
 void Event::initialize() {
   if (cgiResponse.pid() != -1) {
-    FileManager::removeTempFileByKey(clientFd);
+    // FileManager::removeTempFileByKey(clientFd);
   }
 
   type     = HTTP_REQUEST_READABLE;

@@ -63,6 +63,7 @@ HttpResponse* ResponseFactory::makeResponse(CgiResponse& cgi_response, LocationI
   if (cgi_response.httpVersion() != "HTTP/1.1") {
     return errorResponse(STATUS_HTTP_VERSION_NOT_SUPPORTED, cgi_response, location_info);
   }
+  // lseek
   _httpVersion   = cgi_response.httpVersion();
   _statusCode    = static_cast<HttpResponseStatusCode>(cgi_response.statusCode());  // ?
   _message       = cgi_response.statusMessage();
@@ -70,7 +71,8 @@ HttpResponse* ResponseFactory::makeResponse(CgiResponse& cgi_response, LocationI
   _contentType   = cgi_response.contentType();
 
   Log::log()(true, "_contentLengh.make_cgires", _contentLength);
-  return new HttpResponse(cgi_response.storage(), _makeHeader(), _statusCode, _contentLength, cgi_response.bodyFd());
+  return new HttpResponse(HTTP_DOWNLOADING_INIT, cgi_response.storage(), _makeHeader(), _statusCode, _contentLength,
+                          cgi_response.bodyFd());
 }
 
 HttpResponse* ResponseFactory::_getResponse(HttpRequest& request, LocationInfo& location_info) {
@@ -105,7 +107,7 @@ HttpResponse* ResponseFactory::_getResponse(HttpRequest& request, LocationInfo& 
   _message     = _getMessage(_statusCode);
   _contentType = _getContentType(file_manager.filePath());
   Log::log()(LOG_LOCATION, "Get request processed.");
-  return new HttpResponse(_makeHeader(), _statusCode, _contentLength, fd);
+  return new HttpResponse(HTTP_DOWNLOADING_INIT, _makeHeader(), _statusCode, _contentLength, fd);
 }
 
 HttpResponse* ResponseFactory::_headResponse(HttpRequest& request, LocationInfo& location_info) {
@@ -132,7 +134,7 @@ HttpResponse* ResponseFactory::_headResponse(HttpRequest& request, LocationInfo&
   _message     = _getMessage(_statusCode);
   _contentType = _getContentType(file_manager.filePath());
   Log::log()(LOG_LOCATION, "Get request processed.");
-  return new HttpResponse(_makeHeader(), _statusCode, 0);
+  return new HttpResponse(HTTP_SENDING_STORAGE, _makeHeader(), _statusCode, 0);
 }
 
 HttpResponse* ResponseFactory::_autoIndexResponse(HttpRequest& request, LocationInfo& location_info,
@@ -160,7 +162,7 @@ HttpResponse* ResponseFactory::_autoIndexResponse(HttpRequest& request, Location
   _message       = _getMessage(_statusCode);
   _contentLength = body.size();
 
-  return new HttpResponse(_makeHeader() + body, _statusCode);
+  return new HttpResponse(HTTP_SENDING_STORAGE, _makeHeader() + body, _statusCode);
 }
 
 HttpResponse* ResponseFactory::_postResponse(HttpRequest& request, LocationInfo& location_info) {
@@ -188,7 +190,7 @@ HttpResponse* ResponseFactory::_postResponse(HttpRequest& request, LocationInfo&
   _statusCode  = STATUS_CREATED;
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Post request processed.");
-  return new HttpResponse(_makeHeader(), _statusCode, 0, fd);
+  return new HttpResponse(HTTP_SENDING_STORAGE, _makeHeader(), _statusCode, 0, fd);
 }
 
 HttpResponse* ResponseFactory::_putResponse(HttpRequest& request, LocationInfo& location_info) {
@@ -217,7 +219,7 @@ HttpResponse* ResponseFactory::_putResponse(HttpRequest& request, LocationInfo& 
   _httpVersion = request.httpVersion();
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Put request processed.");
-  return new HttpResponse(_makeHeader(), _statusCode, 0, fd);
+  return new HttpResponse(HTTP_SENDING_STORAGE, _makeHeader(), _statusCode, 0, fd);
 }
 
 HttpResponse* ResponseFactory::_deleteResponse(HttpRequest& request, LocationInfo& location_info) {
@@ -234,7 +236,7 @@ HttpResponse* ResponseFactory::_deleteResponse(HttpRequest& request, LocationInf
   _message     = _getMessage(_statusCode);
 
   Log::log()(LOG_LOCATION, "Delete request processed.");
-  return new HttpResponse(_makeHeader(), _statusCode);
+  return new HttpResponse(HTTP_SENDING_STORAGE, _makeHeader(), _statusCode);
 }
 
 HttpResponse* ResponseFactory::errorResponse(HttpResponseStatusCode error_code, Request& request,
@@ -262,7 +264,7 @@ HttpResponse* ResponseFactory::errorResponse(HttpResponseStatusCode error_code, 
   }
 
   if (request.method() == HEAD) {
-    ft::syscall::close(fd);
+    // FileManager::registerFileFdToClose(fd);
     fd = -1;
   }
 
@@ -274,7 +276,7 @@ HttpResponse* ResponseFactory::errorResponse(HttpResponseStatusCode error_code, 
     ft::syscall::lseek(fd, 0, SEEK_SET);
   }
   Log::log()(LOG_LOCATION, "Error page returned.");
-  return new HttpResponse(_makeHeader(), _statusCode, _contentLength, fd);
+  return new HttpResponse(HTTP_DOWNLOADING_INIT, _makeHeader(), _statusCode, _contentLength, fd);
 }
 
 HttpResponse* ResponseFactory::_redirResponse(HttpResponseStatusCode redir_code, HttpRequest& request,
@@ -294,7 +296,7 @@ HttpResponse* ResponseFactory::_redirResponse(HttpResponseStatusCode redir_code,
   }
 
   Log::log()(LOG_LOCATION, "Redirection address returned.");
-  return new HttpResponse(_makeHeader(), _statusCode);
+  return new HttpResponse(HTTP_SENDING_STORAGE, _makeHeader(), _statusCode);
 }
 
 bool ResponseFactory::_isAllowedMethod(MethodType method, std::vector<std::string>& allowed_methods) {

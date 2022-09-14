@@ -24,11 +24,11 @@ SRC :=	main.cpp\
 
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
 
+CXXFALGS = -std=c++98 -Wall -Werror -Wextra -fsanitize=address -g
+LDFALGS  = -fsanitize=address -g
+ifeq ($(fsanitize), no)
 CXXFALGS = -std=c++98 -Wall -Werror -Wextra
 LDFALGS  = 
-ifeq ($(fsanitize), yes)
-CXXFALGS += -fsanitize=address -g
-LDFALGS  += -fsanitize=address -g
 endif
 
 INCS := -I ./$(SRC_DIR)/Router\

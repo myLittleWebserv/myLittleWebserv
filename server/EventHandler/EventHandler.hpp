@@ -42,16 +42,40 @@ class EventHandler {
 
   // Interface
  public:
-  void disableReadEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_READ, EV_DISABLE, event); }
-  void disableWriteEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_WRITE, EV_DISABLE, event); }
-  void enableReadEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_READ, EV_ENABLE, event); }
-  void enableWriteEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_WRITE, EV_ENABLE, event); }
-  void addReadEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_READ, EV_ADD, event); }
-  void addWriteEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_WRITE, EV_ADD, event); }
-  void deleteReadEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_READ, EV_DELETE, event); }
-  void deleteWriteEvent(int id, Event* event) { _appendNewEventToChangeList(id, EVFILT_WRITE, EV_DELETE, event); }
-  void removeConnection(Event& event);
-  void routeEvents();
+  void disableReadEvent(int id, Event* event) {
+    Log::log()(true, "disableRead", id);
+    _appendNewEventToChangeList(id, EVFILT_READ, EV_DISABLE, event);
+  }
+  void disableWriteEvent(int id, Event* event) {
+    Log::log()(true, "disableWrite", id);
+    _appendNewEventToChangeList(id, EVFILT_WRITE, EV_DISABLE, event);
+  }
+  void enableReadEvent(int id, Event* event) {
+    Log::log()(true, "enableRead", id);
+    _appendNewEventToChangeList(id, EVFILT_READ, EV_ENABLE, event);
+  }
+  void enableWriteEvent(int id, Event* event) {
+    Log::log()(true, "enalbeWrite", id);
+    _appendNewEventToChangeList(id, EVFILT_WRITE, EV_ENABLE, event);
+  }
+  void addReadEvent(int id, Event* event) {
+    Log::log()(true, "addRead", id);
+    _appendNewEventToChangeList(id, EVFILT_READ, EV_ADD, event);
+  }
+  void addWriteEvent(int id, Event* event) {
+    Log::log()(true, "addWrite", id);
+    _appendNewEventToChangeList(id, EVFILT_WRITE, EV_ADD, event);
+  }
+  void deleteReadEvent(int id, Event* event) {
+    Log::log()(true, "deleteRead", id);
+    _appendNewEventToChangeList(id, EVFILT_READ, EV_DELETE, event);
+  }
+  void deleteWriteEvent(int id, Event* event) {
+    Log::log()(true, "deletWrite", id);
+    _appendNewEventToChangeList(id, EVFILT_WRITE, EV_DELETE, event);
+  }
+  void                 removeConnection(Event& event);
+  void                 routeEvents();
   std::vector<Event*>& getRoutedEvents(int server_id);
 };
 

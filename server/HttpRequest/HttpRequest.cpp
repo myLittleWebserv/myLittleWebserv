@@ -27,7 +27,8 @@ void HttpRequest::initialize() {
   _secretHeaderForTest = 0;
   _uploadedSize        = 0;
   _uploadedTotalSize   = 0;
-  _storage.preserveRemains();
+  // _storage.preserveRemains();
+  _storage.clear();
   gettimeofday(&_timestamp, NULL);
 }
 
@@ -37,7 +38,8 @@ bool HttpRequest::isParsingEnd() {
 }
 
 bool HttpRequest::isRecvError() {
-  return _storage.fail() || _parsingState == HTTP_PARSING_CONNECTION_CLOSED || _parsingState == HTTP_PARSING_TIME_OUT;
+  return _storage.state() == CONNECTION_CLOSED || _parsingState == HTTP_PARSING_CONNECTION_CLOSED ||
+         _parsingState == HTTP_PARSING_TIME_OUT;
 }
 
 bool HttpRequest::isUploadEnd() { return _parsingState == HTTP_UPLOADING_DONE; }
@@ -50,7 +52,7 @@ bool HttpRequest::isCgi(const std::string& ext) {
   return true;
 }
 
-void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
+void HttpRequest::uploadRequest(int send_fd, clock_t base_clock) {
   (void)base_clock;
   std::string line;
   ssize_t     moved;
@@ -60,8 +62,8 @@ void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
   switch (_parsingState) {
     case HTTP_UPLOADING_CHUNK_INIT:
     case HTTP_UPLOADING_READ_LINE:
-      line = _storage.getLineSock(recv_fd);
-      if (_storage.fail()) {
+      line = _storage.getLine();
+      if (_storage.state() == CONNECTION_CLOSED) {
         _parsingState = HTTP_PARSING_CONNECTION_CLOSED;
         break;
       }
@@ -90,7 +92,7 @@ void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
       Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_CHUNK_SIZE");
 
     case HTTP_UPLOADING_INIT:
-      moved = _storage.dataToFile(recv_fd, send_fd, _chunkSize - _uploadedSize);
+      moved = _storage.memToFile(send_fd, _chunkSize - _uploadedSize);
       if (moved == -1) {
         _parsingState = HTTP_PARSING_CONNECTION_CLOSED;
         break;
@@ -113,45 +115,55 @@ void HttpRequest::uploadRequest(int recv_fd, int send_fd, clock_t base_clock) {
 }
 
 void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
+  _storage.sockToMem(recv_fd);
+  if (_storage.state() != RECEIVE_DONE) {
+    return;
+  }
+  Log::log()(LOG_LOCATION, "(TRANSFER) socket buffer to _storage done", INFILE);
+
   (void)base_clock;
   std::string line;
 
   switch (_parsingState) {
     case HTTP_PARSING_INIT:
-      line = _storage.getLineSock(recv_fd);
+      line = _storage.getLine();
+      Log::log()(true, "line", line);
       _parseStartLine(line);
       if (line.empty() || isParsingEnd())
         break;
+      // Log::log()(true, "line", line);
       gettimeofday(&_timestamp, NULL);
       _parsingState = HTTP_PARSING_HEADER;
 
     case HTTP_PARSING_HEADER:
-      line = _storage.getLineSock(recv_fd);
+      line = _storage.getLine();
       while (_parseHeaderField(line)) {
-        line = _storage.getLineSock(recv_fd);
+        line = _storage.getLine();
       }
       if (line.empty() || isParsingEnd())
         break;
       gettimeofday(&_timestamp, NULL);
+      _bodyFirst    = _storage.readPos();
       _parsingState = HTTP_PARSING_BODY;
 
     case HTTP_PARSING_BODY:
-      _fileFd = recv_fd;
-      _storage.preserveRemains();
-      gettimeofday(&_timestamp, NULL);
-      if (!_isChunked) {
+      Log::log()(true, "_isChunked", _isChunked);
+      if (_isChunked && _parseChunk()) {
+        _storage.setReadPos(_bodyFirst);
+        _parsingState = HTTP_UPLOADING_CHUNK_INIT;
+        Log::log()(true, "_bodyFirst", _bodyFirst);
+      } else if (!_isChunked && _storage.remains() >= _contentLength) {
         _chunkSize    = _contentLength;
         _parsingState = HTTP_UPLOADING_INIT;
-        break;
       }
 
     default:
-      _parsingState = HTTP_UPLOADING_CHUNK_INIT;
       break;
   }
 
   Log::log()(LOG_LOCATION, "(STATE) CURRENT HTTP_PARSING STATE", INFILE);
   Log::log()("_parsingState", _parsingState, INFILE);
+  Log::log()("storage.size", _storage.size(), INFILE);
   _checkTimeOut();
 }
 
@@ -270,6 +282,36 @@ bool HttpRequest::_parseHeaderField(const std::string& line) {
     Log::log()(true, "header-value", word);
   }
   return true;
+}
+
+bool HttpRequest::_parseChunk() {
+  while (1) {
+    if (_chunkSize == -1) {
+      std::string line = _storage.getLine();
+      if (line.empty()) {
+        return false;
+      }
+      _chunkSize = _parseChunkSize(line);
+    }
+
+    if (_chunkSize == 0) {
+      std::string line = _storage.getLine();
+      if (line.empty()) {
+        return false;
+      }
+      _chunkSize = -1;
+      return true;
+    }
+
+    if (_storage.remains() > _chunkSize + 2) {  // jump "\r\n" .. ?
+      _storage.moveReadPos(_chunkSize + 2);
+      _chunkSize = -1;
+    } else {
+      break;
+    }
+  }
+  gettimeofday(&_timestamp, NULL);
+  return false;
 }
 
 ssize_t HttpRequest::_parseChunkSize(const std::string& line) {

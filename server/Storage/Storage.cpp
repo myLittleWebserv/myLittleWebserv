@@ -3,57 +3,121 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "Log.hpp"
-
 unsigned char Storage::_buffer[READ_BUFFER_SIZE];
-unsigned char Storage::publicBuffer[PUBLIC_BUFFER_SIZE];
-
-Storage::Storage(const Storage& storage) : _readPos(0), _writePos(0) {
-  vector::const_iterator begin = storage.begin() + storage._readPos;
-  vector::const_iterator end   = storage.end() + storage._writePos;
-
-  insertBack(begin, end);
-}
-
-void Storage::insertBack(const Storage& storage) {
-  vector::const_pointer bi = storage.data() + storage._readPos;
-  vector::const_pointer ei = storage.data() + storage._writePos;
-
-  insertBack(bi, ei);
-}
 
 void Storage::clear() {
   _writePos = 0;
   _readPos  = 0;
-  _fail     = false;
 }
 
-std::string Storage::getLineSock(int fd) {
-  for (size_t i = _readPos; i != _writePos; ++i) {
+std::string Storage::getLine() {
+  for (vector::size_type i = _readPos; i < size(); ++i) {
     if ((*this)[i] == '\n') {
-      std::string line(data() + _readPos, data() + i);
-      Log::log()(LOG_LOCATION, line);
+      std::string line(begin() + _readPos, begin() + i);
+      Log::log()(true, "line", line);
       _readPos = i + 1;
       return line;
     }
   }
-  ssize_t recv_size = recv(fd, _buffer, READ_BUFFER_SIZE, 0);
-  if (recv_size == -1 || recv_size == 0) {
-    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
-    _fail = true;
-    return "";
-  }
-  insertBack(_buffer, _buffer + recv_size);
-  for (size_t i = _readPos; i != _writePos; ++i) {
-    if ((*this)[i] == '\n') {
-      std::string line(data() + _readPos, data() + i);
-      Log::log()(LOG_LOCATION, line);
-      _readPos = i + 1;
-      return line;
-    }
-  }
-  _fail = false;
   return "";
+}
+
+void Storage::moveReadPos(int move) { _readPos += move; }
+
+void Storage::preserveRemains() {
+  if (_readPos != _writePos) {
+    Log::log()(LOG_LOCATION, "");
+    for (size_t i = _readPos; i != _writePos; ++i) {
+      Log::log().getLogStream() << (*this)[i];
+    }
+  }
+
+  size_t i;
+  for (i = _readPos; i != _writePos; ++i) {
+    (*this)[i - _readPos] = (*this)[i];
+  }
+  _writePos = i - _readPos;
+  _readPos  = 0;
+
+  // for (i = _readPos; i != _writePos; ++i) {
+  //   Log::log().getLogStream() << (*this)[i];
+  // }
+  // Log::log()(LOG_LOCATION, "(init) storage", INFILE);
+}
+
+ssize_t Storage::memToFile(int file_fd, size_t goal_size) {
+  size_t  small_one = goal_size < (_writePos - _readPos) ? goal_size : (_writePos - _readPos);
+  ssize_t send_size = write(file_fd, data() + _readPos, small_one);
+
+  // Log::log()(true, "goal_size", goal_size);
+  // Log::log()(true, "_writePos - _readPos", _writePos - _readPos);
+  // Log::log()(true, "small_one", small_one);
+  // Log::log()(true, "send_size", send_size);
+  // Log::log()(true, "file_fd", file_fd);
+
+  if (send_size == -1) {
+    _state = CONNECTION_CLOSED;
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
+    return -1;
+  }
+  _readPos += send_size;
+  return send_size;
+}
+ssize_t Storage::memToSock(int send_fd, size_t goal_size) {
+  size_t  small_one = goal_size < (_writePos - _readPos) ? goal_size : (_writePos - _readPos);
+  ssize_t send_size = send(send_fd, data() + _readPos, small_one, 0);
+  if (send_size == -1) {
+    _state = CONNECTION_CLOSED;
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
+    return -1;
+  }
+
+  // if (goal_size < 100000) {
+  //   Log::log()(LOG_LOCATION, "memToSock");
+  //   for (int i = 0; i < send_size; ++i) {
+  //     Log::log().getLogStream() << *(data() + _readPos + i);
+  //   }
+  // }
+  _readPos += send_size;
+  return send_size;
+}
+
+ssize_t Storage::fileToMem(int file_fd, size_t goal_size) {
+  (void)goal_size;
+  ssize_t read_size = read(file_fd, _buffer, READ_BUFFER_SIZE);
+
+  if (read_size == -1) {
+    _state = CONNECTION_CLOSED;
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
+    return -1;
+  }
+  insert(_buffer, _buffer + read_size);
+  // _fail = false;
+  return read_size;
+}
+
+void Storage::sockToMem(int recv_fd) {
+  ssize_t recv_size = recv(recv_fd, _buffer, READ_BUFFER_SIZE, 0);
+
+  if (recv_size <= 0) {
+    _state = CONNECTION_CLOSED;
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
+  } else if (recv_size == READ_BUFFER_SIZE) {
+    _state = RECEIVING;
+  } else {
+    _state = RECEIVE_DONE;
+  }
+
+  if (recv_size > 0) {
+    insert(_buffer, _buffer + recv_size);
+  }
+}
+
+void Storage::insert(const Storage& storage) {
+  vector::const_pointer bi = storage.data() + storage._readPos;
+  vector::const_pointer ei = storage.data() + storage._writePos;
+
+  insert(bi, ei);
 }
 
 std::string Storage::getLineFile(int fd) {
@@ -68,10 +132,10 @@ std::string Storage::getLineFile(int fd) {
   ssize_t recv_size = read(fd, _buffer, READ_BUFFER_SIZE);
   if (recv_size == -1) {  // ? 0
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
-    _fail = true;
+    _state = CONNECTION_CLOSED;
     return "";
   }
-  insertBack(_buffer, _buffer + recv_size);
+  insert(_buffer, _buffer + recv_size);
   for (size_t i = _readPos; i != _writePos; ++i) {
     if ((*this)[i] == '\n') {
       std::string line(data() + _readPos, data() + i);
@@ -80,105 +144,6 @@ std::string Storage::getLineFile(int fd) {
       return line;
     }
   }
-  _fail = false;
+  _state = CONNECTION_CLOSED;
   return "";
-}
-
-void Storage::preserveRemains() {
-  size_t i;
-  for (i = _readPos; i != _writePos; ++i) {
-    (*this)[i - _readPos] = (*this)[i];
-  }
-  _writePos = i - _readPos;
-  _readPos  = 0;
-  vector::resize(_writePos);
-}
-
-ssize_t Storage::dataToFile(int recv_fd, int send_fd, size_t goal_size) {
-  if (_readPos != _writePos) {
-    Log::log()(LOG_LOCATION, "(INIT) memToFile");
-    return memToFile(send_fd, goal_size);
-  } else {
-    clear();
-    Log::log()(LOG_LOCATION, "(INIT) sockToFile");
-    return sockToFile(recv_fd, send_fd, goal_size);
-  }
-}
-
-ssize_t Storage::dataToSock(int recv_fd, int send_fd, size_t goal_size) {
-  if (_readPos != _writePos) {
-    Log::log()(LOG_LOCATION, "(INIT) memToFile");
-    return memToFile(send_fd, goal_size);
-  } else {
-    clear();
-    Log::log()(LOG_LOCATION, "(INIT) fileToSock");
-    return fileToSock(recv_fd, send_fd, goal_size);
-  }
-}
-
-ssize_t Storage::fileToSock(int recv_fd, int send_fd, size_t goal_size) {
-  Log::log()(true, "recv_fd", recv_fd);
-  Log::log()(true, "send_fd", send_fd);
-  Log::log()(true, "goal_size", goal_size);
-
-  size_t  small_one = goal_size < PUBLIC_BUFFER_SIZE ? goal_size : PUBLIC_BUFFER_SIZE;
-  ssize_t recv_size = read(recv_fd, publicBuffer, small_one);  // ret -> 0, eof
-  if (recv_size == -1) {
-    _fail = true;
-    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
-    return -1;
-  }
-
-  if (recv_size == 0) {
-    Log::log()(true, "empty file", "");
-  }
-
-  ssize_t send_size = send(send_fd, publicBuffer, recv_size, 0);
-  if (send_size == -1) {
-    _fail = true;
-    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
-    return -1;
-  }
-
-  Log::log()(true, "recv_size", recv_size);
-  Log::log()(true, "send_size", send_size);
-
-  insertBack(Storage::publicBuffer + send_size, Storage::publicBuffer + recv_size);
-  _fail = false;
-  return send_size;
-}
-
-ssize_t Storage::sockToFile(int recv_fd, int send_fd, size_t goal_size) {
-  Log::log()(true, "recv_fd", recv_fd);
-  Log::log()(true, "send_fd", send_fd);
-  Log::log()(true, "goal_size", goal_size);
-
-  ssize_t recv_size = recv(recv_fd, publicBuffer, goal_size, 0);
-  if (recv_size == -1) {
-    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
-    return -1;
-  }
-
-  ssize_t send_size = write(send_fd, publicBuffer, recv_size);
-  if (send_size == -1 || recv_size == 0) {
-    _fail = true;
-    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
-    return -1;
-  }
-  insertBack(Storage::publicBuffer + send_size, Storage::publicBuffer + recv_size);
-  _fail = false;
-  return send_size;
-}
-
-ssize_t Storage::memToFile(int file_fd, size_t goal_size) {
-  size_t  small_one = goal_size < (_writePos - _readPos) ? goal_size : (_writePos - _readPos);
-  ssize_t send_size = write(file_fd, data() + _readPos, small_one);
-  if (send_size == -1) {
-    _fail = true;
-    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)), INFILE);
-    return -1;
-  }
-  _readPos += send_size;
-  _fail = false;
-  return send_size;
 }

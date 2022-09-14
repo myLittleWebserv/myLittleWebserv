@@ -47,6 +47,16 @@ echo $NEXT_TEST_MSG
 read input
 
 
+# ./myLittleClient $PORT1 $POST_TEST/PostRequest_8.infile
+# echo $NEXT_TEST_MSG
+# read input
+
+
+# ./myLittleClient $PORT1 $POST_TEST/PostRequest_9.infile
+# echo $NEXT_TEST_MSG
+# read input
+
+
 # GET TEST
 
 # echo "====================================== GET TEST ======================================"

@@ -25,8 +25,14 @@ class VirtualServer {
   void          _processHttpRequestReadable(Event& event, LocationInfo& location_info);
   void          _cgiResponseToHttpResponse(Event& event, LocationInfo& location_info);
   void          _uploadFile(Event& event, LocationInfo& location_info);
-  void          _flushSocket(Event& event, LocationInfo& location_info);
+  void          _downloadFile(Event& event, LocationInfo& location_info);
+  void          _flushBuffer(Event& event, LocationInfo& location_info);
   void          _redirectUploadError(Event& event);
+  void          _directUploadToClient(Event& event);
+  void          _directUploadToDownload(Event& event, int fd);
+  void          _directClientToUpload(Event& event, int fd);
+  void          _directClientToDownload(Event& event, int fd);
+  void          _directDownloadToClient(Event& event);
 
  public:
   VirtualServer(int id, ServerInfo& info, EventHandler& eventHandler);

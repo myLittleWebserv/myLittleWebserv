@@ -29,6 +29,7 @@ int ft::syscall::open(const char *path, int oflag, mode_t mode) {
     Log::log()(true, "mode", mode);
     throw Router::ServerSystemCallException("(SYSCALL) open");
   }
+  Log::log()(true, "file opend fd", ret);
   return ret;
 }
 
@@ -57,6 +58,7 @@ void ft::syscall::close(int fd) {
   int ret = ::close(fd);
   if (ret == -1) {
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    Log::log()(true, "fd", fd);
     throw Router::ServerSystemCallException("(SYSCALL) close");
   }
   Log::log()(true, "closed fd", fd);
@@ -67,6 +69,8 @@ int ft::syscall::accept(int fd, ::sockaddr *addr, ::socklen_t *alen) {
   int ret = ::accept(fd, addr, alen);
   if (ret == -1) {
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    Log::log()("Server Socket fd", fd, INFILE);
+    Log::log()("Client Socket fd", ret, INFILE);
     throw Router::ServerSystemCallException("(SYSCALL) accept");
   }
   Log::log()("Server Socket fd", fd, INFILE);

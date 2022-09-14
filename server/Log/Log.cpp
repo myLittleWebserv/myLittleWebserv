@@ -128,6 +128,12 @@ void Log::printHttpResponse(HttpResponse& response, LogLocationType location) {
   // for (int i = 0; i < response.contentLength(); ++i) {
   //   logMessage << response.body()[i];
   // }
+  if (response._storage.size() < 1000000) {
+    for (Storage::vector::pointer it = response._storage.currentReadPos(); it != response._storage.currentWritePos();
+         ++it) {
+      logMessage << *it;
+    }
+  }
 
   if (location == ALL || location == CONSOLE) {
     std::cerr << logMessage.str() << std::endl;

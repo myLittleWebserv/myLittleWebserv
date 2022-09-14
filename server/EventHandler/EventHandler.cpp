@@ -28,6 +28,20 @@ void EventHandler::_appendNewEventToChangeList(int ident, int filter, int flag, 
 
 void EventHandler::removeConnection(Event& event) {
   ft::syscall::close(event.clientFd);
+  switch (event.type) {
+    case HTTP_REQUEST_UPLOAD:
+      FileManager::registerFileFdToClose(event.toSendFd);
+      deleteWriteEvent(event.toSendFd, NULL);
+      break;
+
+    case HTTP_RESPONSE_DOWNLOAD:
+      FileManager::registerFileFdToClose(event.toRecvFd);
+      deleteReadEvent(event.toRecvFd, NULL);
+      break;
+
+    default:
+      break;
+  }
   _eventSet.erase(&event);
   delete &event;
 }
@@ -129,14 +143,17 @@ void EventHandler::routeEvents() {
   for (int i = 0; i < num_kevents; ++i) {
     Event& event = *(Event*)_keventList[i].udata;
     int    flags = _keventList[i].flags;
-    // int    ident = _keventList[i].ident;
+    int    ident = _keventList[i].ident;
+
+    Log::log()(true, "ident", ident);
 
     if (flags & EV_EOF) {  // file ?
       Log::log()(LOG_LOCATION, "ev_eof", ALL);
-      // Log::log()(true, "ident", ident, ALL);
       removeConnection(event);
       continue;
     }
+    Log::log()(true, "event.clientfd", event.clientFd);
+    Log::log()(true, "event.", event.clientFd);
     _routeEvent(event);
   }
 }

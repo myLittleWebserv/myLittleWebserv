@@ -32,17 +32,18 @@ class HttpRequest : public Request {
  private:
   HttpRequestParsingState _parsingState;
   Storage                 _storage;
-  int                     _fileFd;
-  int                     _headerSize;
-  ssize_t                 _chunkSize;
-  timeval                 _timestamp;  // 생성자에서 초기화
-  bool                    _isBodyExisted;
-  bool                    _isChunked;
-  bool                    _isKeepAlive;
-  bool                    _serverError;
-  int                     _secretHeaderForTest;
-  ssize_t                 _uploadedSize;
-  ssize_t                 _uploadedTotalSize;
+  // int                     _fileFd;
+  int     _headerSize;
+  ssize_t _chunkSize;
+  timeval _timestamp;  // 생성자에서 초기화
+  bool    _isBodyExisted;
+  bool    _isChunked;
+  bool    _isKeepAlive;
+  // bool                    _serverError;
+  int     _secretHeaderForTest;
+  ssize_t _uploadedSize;
+  ssize_t _uploadedTotalSize;
+  size_t  _bodyFirst;
 
   // HttpRequest Variable
   MethodType  _method;
@@ -57,7 +58,7 @@ class HttpRequest : public Request {
  private:
   void    _parseStartLine(const std::string& line);
   bool    _parseHeaderField(const std::string& line);
-  void    _parseChunk();
+  bool    _parseChunk();
   void    _checkTimeOut();
   ssize_t _parseChunkSize(const std::string& line);
 
@@ -71,7 +72,7 @@ class HttpRequest : public Request {
         _isBodyExisted(false),
         _isChunked(false),
         _isKeepAlive(true),  //  default: keep-alive: true
-        _serverError(false),
+        // _serverError(false),
         _secretHeaderForTest(0),
         _uploadedSize(0),
         _uploadedTotalSize(0),
@@ -81,7 +82,7 @@ class HttpRequest : public Request {
 
   // Interface
  public:
-  void                    uploadRequest(int recv_fd, int send_fd, clock_t base_clock);
+  void                    uploadRequest(int send_fd, clock_t base_clock);
   void                    parseRequest(int recv_fd, clock_t base_clock);
   bool                    isUploadEnd();
   bool                    isParsingEnd();

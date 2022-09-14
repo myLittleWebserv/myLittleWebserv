@@ -72,6 +72,8 @@ void CgiResponse::parseRequest(int recv_fd, clock_t base_clock) {
   int         curr;
   int         file_size;
   std::string line;
+
+  Log::log()(true, "recv_fd", recv_fd);
   switch (_parsingState) {
     case CGI_RUNNING:
       if (!_isCgiExecutionEnd(base_clock))
@@ -87,10 +89,10 @@ void CgiResponse::parseRequest(int recv_fd, clock_t base_clock) {
         break;
 
     case CGI_PARSING_DONE:
-      curr      = ft::syscall::lseek(recv_fd, 0, SEEK_CUR);
+      curr      = ft::syscall::lseek(recv_fd, static_cast<off_t>(_storage.remains()) * -1, SEEK_CUR);
       file_size = ft::syscall::lseek(recv_fd, 0, SEEK_END);
       ft::syscall::lseek(recv_fd, curr, SEEK_SET);
-      _bodySize     = file_size - curr + _storage.remains();
+      _bodySize     = file_size - curr;
       _parsingState = CGI_PARSING_DONE;
       break;
 

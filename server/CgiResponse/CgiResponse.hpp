@@ -46,7 +46,7 @@ class CgiResponse : public Request {
   void               initialize();
   bool               isParsingEnd() { return _parsingState == CGI_ERROR || _parsingState == CGI_PARSING_DONE; }
   bool               isExecError() { return _parsingState == CGI_ERROR; }
-  bool               isRecvError() { return _storage.fail(); }
+  bool               isRecvError() { return _storage.state() == CONNECTION_CLOSED; }
   void               parseRequest(int recv_fd, clock_t base_clock);
   void               setInfo(const HttpRequest& http_request);
   MethodType         method() const { return _method; }

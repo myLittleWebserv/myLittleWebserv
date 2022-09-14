@@ -123,8 +123,10 @@ bool FileManager::_isDirExist(const std::string& file_path) {
 }
 
 void FileManager::registerFileFdToClose(int fd) {
-  _fileFdSet.insert(fd);
-  Log::log()(true, "registered fd", fd);
+  if (fd != -1) {
+    _fileFdSet.insert(fd);
+    Log::log()(true, "registered fd", fd);
+  }
 }
 
 bool FileManager::isConflict() {
