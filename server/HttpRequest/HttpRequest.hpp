@@ -7,7 +7,7 @@
 #include "Request.hpp"
 #include "Storage.hpp"
 
-#define TIME_OUT_HTTP_PARSING 100000
+#define TIME_OUT_HTTP_PARSING 10000
 #define HTTP_DEFAULT_PORT 4242
 #define HTTP_MAX_HEADER_SIZE 8192
 
@@ -21,6 +21,7 @@ enum HttpRequestParsingState {
   HTTP_UPLOADING_CHUNK_INIT,
   HTTP_UPLOADING_CHUNK_SIZE,
   HTTP_UPLOADING_READ_LINE,
+
   HTTP_UPLOADING_DONE,
   HTTP_UPLOADING_INIT,
   HTTP_PARSING_CONNECTION_CLOSED
@@ -34,7 +35,7 @@ class HttpRequest : public Request {
   int                     _fileFd;
   int                     _headerSize;
   ssize_t                 _chunkSize;
-  time_t                  _timeStamp;  // 생성자에서 초기화
+  timeval                 _timestamp;  // 생성자에서 초기화
   bool                    _isBodyExisted;
   bool                    _isChunked;
   bool                    _isKeepAlive;
@@ -66,7 +67,7 @@ class HttpRequest : public Request {
       : _parsingState(HTTP_PARSING_INIT),
         _headerSize(0),
         _chunkSize(-1),
-        _timeStamp(time(NULL)),
+        _timestamp(),
         _isBodyExisted(false),
         _isChunked(false),
         _isKeepAlive(true),  //  default: keep-alive: true

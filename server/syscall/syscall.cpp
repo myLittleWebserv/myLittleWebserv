@@ -33,9 +33,13 @@ int ft::syscall::open(const char *path, int oflag, mode_t mode) {
 }
 
 void ft::syscall::fcntl(int fd, int cmd, int oflag, const std::exception &e) {
+  if (fd == -1) {
+    return;
+  }
   int ret = ::fcntl(fd, cmd, oflag);
   if (ret == -1) {
     Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    Log::log()(true, "fd", fd);
     throw e;
   }
   return;

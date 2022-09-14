@@ -108,18 +108,18 @@ void FileManager::_updateFileInfo() {
 
 bool FileManager::_isDirExist(const std::string& file_path) {
   struct stat buf;
-  int         ret = lstat(file_path.c_str(), &buf);
+  int         ret = ::lstat(file_path.c_str(), &buf);
 
   if (ret == -1) {
     return false;
   }
 
-  if (!S_ISDIR(buf.st_mode)) {
-    Log::log()(true, "path.isConflict", file_path);
-    _isConflict = true;
-    return false;
+  if (S_ISDIR(buf.st_mode)) {
+    return true;
   }
-  return true;
+  Log::log()(true, "path.isConflict", file_path);
+  _isConflict = true;
+  return false;
 }
 
 void FileManager::registerFileFdToClose(int fd) {
