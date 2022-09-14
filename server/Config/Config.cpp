@@ -4,6 +4,9 @@
 #include <sstream>
 
 Config::Config(const std::string& confFile) {
+  if (confFile.substr(confFile.find_last_of(".") + 1) != "conf") {
+    _error(LOG_LOCATION, "Config file must be a .conf file");
+  }
   _readConfigFile(confFile);
   _startParse();
   _setPorts();
@@ -54,14 +57,15 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
     std::pair<int, std::string> _trimmed  = _trimLeftTab(*it);
     std::vector<std::string>    _splitted = _split(_trimmed.second, ":");
     if (_splitted.size() != 2) {
-      std::cout << "ERROR: invalid config file" << std::endl;
-      Log::log()(LOG_LOCATION, "ERROR: invalid config file");
-      std::exit(1);
+      _error(LOG_LOCATION, "Error: Invalid config file");
     }
     std::string       _identifier = _splitted[0];
     std::stringstream _value(_trimLeftSpace(_splitted[1]));
     int               vi;
     if (_identifier == "client_max_body_size") {
+      if (!_isNumber(_value.str())) {
+        _error(LOG_LOCATION, "Error: Invalid client_max_body_size");
+      }
       _value >> vi;
       _server_info.maxBodySize = vi;
     } else if (_identifier == "root") {
@@ -85,9 +89,7 @@ ServerInfo Config::_parseServer(configIterator& it, const configIterator& end) {
       _server_info.locations[_value.str()] = _parseLocation(++it, end, _server_info, _value.str());
       continue;
     } else {
-      std::cout << "ERROR: invalid config file" << std::endl;
-      Log::log()(LOG_LOCATION, "ERROR: invalid config file " + _identifier + _value.str(), ALL);
-      std::exit(1);
+      _error(LOG_LOCATION, "Error: Invalid config file: " + _identifier + _value.str());
     }
     ++it;
   }
@@ -114,8 +116,7 @@ LocationInfo Config::_parseLocation(configIterator& it, const configIterator& en
         it++;
         continue;
       }
-      Log::log()(LOG_LOCATION, "ERROR: split error", ALL);
-      std::exit(1);
+      _error(LOG_LOCATION, "Error: split error");
     }
     std::string _identifier = _trimmed.second.substr(0, delim);
     std::string _value      = _trimLeftSpace(_trimmed.second.substr(delim + 1));
@@ -129,6 +130,9 @@ void Config::_parseLocationInfoToken(LocationInfo& info, const std::string& iden
   std::stringstream value_stream(value);
   int               vi;
   if (identifier == "client_max_body_size") {
+    if (!_isNumber(value)) {
+      _error(LOG_LOCATION, "Error: Invalid client_max_body_size");
+    }
     value_stream >> vi;
     info.maxBodySize = vi;
   } else if (identifier == "root") {
@@ -146,9 +150,7 @@ void Config::_parseLocationInfoToken(LocationInfo& info, const std::string& iden
   } else if (identifier == "index") {
     info.indexPagePath = value_stream.str();
   } else {
-    std::cout << "ERROR: invalid config file" << std::endl;
-    Log::log()(LOG_LOCATION, "ERROR: invalid config file" + identifier + value_stream.str(), ALL);
-    std::exit(1);
+    _error(LOG_LOCATION, "Error: Invalid config file: " + identifier + value_stream.str());
   }
 }
 
@@ -238,9 +240,7 @@ std::string Config::_trimLeftSpace(const std::string& str) {
 void Config::_parseRedirection(const std::string& value, LocationInfo& info) {
   std::vector<std::string> _splitted = _split(value, " ");
   if (_splitted.size() != 2) {
-    std::cout << "ERROR: invalid config file" << std::endl;
-    Log::log()(LOG_LOCATION, "ERROR: invalid config file" + value, ALL);
-    std::exit(1);
+    _error(LOG_LOCATION, "Error: Invalid redirection");
   }
   try {
     std::stringstream ss(_splitted[0]);
@@ -248,9 +248,7 @@ void Config::_parseRedirection(const std::string& value, LocationInfo& info) {
     ss >> si;
     info.redirStatus = si;
   } catch (std::invalid_argument& e) {
-    std::cout << "ERROR: invalid config file" << std::endl;
-    Log::log()(LOG_LOCATION, "ERROR: invalid config file" + value, ALL);
-    std::exit(1);
+    _error(LOG_LOCATION, "Error: Invalid redirection");
   }
   info.redirPath = _splitted[1];
 }
@@ -262,9 +260,7 @@ std::vector<std::string> Config::_parseAllowedMethod(const std::string& value) {
     if (*it == "GET" || *it == "POST" || *it == "PUT" || *it == "DELETE" || *it == "HEAD") {
       _allowed_methods.push_back(*it);
     } else {
-      std::cout << "ERROR: invalid HTTP Method" << std::endl;
-      Log::log()(LOG_LOCATION, "ERROR: invalid HTTP Method" + value, ALL);
-      std::exit(1);
+      _error(LOG_LOCATION, "Error: Invalid allowed method");
     }
   }
   return _allowed_methods;
@@ -273,8 +269,7 @@ std::vector<std::string> Config::_parseAllowedMethod(const std::string& value) {
 void Config::_parseDefaultErrorPage(const std::string& pages, std::map<int, std::string>& defaultErrorPages) {
   std::vector<std::string> _splitted = _split(pages, " ");
   if (_splitted.size() % 2 != 0) {
-    std::cout << "ERROR: invalid config file" << std::endl;
-    std::exit(1);
+    _error(LOG_LOCATION, "Error: Invalid default error page");
   }
   for (std::vector<std::string>::size_type i = 0; i < _splitted.size(); i += 2) {
     try {
@@ -284,8 +279,7 @@ void Config::_parseDefaultErrorPage(const std::string& pages, std::map<int, std:
       int _error_code                = si;
       defaultErrorPages[_error_code] = _splitted[i + 1];
     } catch (std::invalid_argument& e) {
-      std::cout << "ERROR: invalid config file" << std::endl;
-      std::exit(1);
+      _error(LOG_LOCATION, "Error: Invalid default error page");
     }
   }
 }
@@ -308,6 +302,8 @@ void Config::_locatinInfoString(std::stringstream& _ss, const LocationInfo& info
       << "cgi_extension: " << info.cgiExtension << std::endl;
   _ss << "\t"
       << "cgi_path: " << info.cgiPath << std::endl;
+  _ss << "\t"
+      << "max_body_size: " << info.maxBodySize << std::endl;
   _ss << "\t"
       << "redirection: " << info.redirStatus << " " << info.redirPath << std::endl;
   _ss << "\t"
@@ -357,6 +353,13 @@ void Config::_setPorts() {
     }
     _ports.insert(it->hostPort);
   }
+}
+
+bool Config::_isNumber(const std::string& s)
+{
+    std::string::const_iterator it = s.begin();
+    while (it != s.end() && std::isdigit(*it)) ++it;
+    return !s.empty() && it == s.end();
 }
 
 std::string Config::_itoa(int i) {
