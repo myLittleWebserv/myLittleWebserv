@@ -18,5 +18,8 @@ void  listen(int fd, int back_log);
 void  bind(int fd, ::sockaddr* addr, socklen_t len);
 int   kqueue();
 int   kevent(int fd, struct kevent* changelist, int nchanges, struct kevent* eventlist, int nevents, timespec* timeout);
+int   socket(int domain, int type, int protocol);
+void  gettimeofday(timeval* time, void* tzp);
+void  setsockopt(int fd, int level, int option_name, void* opt_value, socklen_t len);
 }  // namespace syscall
 }  // namespace ft

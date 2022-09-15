@@ -6,7 +6,7 @@
 #include "Log.hpp"
 #define READ_BUFFER_SIZE 1000000
 
-enum StorageState { RECEIVE_DONE = -1, CONNECTION_CLOSED = 0, RECEIVING };
+enum StorageState { RECEIVE_DONE, CONNECTION_CLOSED, RECEIVING };
 
 struct Storage : private std::vector<unsigned char> {
   // Types;
@@ -24,7 +24,7 @@ struct Storage : private std::vector<unsigned char> {
 
   // Constructor
  public:
-  Storage() : _readPos(0), _writePos(0) {}
+  Storage() : _readPos(0), _writePos(0), _state(RECEIVING) {}
   template <typename BeginIter, typename EndIter>
   Storage(BeginIter bi, EndIter ei);
   virtual ~Storage() {}
@@ -57,9 +57,9 @@ struct Storage : private std::vector<unsigned char> {
 
 template <typename BeginIter, typename EndIter>
 void Storage::insert(BeginIter bi, EndIter ei) {
-  Log::log()(LOG_LOCATION, "");
+  // Log::log()(LOG_LOCATION, "");
   Log::log()(true, "_writePos", _writePos);
-  Log::log()(true, "capacity()", capacity());
+  // Log::log()(true, "capacity()", capacity());
   // Log::log()(true, "bi", bi);
   // Log::log()(true, "ei", ei);
   for (; _writePos != capacity() && bi != ei; ++_writePos, ++bi) {

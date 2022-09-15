@@ -89,8 +89,8 @@ void Log::operator()(const char* file, int line, const char* function, const std
                      LogLocationType location) {
   std::stringstream logMessage;
 
-  logMessage << currentTimestamp(LOG_FILE) << '\n'
-             << "[Logged from : " << file << ":" << function << ":" << line << "] " << std::endl
+  logMessage << currentTimestamp(LOG_FILE) << "[Logged from : " << file << ":" << function << ":" << line << "] "
+             << '\n'
              << message;
 
   if (location == ALL || location == CONSOLE) {
@@ -124,11 +124,7 @@ void Log::printHttpResponse(HttpResponse& response, LogLocationType location) {
   logMessage << "HttpResponse:\n";
 
   (void)response;
-  // logMessage << response.header();
-  // for (int i = 0; i < response.contentLength(); ++i) {
-  //   logMessage << response.body()[i];
-  // }
-  if (response._storage.size() < 1000000) {
+  if (response._storage.size() < 1000) {
     for (Storage::vector::pointer it = response._storage.currentReadPos(); it != response._storage.currentWritePos();
          ++it) {
       logMessage << *it;

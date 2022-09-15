@@ -14,7 +14,7 @@ std::string Storage::getLine() {
   for (vector::size_type i = _readPos; i < size(); ++i) {
     if ((*this)[i] == '\n') {
       std::string line(begin() + _readPos, begin() + i);
-      Log::log()(true, "line", line);
+      // Log::log()(true, "line", line);
       _readPos = i + 1;
       return line;
     }
@@ -25,12 +25,12 @@ std::string Storage::getLine() {
 void Storage::moveReadPos(int move) { _readPos += move; }
 
 void Storage::preserveRemains() {
-  if (_readPos != _writePos) {
-    Log::log()(LOG_LOCATION, "");
-    for (size_t i = _readPos; i != _writePos; ++i) {
-      Log::log().getLogStream() << (*this)[i];
-    }
-  }
+  // if (_readPos != _writePos) {
+  //   Log::log()(LOG_LOCATION, "");
+  //   for (size_t i = _readPos; i != _writePos; ++i) {
+  //     Log::log().getLogStream() << (*this)[i];
+  //   }
+  // }
 
   size_t i;
   for (i = _readPos; i != _writePos; ++i) {
@@ -38,11 +38,6 @@ void Storage::preserveRemains() {
   }
   _writePos = i - _readPos;
   _readPos  = 0;
-
-  // for (i = _readPos; i != _writePos; ++i) {
-  //   Log::log().getLogStream() << (*this)[i];
-  // }
-  // Log::log()(LOG_LOCATION, "(init) storage", INFILE);
 }
 
 ssize_t Storage::memToFile(int file_fd, size_t goal_size) {
@@ -124,7 +119,7 @@ std::string Storage::getLineFile(int fd) {
   for (size_t i = _readPos; i != _writePos; ++i) {
     if ((*this)[i] == '\n') {
       std::string line(data() + _readPos, data() + i);
-      Log::log()(LOG_LOCATION, line);
+      // Log::log()(LOG_LOCATION, line);
       _readPos = i + 1;
       return line;
     }
@@ -139,7 +134,7 @@ std::string Storage::getLineFile(int fd) {
   for (size_t i = _readPos; i != _writePos; ++i) {
     if ((*this)[i] == '\n') {
       std::string line(data() + _readPos, data() + i);
-      Log::log()(LOG_LOCATION, line);
+      // Log::log()(LOG_LOCATION, line);
       _readPos = i + 1;
       return line;
     }

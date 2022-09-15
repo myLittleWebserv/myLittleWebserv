@@ -20,44 +20,20 @@ EventHandler::EventHandler(const Router& router) : _router(router) {
 
 std::vector<Event*>& EventHandler::getRoutedEvents(int server_id) { return _routedEvents[server_id]; }
 
+void EventHandler::_updateEventsTimestamp(int num_kevents) {
+  for (int i = 0; i < num_kevents; ++i) {
+    Event& event = *(Event*)_keventList[i].udata;
+    // int    ident = _keventList[i].ident;
+
+    // Log::log()(true, "ident", ident);
+    ft::syscall::gettimeofday(&event.timestamp, NULL);
+  }
+}
+
 void EventHandler::_appendNewEventToChangeList(int ident, int filter, int flag, Event* event) {
   struct kevent kevent;
   EV_SET(&kevent, ident, filter, flag, 0, 0, event);
   _changeList.push_back(kevent);
-}
-
-void EventHandler::removeConnection(Event& event) {
-  ft::syscall::close(event.clientFd);
-  switch (event.type) {
-    case HTTP_REQUEST_UPLOAD:
-      FileManager::registerFileFdToClose(event.toSendFd);
-      deleteWriteEvent(event.toSendFd, NULL);
-      break;
-
-    case HTTP_RESPONSE_DOWNLOAD:
-      FileManager::registerFileFdToClose(event.toRecvFd);
-      deleteReadEvent(event.toRecvFd, NULL);
-      break;
-
-    default:
-      break;
-  }
-  _eventSet.erase(&event);
-  delete &event;
-}
-
-void EventHandler::_addConnection(int listen_fd) {
-  sockaddr_in addr;
-  socklen_t   alen;
-  int         client_fd = ft::syscall::accept(listen_fd, (struct sockaddr*)&addr, &alen);
-
-  ft::syscall::fcntl(client_fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("(SYSCALL) fcntl"));
-  Event* event = new Event(HTTP_REQUEST_READABLE, client_fd);
-
-  _appendNewEventToChangeList(event->clientFd, EVFILT_READ, EV_ADD, event);
-  _appendNewEventToChangeList(event->clientFd, EVFILT_WRITE, EV_ADD, event);
-  _appendNewEventToChangeList(event->clientFd, EVFILT_WRITE, EV_DISABLE, event);  // 따로 해야 제대로 적용됨.
-  _eventSet.insert(event);
 }
 
 void EventHandler::_checkConnectionTimeout(const timeval& base_time) {
@@ -75,15 +51,43 @@ void EventHandler::_checkConnectionTimeout(const timeval& base_time) {
   for (std::vector<Event*>::iterator it = v.begin(); it != v.end(); ++it) {
     Event& event = **it;
     Log::log()(LOG_LOCATION, "CLOSE BECAUSE TIME OUT", INFILE);
+    Log::log()(true, "event.clientFd", event.clientFd);
     removeConnection(event);
   }
 }
 
-void EventHandler::_updateEventsTimestamp(int num_kevents) {
-  for (int i = 0; i < num_kevents; ++i) {
-    Event& event = *(Event*)_keventList[i].udata;
-    gettimeofday(&event.timestamp, NULL);
+void EventHandler::_addConnection(int listen_fd) {
+  sockaddr_in addr;
+  socklen_t   alen;
+  int         client_fd = ft::syscall::accept(listen_fd, (struct sockaddr*)&addr, &alen);
+
+  ft::syscall::fcntl(client_fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("(SYSCALL) fcntl"));
+  Event* event = new Event(HTTP_REQUEST_READABLE, client_fd);
+
+  _appendNewEventToChangeList(event->clientFd, EVFILT_READ, EV_ADD, event);
+  _appendNewEventToChangeList(event->clientFd, EVFILT_WRITE, EV_ADD, event);
+  _appendNewEventToChangeList(event->clientFd, EVFILT_WRITE, EV_DISABLE, event);  // 따로 해야 제대로 적용됨.
+  _eventSet.insert(event);
+}
+
+void EventHandler::removeConnection(Event& event) {  // ?
+  ft::syscall::close(event.clientFd);
+  switch (event.type) {
+    case HTTP_REQUEST_UPLOAD:
+      FileManager::registerFileFdToClose(event.toSendFd);
+      deleteWriteEvent(event.toSendFd, NULL);
+      break;
+
+    case HTTP_RESPONSE_DOWNLOAD:
+      FileManager::registerFileFdToClose(event.toRecvFd);
+      deleteReadEvent(event.toRecvFd, NULL);
+      break;
+
+    default:
+      break;
   }
+  _eventSet.erase(&event);
+  delete &event;
 }
 
 void EventHandler::_routeRecvEvent(Event& event, Request& request) {
@@ -117,7 +121,7 @@ void EventHandler::_routeEvent(Event& event) {
 
     default:
       _routedEvents[event.serverId].push_back(&event);
-      Log::log()(LOG_LOCATION, "(event routed)", INFILE);
+      // Log::log()(LOG_LOCATION, "(event routed)", INFILE);
       Log::log()(true, "event.type", event.type, INFILE);
       break;
   }
@@ -133,7 +137,7 @@ void EventHandler::routeEvents() {
   if (num_kevents == 0) {
     Log::log()("Wating event...", CONSOLE);
     timeval current;
-    gettimeofday(&current, NULL);
+    ft::syscall::gettimeofday(&current, NULL);
     _checkConnectionTimeout(current);
   }
 
@@ -143,17 +147,16 @@ void EventHandler::routeEvents() {
   for (int i = 0; i < num_kevents; ++i) {
     Event& event = *(Event*)_keventList[i].udata;
     int    flags = _keventList[i].flags;
-    int    ident = _keventList[i].ident;
+    // int    ident = _keventList[i].ident;
 
-    Log::log()(true, "ident", ident);
+    // Log::log()(true, "ident", ident);
 
     if (flags & EV_EOF) {  // file ?
       Log::log()(LOG_LOCATION, "ev_eof", ALL);
       removeConnection(event);
       continue;
     }
-    Log::log()(true, "event.clientfd", event.clientFd);
-    Log::log()(true, "event.", event.clientFd);
+    // Log::log()(true, "event.clientfd", event.clientFd);
     _routeEvent(event);
   }
 }

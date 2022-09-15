@@ -15,6 +15,8 @@ class HttpRequest;
 class CgiResponse;
 class FileManager;
 
+enum HttpResponseType { TYPE_POST, TYPE_GET, TYPE_CGI, TYPE_DEL, TYPE_FLUSH, TYPE_FLUSH_ERR };
+
 enum HttpResponseStatusCode {
   STATUS_CONTINUE                   = 100,
   STATUS_SWITCHING_PROTOCOLS        = 101,
@@ -57,20 +59,21 @@ class HttpResponse {
   enum HttpResponseSendingState _sendingState;
 
  public:
-  Storage                     _storage;
-  size_t                      _sentSize;
-  enum HttpResponseStatusCode _statusCode;
-  size_t                      _goalSize;
-  size_t                      _contentLength;
-  size_t                      _downloadedSize;
-  int                         _fileFd;
+  HttpResponseType       _type;
+  Storage                _storage;
+  size_t                 _sentSize;
+  HttpResponseStatusCode _statusCode;
+  size_t                 _goalSize;
+  size_t                 _contentLength;
+  size_t                 _downloadedSize;
+  int                    _fileFd;
 
   // Constructor
  public:
   ~HttpResponse();
-  HttpResponse(HttpResponseSendingState state, const std::string& header, HttpResponseStatusCode status_code,
-               size_t content_length = 0, int file_fd = -1);
-  HttpResponse(HttpResponseSendingState state, const Storage& storage, const std::string& header,
+  HttpResponse(HttpResponseType type, HttpResponseSendingState state, const std::string& header,
+               HttpResponseStatusCode status_code, size_t content_length = 0, int file_fd = -1);
+  HttpResponse(HttpResponseType type, HttpResponseSendingState state, const Storage& storage, const std::string& header,
                HttpResponseStatusCode status_code, size_t content_length = 0, int file_fd = -1);
 
   // Interface
@@ -86,4 +89,5 @@ class HttpResponse {
   void                     _headerToSocket(int send_fd);
   HttpResponseSendingState state() { return _sendingState; }
   void                     setState(HttpResponseSendingState state) { _sendingState = state; }
+  HttpResponseType         type() { return _type; }
 };

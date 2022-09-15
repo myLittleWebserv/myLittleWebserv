@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <sys/event.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "Log.hpp"
@@ -107,6 +108,30 @@ void ft::syscall::listen(int fd, int back_log) {
 
 void ft::syscall::bind(int fd, ::sockaddr *addr, socklen_t len) {
   int ret = ::bind(fd, addr, len);
+  if (ret < 0) {
+    throw Router::ServerSocketInitException();
+  }
+}
+
+void ft::syscall::gettimeofday(timeval *time, void *tzp) {
+  int ret = ::gettimeofday(time, tzp);
+  if (ret < 0) {
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    throw Router::ServerSystemCallException("(SYSCALL) gettimeofday");
+  }
+}
+
+int ft::syscall::socket(int domain, int type, int protocol) {
+  int ret = ::socket(domain, type, protocol);
+  if (ret < 0) {
+    Log::log()(LOG_LOCATION, "errno : " + std::string(strerror(errno)));
+    throw Router::ServerSystemCallException("(SYSCALL) SOCKET");
+  }
+  return ret;
+}
+
+void ft::syscall::setsockopt(int fd, int level, int option_name, void *opt_value, socklen_t len) {
+  int ret = ::setsockopt(fd, level, option_name, opt_value, len);
   if (ret < 0) {
     throw Router::ServerSocketInitException();
   }

@@ -35,20 +35,9 @@ void Router::start() {
 
 void Router::_serverSocketsInit() {
   for (std::set<int>::iterator port = _config.getPorts().begin(); port != _config.getPorts().end(); ++port) {
-    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_socket < 0) {
-      Log::log().syscall(server_socket, LOG_LOCATION, "", "(SYSCALL) socket error", ALL);
-      throw ServerSocketInitException();
-    }
-
-    int ret;
-    int sock_opt = 1;
-
-    ret = setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &sock_opt, sizeof(sock_opt));
-    if (ret < 0) {
-      Log::log().syscall(ret, LOG_LOCATION, "", "(SYSCALL) setsockopt error", ALL);
-      throw ServerSocketInitException();
-    }
+    int server_socket = ft::syscall::socket(AF_INET, SOCK_STREAM, 0);
+    int sock_opt      = 1;
+    ft::syscall::setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &sock_opt, sizeof(sock_opt));
 
     sockaddr_in server_addr = {
         .sin_family = AF_INET,
@@ -86,8 +75,8 @@ int Router::findServerId(HttpRequest& request) const {
       return i;
     }
   }
-  Log::log()(LOG_LOCATION, "(Not Found) ServerId ", INFILE);
-  Log::log()(true, "HttpRequest.hostPort", request.hostPort(), INFILE);
-  Log::log()(true, "HttpRequest.hostName", request.hostName(), INFILE);
+  // Log::log()(LOG_LOCATION, "(Not Found) ServerId ", INFILE);
+  // Log::log()(true, "HttpRequest.hostPort", request.hostPort(), INFILE);
+  // Log::log()(true, "HttpRequest.hostName", request.hostName(), INFILE);
   return 0;
 }

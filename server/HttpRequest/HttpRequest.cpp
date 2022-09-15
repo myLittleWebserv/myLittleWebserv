@@ -57,7 +57,7 @@ void HttpRequest::uploadRequest(int send_fd, clock_t base_clock) {
   std::string line;
   ssize_t     moved;
 
-  Log::log()(true, "(START) uploadRequest _parsingState", _parsingState);
+  // Log::log()(true, "(START) uploadRequest _parsingState", _parsingState);
 
   switch (_parsingState) {
     case HTTP_UPLOADING_CHUNK_INIT:
@@ -69,14 +69,14 @@ void HttpRequest::uploadRequest(int send_fd, clock_t base_clock) {
       }
       if (line == "\r" && _chunkSize == 0) {
         _parsingState = HTTP_UPLOADING_DONE;
-        Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_DONE");
+        // Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_DONE");
         break;
       }
       if (line == "\r") {
         break;
       }
       _parsingState = HTTP_UPLOADING_READ_LINE;
-      Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_READ_LINE");
+      // Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_READ_LINE");
 
     case HTTP_UPLOADING_CHUNK_SIZE:
       _chunkSize = _parseChunkSize(line);
@@ -89,7 +89,7 @@ void HttpRequest::uploadRequest(int send_fd, clock_t base_clock) {
       }
       _uploadedSize = 0;
       _parsingState = HTTP_UPLOADING_INIT;
-      Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_CHUNK_SIZE");
+      // Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_CHUNK_SIZE");
 
     case HTTP_UPLOADING_INIT:
       moved = _storage.memToFile(send_fd, _chunkSize - _uploadedSize);
@@ -110,7 +110,7 @@ void HttpRequest::uploadRequest(int send_fd, clock_t base_clock) {
     default:
       break;
   }
-  Log::log()(true, "(END) uploadRequest _parsingState", _parsingState);
+  // Log::log()(true, "(END) uploadRequest _parsingState", _parsingState);
   _checkTimeOut();
 }
 
@@ -119,7 +119,7 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
   if (_storage.state() != RECEIVE_DONE) {
     return;
   }
-  Log::log()(LOG_LOCATION, "(TRANSFER) socket buffer to _storage done", INFILE);
+  // Log::log()(LOG_LOCATION, "(TRANSFER) socket buffer to _storage done", INFILE);
 
   (void)base_clock;
   std::string line;
@@ -127,7 +127,7 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
   switch (_parsingState) {
     case HTTP_PARSING_INIT:
       line = _storage.getLine();
-      Log::log()(true, "line", line);
+      // Log::log()(true, "line", line);
       _parseStartLine(line);
       if (line.empty() || isParsingEnd())
         break;
@@ -147,11 +147,11 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
       _parsingState = HTTP_PARSING_BODY;
 
     case HTTP_PARSING_BODY:
-      Log::log()(true, "_isChunked", _isChunked);
+      // Log::log()(true, "_isChunked", _isChunked);
       if (_isChunked && _parseChunk()) {
         _storage.setReadPos(_bodyFirst);
         _parsingState = HTTP_UPLOADING_CHUNK_INIT;
-        Log::log()(true, "_bodyFirst", _bodyFirst);
+        // Log::log()(true, "_bodyFirst", _bodyFirst);
       } else if (!_isChunked && _storage.remains() >= _contentLength) {
         _chunkSize    = _contentLength;
         _parsingState = HTTP_UPLOADING_INIT;
@@ -161,9 +161,9 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
       break;
   }
 
-  Log::log()(LOG_LOCATION, "(STATE) CURRENT HTTP_PARSING STATE", INFILE);
-  Log::log()("_parsingState", _parsingState, INFILE);
-  Log::log()("storage.size", _storage.size(), INFILE);
+  // Log::log()(LOG_LOCATION, "(STATE) CURRENT HTTP_PARSING STATE", INFILE);
+  // Log::log()("_parsingState", _parsingState, INFILE);
+  // Log::log()("storage.size", _storage.size(), INFILE);
   _checkTimeOut();
 }
 
@@ -267,7 +267,7 @@ bool HttpRequest::_parseHeaderField(const std::string& line) {
     } else {
       _isKeepAlive = false;
     }
-    Log::log()(true, "header-value", word);
+    // Log::log()(true, "header-value", word);
   } else if (word == "Transfer-Encoding:") {
     std::getline(ss, word, '\r');
     if (word == "chunked") {
@@ -277,9 +277,9 @@ bool HttpRequest::_parseHeaderField(const std::string& line) {
   } else if (word == "X-Secret-Header-For-Test:") {
     ss >> _secretHeaderForTest;
   } else {
-    Log::log()(true, "header-field", word);
+    // Log::log()(true, "header-field", word);
     ss >> word;
-    Log::log()(true, "header-value", word);
+    // Log::log()(true, "header-value", word);
   }
   return true;
 }

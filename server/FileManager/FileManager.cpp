@@ -15,8 +15,8 @@ FileManager::FileManager(const std::string& uri, const LocationInfo& location_in
   if (!file_name.empty())
     _appendFileName(file_name);
 
-  Log::log()(true, "File path", _absolutePath);
-  Log::log()(true, "File name", file_name);
+  // Log::log()(true, "File path", _absolutePath);
+  // Log::log()(true, "File name", file_name);
 
   _updateFileInfo();
 }
@@ -24,7 +24,7 @@ FileManager::FileManager(const std::string& uri, const LocationInfo& location_in
 void FileManager::appendToPath(const std::string& indexFile) {
   _appendFileName(indexFile);
 
-  Log::log()(true, "File path", _absolutePath);
+  // Log::log()(true, "File path", _absolutePath);
 
   _updateFileInfo();
 }
@@ -117,7 +117,6 @@ bool FileManager::_isDirExist(const std::string& file_path) {
   if (S_ISDIR(buf.st_mode)) {
     return true;
   }
-  Log::log()(true, "path.isConflict", file_path);
   _isConflict = true;
   return false;
 }
@@ -125,18 +124,17 @@ bool FileManager::_isDirExist(const std::string& file_path) {
 void FileManager::registerFileFdToClose(int fd) {
   if (fd != -1) {
     _fileFdSet.insert(fd);
-    Log::log()(true, "registered fd", fd);
   }
+  Log::log()(fd != -1, "registered fd", fd);
 }
 
 bool FileManager::isConflict() {
-  Log::log()(LOG_LOCATION, "");
   _isConflict       = false;
   size_t      delim = _absolutePath.find('/');
   std::string path  = _absolutePath.substr(0, delim);
 
   while (1) {
-    Log::log()(true, "path.isConflict", path);
+    // Log::log()(true, "path.isConflict", path);
     if (_isDirExist(path)) {
       ;
     } else if (_isConflict) {

@@ -32,7 +32,7 @@ std::string Storage::getLineSock(int fd) {
   for (size_t i = _readPos; i != _writePos; ++i) {
     if ((*this)[i] == '\n') {
       std::string line(data() + _readPos, data() + i);
-      Log::log()(LOG_LOCATION, line);
+      // Log::log()(LOG_LOCATION, line);
       _readPos = i + 1;
       return line;
     }
@@ -47,7 +47,7 @@ std::string Storage::getLineSock(int fd) {
   for (size_t i = _readPos; i != _writePos; ++i) {
     if ((*this)[i] == '\n') {
       std::string line(data() + _readPos, data() + i);
-      Log::log()(LOG_LOCATION, line);
+      // Log::log()(LOG_LOCATION, line);
       _readPos = i + 1;
       return line;
     }
@@ -68,22 +68,22 @@ void Storage::preserveRemains() {
 
 ssize_t Storage::dataToFile(int recv_fd, int send_fd, size_t goal_size) {
   if (_readPos != _writePos) {
-    Log::log()(LOG_LOCATION, "(INIT) memToFile");
+    // Log::log()(LOG_LOCATION, "(INIT) memToFile");
     return memToFile(send_fd, goal_size);
   } else {
     clear();
-    Log::log()(LOG_LOCATION, "(INIT) sockToFile");
+    // Log::log()(LOG_LOCATION, "(INIT) sockToFile");
     return sockToFile(recv_fd, send_fd, goal_size);
   }
 }
 
 ssize_t Storage::dataToSock(int recv_fd, int send_fd, size_t goal_size) {
   if (_readPos != _writePos) {
-    Log::log()(LOG_LOCATION, "(INIT) memToFile");
+    // Log::log()(LOG_LOCATION, "(INIT) memToFile");
     return memToFile(send_fd, goal_size);
   } else {
     clear();
-    Log::log()(LOG_LOCATION, "(INIT) fileToSock");
+    // Log::log()(LOG_LOCATION, "(INIT) fileToSock");
     return fileToSock(recv_fd, send_fd, goal_size);
   }
 }
@@ -91,7 +91,7 @@ ssize_t Storage::dataToSock(int recv_fd, int send_fd, size_t goal_size) {
 ssize_t Storage::fileToSock(int recv_fd, int send_fd, size_t goal_size) {
   // Log::log()(true, "recv_fd", recv_fd);
   // Log::log()(true, "send_fd", send_fd);
-  Log::log()(true, "goal_size", goal_size);
+  // Log::log()(true, "goal_size", goal_size);
 
   size_t  small_one = goal_size < PUBLIC_BUFFER_SIZE ? goal_size : PUBLIC_BUFFER_SIZE;
   ssize_t recv_size = read(recv_fd, publicBuffer, small_one);  // ret -> 0, eof
@@ -112,8 +112,8 @@ ssize_t Storage::fileToSock(int recv_fd, int send_fd, size_t goal_size) {
     return -1;
   }
 
-  Log::log()(true, "recv_size", recv_size);
-  Log::log()(true, "send_size", send_size);
+  // Log::log()(true, "recv_size", recv_size);
+  // Log::log()(true, "send_size", send_size);
 
   insertBack(Storage::publicBuffer + send_size, Storage::publicBuffer + recv_size);
   _fail = false;
@@ -121,9 +121,9 @@ ssize_t Storage::fileToSock(int recv_fd, int send_fd, size_t goal_size) {
 }
 
 ssize_t Storage::sockToFile(int recv_fd, int send_fd, size_t goal_size) {
-  Log::log()(true, "recv_fd", recv_fd);
-  Log::log()(true, "send_fd", send_fd);
-  Log::log()(true, "goal_size", goal_size);
+  // Log::log()(true, "recv_fd", recv_fd);
+  // Log::log()(true, "send_fd", send_fd);
+  // Log::log()(true, "goal_size", goal_size);
 
   ssize_t recv_size = recv(recv_fd, publicBuffer, goal_size, 0);
   if (recv_size == -1) {

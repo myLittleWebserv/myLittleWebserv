@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  std::signal(SIGPIPE, SIG_IGN);
+  // std::signal(SIGPIPE, SIG_IGN);
 
   Router router(argv[1]);
 

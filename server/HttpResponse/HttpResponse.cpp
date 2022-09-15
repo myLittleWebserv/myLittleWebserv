@@ -15,9 +15,10 @@
 #include "syscall.hpp"
 
 // Constructor
-HttpResponse::HttpResponse(HttpResponseSendingState state, const std::string& header,
+HttpResponse::HttpResponse(HttpResponseType type, HttpResponseSendingState state, const std::string& header,
                            HttpResponseStatusCode status_code, size_t content_length, int file_fd)
     : _sendingState(state),
+      _type(type),
       _storage(header.begin(), header.end()),
       _sentSize(0),
       _statusCode(status_code),
@@ -26,9 +27,11 @@ HttpResponse::HttpResponse(HttpResponseSendingState state, const std::string& he
       _downloadedSize(0),
       _fileFd(file_fd) {}
 
-HttpResponse::HttpResponse(HttpResponseSendingState state, const Storage& storage, const std::string& header,
-                           HttpResponseStatusCode status_code, size_t content_length, int file_fd)
+HttpResponse::HttpResponse(HttpResponseType type, HttpResponseSendingState state, const Storage& storage,
+                           const std::string& header, HttpResponseStatusCode status_code, size_t content_length,
+                           int file_fd)
     : _sendingState(state),
+      _type(type),
       _storage(header.begin(), header.end()),
       _sentSize(0),
       _statusCode(status_code),
@@ -42,17 +45,17 @@ HttpResponse::HttpResponse(HttpResponseSendingState state, const Storage& storag
 // Destructor
 HttpResponse::~HttpResponse() {
   // Log::log(true, "fileFd.httpRes", _fileFd);
-  if (_fileFd != -1)
-    FileManager::registerFileFdToClose(_fileFd);
+  // if (_fileFd != -1)
+  //   FileManager::registerFileFdToClose(_fileFd);
 }
 
 // Interface
 
 void HttpResponse::sendResponse(int send_fd) {
-  Log::log()(LOG_LOCATION, "");
+  // Log::log()(LOG_LOCATION, "");
   // Log::log()(true, "recv_fd", recv_fd);
   // Log::log()(true, "send_fd", send_fd);
-  Log::log()(true, "(START) _sendingState", _sendingState);
+  // Log::log()(true, "(START) _sendingState", _sendingState);
   ssize_t moved;
   switch (_sendingState) {
     case HTTP_SENDING_STORAGE:
@@ -62,16 +65,14 @@ void HttpResponse::sendResponse(int send_fd) {
         break;
       }
       _sentSize += moved;
-      Log::log()(true, "_sentSize", _sentSize);
-      Log::log()(true, "moved", moved);
-      Log::log()(true, "_goalSize", _goalSize);
       if (_goalSize == _sentSize)
         _sendingState = HTTP_SENDING_DONE;
+      Log::log()(_goalSize > 10000000, "_sentSize", _sentSize);
 
     default:
       break;
   }
-  Log::log()(true, "(END) _sendingState", _sendingState);
+  // Log::log()(true, "(END) _sendingState", _sendingState);
 }
 
 void HttpResponse::downloadResponse(int recv_fd, clock_t base_clock) {
@@ -79,7 +80,7 @@ void HttpResponse::downloadResponse(int recv_fd, clock_t base_clock) {
   std::string line;
   ssize_t     moved;
 
-  Log::log()(true, "(START) downloadResponse _sendingState", _sendingState);
+  // Log::log()(true, "(START) downloadResponse _sendingState", _sendingState);
 
   switch (_sendingState) {
     case HTTP_DOWNLOADING_INIT:
@@ -89,8 +90,8 @@ void HttpResponse::downloadResponse(int recv_fd, clock_t base_clock) {
         break;
       }
       _downloadedSize += moved;
-      Log::log()(true, "_downloadedSize", _downloadedSize);
-      Log::log()(true, "_contentLength", _contentLength);
+      Log::log()(_contentLength > 10000000, "_downloadedSize", _downloadedSize);
+      // Log::log()(true, "_contentLength", _contentLength);
       if (_contentLength == _downloadedSize)
         _sendingState = HTTP_SENDING_STORAGE;
       else
