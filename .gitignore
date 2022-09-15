@@ -9,3 +9,5 @@ myLittleClient
 file_should_exist_after
 multiple_same
 temp
+*.dSYM
+post_body

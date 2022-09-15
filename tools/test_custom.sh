@@ -11,21 +11,24 @@ CGI_TEST="client/CGI_TEST"
 
 # # POST TEST
 
-# ./myLittleClient $PORT1 $POST_TEST/PostRequest_0.infile
-# echo $NEXT_TEST_MSG
-# read input
+echo "====================================== POST TEST ======================================"
+read input
 
-# ./myLittleClient $PORT1 $POST_TEST/PostRequest_1.infile
-# echo $NEXT_TEST_MSG
-# read input
+./myLittleClient $PORT1 $POST_TEST/PostRequest_0.infile
+echo $NEXT_TEST_MSG
+read input
 
-# ./myLittleClient $PORT1 $POST_TEST/PostRequest_2.infile
-# echo $NEXT_TEST_MSG
-# read input
+./myLittleClient $PORT1 $POST_TEST/PostRequest_1.infile
+echo $NEXT_TEST_MSG
+read input
 
-# ./myLittleClient $PORT1 $POST_TEST/PostRequest_3.infile
-# echo $NEXT_TEST_MSG
-# read input
+./myLittleClient $PORT1 $POST_TEST/PostRequest_2.infile
+echo $NEXT_TEST_MSG
+read input
+
+./myLittleClient $PORT1 $POST_TEST/PostRequest_3.infile
+echo $NEXT_TEST_MSG
+read input
 
 ./myLittleClient $PORT1 $POST_TEST/PostRequest_4.infile
 echo $NEXT_TEST_MSG
@@ -35,12 +38,28 @@ read input
 echo $NEXT_TEST_MSG
 read input
 
-# ./myLittleClient $PORT1 $POST_TEST/PostRequest_6.infile
-# echo $NEXT_TEST_MSG
-# read input
+./myLittleClient $PORT1 $POST_TEST/PostRequest_6.infile
+echo $NEXT_TEST_MSG
+read input
+
+./myLittleClient $PORT1 $POST_TEST/PostRequest_7.infile
+echo $NEXT_TEST_MSG
+read input
+
+
+./myLittleClient $PORT1 $POST_TEST/PostRequest_8.infile
+echo $NEXT_TEST_MSG
+read input
+
+
+./myLittleClient $PORT1 $POST_TEST/PostRequest_9.infile
+echo $NEXT_TEST_MSG
+read input
 
 
 # GET TEST
+
+echo "====================================== GET TEST ======================================"
 
 ./myLittleClient $PORT1 $GET_TEST/GetRequest_0.infile
 echo $NEXT_TEST_MSG
@@ -78,24 +97,28 @@ read input
 
 # DELETE test
 
-# ./myLittleClient $PORT1 $DELETE_TEST/DeleteRequest_0.infile
-# echo $NEXT_TEST_MSG
-# read input
+echo "====================================== DELETE TEST ======================================"
 
-# ./myLittleClient $PORT1 $DELETE_TEST/DeleteRequest_1.infile
-# echo $NEXT_TEST_MSG
-# read input
+./myLittleClient $PORT1 $DELETE_TEST/DeleteRequest_0.infile
+echo $NEXT_TEST_MSG
+read input
+
+./myLittleClient $PORT1 $DELETE_TEST/DeleteRequest_1.infile
+echo $NEXT_TEST_MSG
+read input
 
 
-# UNKNOWN test
-# ./myLittleClient $PORT1 $UNKNOWN_TEST/UnknownRequest_0.infile
-# echo $NEXT_TEST_MSG
-# read input
+UNKNOWN test
+./myLittleClient $PORT1 $UNKNOWN_TEST/UnknownRequest_0.infile
+echo $NEXT_TEST_MSG
+read input
 
 
 # Cgi Test
 
-# ./myLittleClient $PORT1 $CGI_TEST/CgiRequest_0.infile
-# echo $NEXT_TEST_MSG
-# read input
+echo "====================================== CGI TEST ======================================"
+
+./myLittleClient $PORT1 $CGI_TEST/CgiRequest_0.infile
+echo $NEXT_TEST_MSG
+read input
 

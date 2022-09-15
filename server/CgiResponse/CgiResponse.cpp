@@ -1,25 +1,34 @@
 #include "CgiResponse.hpp"
 
+#include "Event.hpp"
 #include "HttpRequest.hpp"
 #include "Log.hpp"
+#include "syscall.hpp"
 
 CgiResponse::CgiResponse()
     : _parsingState(CGI_RUNNING),
-      _storage(),
+      _pid(-1),
       _httpVersion(),
-      _statusCode(0),
+      _statusCode(404),
       _statusMessage(),
+      _method(NOT_IMPL),
       _contentType(),
-      _body(NULL) {}
+      _bodyFd(-1),
+      _bodySize(0),
+      _secretHeaderForTest(0) {}
 
 void CgiResponse::initialize() {
-  _parsingState  = CGI_RUNNING;
-  _statusCode    = 0;
-  _httpVersion   = "";
-  _statusMessage = "";
-  _contentType   = "";
+  _parsingState = CGI_RUNNING;
   _storage.clear();
-  _body = NULL;
+  _pid                 = -1;
+  _httpVersion         = "";
+  _statusCode          = 0;
+  _statusMessage       = "";
+  _method              = NOT_IMPL;
+  _contentType         = "";
+  _bodyFd              = -1;
+  _bodySize            = 0;
+  _secretHeaderForTest = 0;
 }
 
 void CgiResponse::setInfo(const HttpRequest& http_requset) {
@@ -28,104 +37,72 @@ void CgiResponse::setInfo(const HttpRequest& http_requset) {
   _secretHeaderForTest = http_requset.secretHeaderForTest();
 }
 
-void CgiResponse::_checkWaitPid(int pid, clock_t base_clock) {
+bool CgiResponse::_isCgiExecutionEnd(clock_t base_clock) {
   int status;
-  int result = waitpid(pid, &status, WNOHANG);
-  Log::log()(true, "pid", pid, INFILE);
-  Log::log()(true, "result", result, INFILE);
+  int result = waitpid(_pid, &status, WNOHANG);
+  // Log::log()(true, "pid", _pid, INFILE);
+  // Log::log()(true, "result", result, INFILE);
 
-  if (result == pid) {
-    _parsingState = CGI_READING;
-    Log::log()(true, "CGI EXECUTION          DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
+  if (result == _pid) {
+    _parsingState = CGI_PARSING_HEADER;
+    Log::log()(true, "CGI EXECUTION          DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, CONSOLE);
+    return true;
   } else if (result == -1) {
     _parsingState = CGI_ERROR;
     Log::log()(LOG_LOCATION, "CGI_ERROR", INFILE);
   }
+  return false;
 }
 
-void CgiResponse::readCgiResult(int fd, int pid, clock_t base_clock) {
-  if (_parsingState == CGI_RUNNING) {
-    _checkWaitPid(pid, base_clock);
+bool CgiResponse::_parseLine(const std::string& line) {
+  // Log::log()(LOG_LOCATION, "");
+  // Log::log()(true, "line", line);
+  if (line.empty() || line == "\r") {
+    return false;
   }
-
-  Log::log()(LOG_LOCATION, "before read");
-  Log::log()(true, "_readPos", _storage._readPos);
-  Log::log()(true, "_writePos", _storage._writePos);
-
-  if (_parsingState == CGI_READING) {
-    _storage.readFile(fd);
-
-    Log::log()(LOG_LOCATION, "reading");
-    Log::log()(true, "_readPos", _storage._readPos);
-    Log::log()(true, "_writePos", _storage._writePos);
-    if (_storage.isReadingEnd()) {
-      _parsingState = CGI_PARSING;
-
-      Log::log()(LOG_LOCATION, "(DONE) CGI RESULT READING", INFILE);
-      Log::log()(true, "CGI RESULT READING     DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
-      Log::log()(true, "readPos", _storage._readPos);
-      Log::log()(true, "writePos", _storage._writePos);
-    }
+  std::stringstream ss(line);
+  std::string       word;
+  ss >> word;
+  if (word == "Status:") {
+    ss >> _statusCode;
+    ss >> _statusMessage;
+  } else if (word == "Content-Type:") {
+    std::getline(ss, _contentType, '\r');
   }
-
-  if (_parsingState == CGI_PARSING) {
-    _parseCgiResponse(base_clock);
-  }
-  Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", INFILE);
-  Log::log()("_parsingState", _parsingState, INFILE);
-  Log::log()(true, "_storage.size", _storage.size(), INFILE);
+  return true;
 }
 
-void CgiResponse::_parseCgiResponse(clock_t base_clock) {
-  std::string       line = _storage.getLine();
-  std::stringstream ss;
+void CgiResponse::parseRequest(int recv_fd, clock_t base_clock) {
+  int         curr;
+  int         file_size;
+  std::string line;
 
-  while (line != "") {
-    if (line.find("Status:") != std::string::npos) {
-      ss << line.substr(8);
-      ss >> _statusCode;
-      ss >> _statusMessage;
-    } else if (line.find("Content-Type:") != std::string::npos) {
-      ss << line.substr(14);
-      std::string content_type_line;
-      ss >> content_type_line;
-      _contentType += content_type_line;
-      _contentType += " ";
-      ss >> content_type_line;
-      _contentType += content_type_line;
-    } else if (line.find("\r") != std::string::npos) {
-      _body = _storage.currentReadPos();
+  // Log::log()(true, "recv_fd", recv_fd);
+  switch (_parsingState) {
+    case CGI_RUNNING:
+      if (!_isCgiExecutionEnd(base_clock))
+        break;
+
+    case CGI_PARSING_HEADER:
+      line = _storage.getLineFile(recv_fd);
+      while (_parseLine(line)) {
+        line = _storage.getLineFile(recv_fd);
+      }
+
+      if (line.empty() || _statusMessage.empty() || _statusCode == 0 || _contentType.empty())
+        break;
+
+    case CGI_PARSING_DONE:
+      curr      = ft::syscall::lseek(recv_fd, static_cast<off_t>(_storage.remains()) * -1, SEEK_CUR);
+      file_size = ft::syscall::lseek(recv_fd, 0, SEEK_END);
+      ft::syscall::lseek(recv_fd, curr, SEEK_SET);
+      _bodySize     = file_size - curr;
+      _parsingState = CGI_PARSING_DONE;
       break;
-    }
-    line = _storage.getLine();
+
+    default:
+      break;
   }
-  _parsingState = CGI_PARSING_DONE;
-  Log::log()(true, "CGI RESULT PARSING     DONE TIME", (double)(clock() - base_clock) / CLOCKS_PER_SEC, ALL);
-}
-
-std::string CgiResponse::CgiResponseResultString() {
-  std::stringstream ss;
-  ss << "Status-Code: [" << _statusCode << "]" << std::endl;
-  ss << "Status-Message: [" << _statusMessage << "]" << std::endl;
-  ss << "Content-Type: [" << _contentType << "]" << std::endl;
-  // ss << "----Body---" << std::endl << _body << std::endl << "-----------" << std::endl;
-  return ss.str();
-}
-
-bool CgiResponse::isExecuteError() { return _parsingState == CGI_ERROR; }
-bool CgiResponse::isReadError() { return _storage.isReadError(); }
-
-bool CgiResponse::isParsingEnd() { return _parsingState == CGI_ERROR || _parsingState == CGI_PARSING_DONE; }
-
-std::vector<std::string> CgiResponse::_split(const std::string& str, const std::string& delimiter) {
-  std::vector<std::string> _result;
-  std::string::size_type   _prev_pos = 0;
-  std::string::size_type   _pos      = 0;
-
-  while ((_pos = str.find(delimiter, _prev_pos)) != std::string::npos) {
-    _result.push_back(str.substr(_prev_pos, _pos - _prev_pos));
-    _prev_pos = _pos + delimiter.size();
-  }
-  _result.push_back(str.substr(_prev_pos));
-  return _result;
+  // Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", INFILE);
+  // Log::log()("_parsingState", _parsingState, INFILE);
 }

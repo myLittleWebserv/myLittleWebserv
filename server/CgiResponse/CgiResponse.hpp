@@ -10,31 +10,32 @@
 #include <string>
 #include <vector>
 
-#include "CgiStorage.hpp"
+#include "HttpResponse.hpp"
 #include "Request.hpp"
+#include "Storage.hpp"
 
 class HttpRequest;
 
-enum CgiResponseParsingState { CGI_ERROR, CGI_RUNNING, CGI_READING, CGI_PARSING, CGI_PARSING_DONE };
+enum CgiResponseParsingState { CGI_ERROR, CGI_RUNNING, CGI_PARSING_HEADER, CGI_PARSING_DONE };
 
 class CgiResponse : public Request {
- public:
-  typedef Storage::vector vector;
-
  private:
   CgiResponseParsingState _parsingState;
-  CgiStorage              _storage;
+  Storage                 _storage;
+  pid_t                   _pid;
   std::string             _httpVersion;
   int                     _statusCode;
   std::string             _statusMessage;
   enum MethodType         _method;
   std::string             _contentType;
-  vector::pointer         _body;
+  int                     _bodyFd;
+  int                     _bodySize;
   int                     _secretHeaderForTest;
 
   std::vector<std::string> _split(const std::string& str, const std::string& delimiter);
   void                     _parseCgiResponse(clock_t base_clock);
-  void                     _checkWaitPid(int pid, clock_t clock);
+  bool                     _isCgiExecutionEnd(clock_t clock);
+  bool                     _parseLine(const std::string& line);
 
   // Constructor
  public:
@@ -43,10 +44,10 @@ class CgiResponse : public Request {
   // Interface
  public:
   void               initialize();
-  bool               isParsingEnd();
-  bool               isExecuteError();
-  bool               isReadError();
-  void               readCgiResult(int fd, int pid, clock_t clock);
+  bool               isParsingEnd() { return _parsingState == CGI_ERROR || _parsingState == CGI_PARSING_DONE; }
+  bool               isExecError() { return _parsingState == CGI_ERROR; }
+  bool               isRecvError() { return _storage.state() == CONNECTION_CLOSED; }
+  void               parseRequest(int recv_fd, clock_t base_clock);
   void               setInfo(const HttpRequest& http_request);
   MethodType         method() const { return _method; }
   const std::string& httpVersion() const { return _httpVersion; }
@@ -54,9 +55,12 @@ class CgiResponse : public Request {
   const std::string& statusMessage() const { return _statusMessage; }
   const std::string& contentType() const { return _contentType; }
   int                secretHeaderForTest() const { return _secretHeaderForTest; }
-  vector::pointer    body() { return _body; }
-  size_t             bodySize() { return _storage.remains(); }
+  int                bodyFd() { return _bodyFd; }
+  size_t             bodySize() { return _bodySize; }
   std::string        CgiResponseResultString();
+  void               setPid(pid_t pid) { _pid = pid; }
+  pid_t              pid() { return _pid; }
+  Storage&           storage() { return _storage; }
 };
 
 #endif

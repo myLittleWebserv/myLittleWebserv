@@ -1,3 +1,4 @@
+
 NAME := myLittleWebserv
 CLIENT := myLittleClient
 
@@ -17,15 +18,18 @@ SRC :=	main.cpp\
 		HttpResponse.cpp\
 		CgiResponse.cpp\
 		FileManager.cpp\
-		Storage.cpp\
-		RequestStorage.cpp\
-		CgiStorage.cpp\
+		syscall.cpp\
+		ResponseFactory.cpp\
+		Storage.cpp
 
 OBJ := $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o));
 
-
-CXXFALGS += -std=c++98 -Wall -Werror -Wextra #-fsanitize=address -g
-LDFALGS  += #-fsanitize=address -g
+CXXFALGS = -std=c++98 -Wall -Werror -Wextra -fsanitize=address -g
+LDFALGS  = -fsanitize=address -g
+ifeq ($(fsan), no)
+CXXFALGS = -std=c++98 -Wall -Werror -Wextra
+LDFALGS  = 
+endif
 
 INCS := -I ./$(SRC_DIR)/Router\
 		-I ./$(SRC_DIR)/Log\
@@ -37,7 +41,9 @@ INCS := -I ./$(SRC_DIR)/Router\
 		-I ./$(SRC_DIR)/HttpResponse\
 		-I ./$(SRC_DIR)/CgiResponse\
 		-I ./$(SRC_DIR)/FileManager\
-		-I ./$(SRC_DIR)/Storage
+		-I ./$(SRC_DIR)/Storage\
+		-I ./$(SRC_DIR)/ResponseFactory\
+		-I ./$(SRC_DIR)/syscall
 
 
 ifeq ($(shell uname), Linux)
@@ -73,18 +79,18 @@ clean-log:
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(TMP_DIR)
-	rm -rf $(LOG_DIR)/*
 
 fclean: clean
 	rm -rf $(CLIENT)
 	rm -rf $(NAME)
 	rm -rf *.out
 	rm -rf *.dSYM
+	rm -rf temp/*
 
 re: fclean all
 
 $(CLIENT): client/Client.cpp
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ $^ $(CXXFALGS)
 
 
 

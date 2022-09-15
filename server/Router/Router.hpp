@@ -13,6 +13,7 @@ class Router {
   Config                     _config;
   std::vector<VirtualServer> _virtualServers;
   EventHandler               _eventHandler;
+  std::vector<int>           _serverSockets;
 
   void _serverSocketsInit();
 
@@ -22,13 +23,18 @@ class Router {
     virtual const char* what() const throw() { return "(ERROR) failed to init server sockets!"; }
   };
   class ServerSystemCallException : public std::exception {
+   private:
+    const char* _msg;
+
    public:
-    virtual const char* what() const throw() { return "(ERROR) failed to system-call!"; }
+    ServerSystemCallException(const char* msg) throw() : _msg(msg) {}
+    virtual const char* what() const throw() { return _msg; }
   };
 
  public:
   Router(const std::string& confFile);
   void start();
+  void end();
   int  findServerId(HttpRequest& request) const;
 };
 
