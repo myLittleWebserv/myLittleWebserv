@@ -13,6 +13,7 @@ class Router {
   Config                     _config;
   std::vector<VirtualServer> _virtualServers;
   EventHandler               _eventHandler;
+  std::vector<int>           _serverSockets;
 
   void _serverSocketsInit();
 
@@ -33,6 +34,7 @@ class Router {
  public:
   Router(const std::string& confFile);
   void start();
+  void end();
   int  findServerId(HttpRequest& request) const;
 };
 

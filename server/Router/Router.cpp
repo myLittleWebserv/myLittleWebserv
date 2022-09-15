@@ -29,7 +29,14 @@ void Router::start() {
     _eventHandler.routeEvents();
     for (std::vector<VirtualServer>::size_type i = 0; i < _virtualServers.size(); ++i) {
       _virtualServers[i].start();
+      throw std::range_error("test");
     }
+  }
+}
+
+void Router::end() {
+  for (std::vector<int>::iterator socket = _serverSockets.begin(); socket != _serverSockets.end(); ++socket) {
+    close(*socket);
   }
 }
 
@@ -55,7 +62,7 @@ void Router::_serverSocketsInit() {
     ft::syscall::bind(server_socket, (sockaddr*)&server_addr, sizeof(server_addr));
     ft::syscall::listen(server_socket, BACKLOG);
     ft::syscall::fcntl(server_socket, F_SETFL, O_NONBLOCK, ServerSocketInitException());
-
+    _serverSockets.push_back(server_socket);
     Event* event = new Event(CONNECTION_REQUEST, server_socket);
     _eventHandler.addReadEvent(server_socket, event);
   }
