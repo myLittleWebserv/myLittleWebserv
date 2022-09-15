@@ -159,7 +159,7 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
 
 void HttpRequest::_checkTimeOut() {
   timeval current;
-  ft::syscall::(&current, NULL);
+  ft::syscall::gettimeofday(&current, NULL);
   int interval;
   interval = (current.tv_sec - _timestamp.tv_sec) * 1000 + (current.tv_usec - _timestamp.tv_usec) / 1000;
 
