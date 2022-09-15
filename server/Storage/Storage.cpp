@@ -11,10 +11,9 @@ void Storage::clear() {
 }
 
 std::string Storage::getLine() {
-  for (vector::size_type i = _readPos; i < size(); ++i) {
+  for (vector::size_type i = _readPos; i < _writePos; ++i) {
     if ((*this)[i] == '\n') {
       std::string line(begin() + _readPos, begin() + i);
-      // Log::log()(true, "line", line);
       _readPos = i + 1;
       return line;
     }
@@ -25,13 +24,6 @@ std::string Storage::getLine() {
 void Storage::moveReadPos(int move) { _readPos += move; }
 
 void Storage::preserveRemains() {
-  // if (_readPos != _writePos) {
-  //   Log::log()(LOG_LOCATION, "");
-  //   for (size_t i = _readPos; i != _writePos; ++i) {
-  //     Log::log().getLogStream() << (*this)[i];
-  //   }
-  // }
-
   size_t i;
   for (i = _readPos; i != _writePos; ++i) {
     (*this)[i - _readPos] = (*this)[i];
@@ -43,12 +35,6 @@ void Storage::preserveRemains() {
 ssize_t Storage::memToFile(int file_fd, size_t goal_size) {
   size_t  small_one = goal_size < (_writePos - _readPos) ? goal_size : (_writePos - _readPos);
   ssize_t send_size = write(file_fd, data() + _readPos, small_one);
-
-  // Log::log()(true, "goal_size", goal_size);
-  // Log::log()(true, "_writePos - _readPos", _writePos - _readPos);
-  // Log::log()(true, "small_one", small_one);
-  // Log::log()(true, "send_size", send_size);
-  // Log::log()(true, "file_fd", file_fd);
 
   if (send_size == -1) {
     _state = CONNECTION_CLOSED;
@@ -67,12 +53,6 @@ ssize_t Storage::memToSock(int send_fd, size_t goal_size) {
     return -1;
   }
 
-  // if (goal_size < 100000) {
-  //   Log::log()(LOG_LOCATION, "memToSock");
-  //   for (int i = 0; i < send_size; ++i) {
-  //     Log::log().getLogStream() << *(data() + _readPos + i);
-  //   }
-  // }
   _readPos += send_size;
   return send_size;
 }
@@ -87,7 +67,6 @@ ssize_t Storage::fileToMem(int file_fd, size_t goal_size) {
     return -1;
   }
   insert(_buffer, _buffer + read_size);
-  // _fail = false;
   return read_size;
 }
 
@@ -120,7 +99,6 @@ std::string Storage::getLineFile(int fd) {
   for (size_t i = _readPos; i != _writePos; ++i) {
     if ((*this)[i] == '\n') {
       std::string line(data() + _readPos, data() + i);
-      // Log::log()(LOG_LOCATION, line);
       _readPos = i + 1;
       return line;
     }
@@ -135,7 +113,6 @@ std::string Storage::getLineFile(int fd) {
   for (size_t i = _readPos; i != _writePos; ++i) {
     if ((*this)[i] == '\n') {
       std::string line(data() + _readPos, data() + i);
-      // Log::log()(LOG_LOCATION, line);
       _readPos = i + 1;
       return line;
     }

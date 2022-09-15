@@ -23,9 +23,6 @@ std::vector<Event*>& EventHandler::getRoutedEvents(int server_id) { return _rout
 void EventHandler::_updateEventsTimestamp(int num_kevents) {
   for (int i = 0; i < num_kevents; ++i) {
     Event& event = *(Event*)_keventList[i].udata;
-    // int    ident = _keventList[i].ident;
-
-    // Log::log()(true, "ident", ident);
     ft::syscall::gettimeofday(&event.timestamp, NULL);
   }
 }
@@ -121,11 +118,9 @@ void EventHandler::_routeEvent(Event& event) {
 
     default:
       _routedEvents[event.serverId].push_back(&event);
-      // Log::log()(LOG_LOCATION, "(event routed)", INFILE);
-      // Log::log()(true, "event.type", event.type, INFILE);
       break;
   }
-  gettimeofday(&event.timestamp, NULL);
+  ft::syscall::gettimeofday(&event.timestamp, NULL);
 }
 
 void EventHandler::routeEvents() {
@@ -147,16 +142,12 @@ void EventHandler::routeEvents() {
   for (int i = 0; i < num_kevents; ++i) {
     Event& event = *(Event*)_keventList[i].udata;
     int    flags = _keventList[i].flags;
-    // int    ident = _keventList[i].ident;
-
-    // Log::log()(true, "ident", ident);
 
     if (flags & EV_EOF) {  // file ?
       Log::log()(LOG_LOCATION, "ev_eof", ALL);
       removeConnection(event);
       continue;
     }
-    // Log::log()(true, "event.clientfd", event.clientFd);
     _routeEvent(event);
   }
 }

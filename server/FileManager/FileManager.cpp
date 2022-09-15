@@ -134,7 +134,6 @@ bool FileManager::isConflict() {
   std::string path  = _absolutePath.substr(0, delim);
 
   while (1) {
-    // Log::log()(true, "path.isConflict", path);
     if (_isDirExist(path)) {
       ;
     } else if (_isConflict) {

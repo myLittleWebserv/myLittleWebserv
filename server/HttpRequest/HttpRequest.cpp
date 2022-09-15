@@ -56,8 +56,6 @@ void HttpRequest::uploadRequest(int send_fd, clock_t base_clock) {
   std::string line;
   ssize_t     moved;
 
-  // Log::log()(true, "(START) uploadRequest _parsingState", _parsingState);
-
   switch (_parsingState) {
     case HTTP_UPLOADING_CHUNK_INIT:
     case HTTP_UPLOADING_READ_LINE:
@@ -68,27 +66,24 @@ void HttpRequest::uploadRequest(int send_fd, clock_t base_clock) {
       }
       if (line == "\r" && _chunkSize == 0) {
         _parsingState = HTTP_UPLOADING_DONE;
-        // Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_DONE");
         break;
       }
       if (line == "\r") {
         break;
       }
       _parsingState = HTTP_UPLOADING_READ_LINE;
-      // Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_READ_LINE");
 
     case HTTP_UPLOADING_CHUNK_SIZE:
       _chunkSize = _parseChunkSize(line);
       if (line.empty() || isParsingEnd())
         break;
-      gettimeofday(&_timestamp, NULL);
+      ft::syscall::gettimeofday(&_timestamp, NULL);
       if (_chunkSize == 0) {
         _parsingState = HTTP_UPLOADING_READ_LINE;
         break;
       }
       _uploadedSize = 0;
       _parsingState = HTTP_UPLOADING_INIT;
-      // Log::log()(LOG_LOCATION, "(DONE) HTTP_UPLOADING_CHUNK_SIZE");
 
     case HTTP_UPLOADING_INIT:
       moved = _storage.memToFile(send_fd, _chunkSize - _uploadedSize);
@@ -96,7 +91,7 @@ void HttpRequest::uploadRequest(int send_fd, clock_t base_clock) {
         _parsingState = HTTP_PARSING_CONNECTION_CLOSED;
         break;
       }
-      gettimeofday(&_timestamp, NULL);
+      ft::syscall::gettimeofday(&_timestamp, NULL);
       _uploadedSize += moved;
       _uploadedTotalSize += moved;
       if (_isChunked && _chunkSize == _uploadedSize) {
@@ -112,7 +107,6 @@ void HttpRequest::uploadRequest(int send_fd, clock_t base_clock) {
     default:
       break;
   }
-  // Log::log()(true, "(END) uploadRequest _parsingState", _parsingState);
   _checkTimeOut();
 }
 
@@ -121,7 +115,6 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
   if (_storage.state() != RECEIVE_DONE) {
     return;
   }
-  // Log::log()(LOG_LOCATION, "(TRANSFER) socket buffer to _storage done", INFILE);
 
   (void)base_clock;
   std::string line;
@@ -129,12 +122,9 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
   switch (_parsingState) {
     case HTTP_PARSING_INIT:
       line = _storage.getLine();
-      // Log::log()(true, "line", line);
       _parseStartLine(line);
       if (line.empty() || isParsingEnd())
         break;
-      // Log::log()(true, "line", line);
-      gettimeofday(&_timestamp, NULL);
       _parsingState = HTTP_PARSING_HEADER;
 
     case HTTP_PARSING_HEADER:
@@ -144,28 +134,24 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
       }
       if (line.empty() || isParsingEnd())
         break;
-      gettimeofday(&_timestamp, NULL);
       _bodyFirst    = _storage.readPos();
       _parsingState = HTTP_PARSING_BODY;
 
     case HTTP_PARSING_BODY:
-      // Log::log()(true, "_isChunked", _isChunked);
       if (_isChunked && _parseChunk()) {
         _storage.setReadPos(_bodyFirst);
         _parsingState = HTTP_UPLOADING_CHUNK_INIT;
         Log::log()(_storage.remains() > 50000000, "_storage.remains", _storage.remains());
+        Log::log()(_storage.remains() > 50000000, "_bodyFirst", _bodyFirst);
       } else if (!_isChunked && _storage.remains() >= _contentLength) {
         _chunkSize    = _contentLength;
         _parsingState = HTTP_UPLOADING_INIT;
       }
+      ft::syscall::gettimeofday(&_timestamp, NULL);
 
     default:
       break;
   }
-
-  // Log::log()(LOG_LOCATION, "(STATE) CURRENT HTTP_PARSING STATE", INFILE);
-  // Log::log()("_parsingState", _parsingState, INFILE);
-  // Log::log()("storage.size", _storage.size(), INFILE);
   _checkTimeOut();
 }
 
@@ -173,7 +159,7 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
 
 void HttpRequest::_checkTimeOut() {
   timeval current;
-  gettimeofday(&current, NULL);
+  ft::syscall::(&current, NULL);
   int interval;
   interval = (current.tv_sec - _timestamp.tv_sec) * 1000 + (current.tv_usec - _timestamp.tv_usec) / 1000;
 
@@ -195,7 +181,7 @@ void HttpRequest::_parseStartLine(const std::string& line) {
   }
 
   _headerSize += line.size() + 1;
-  gettimeofday(&_timestamp, NULL);
+  ft::syscall::gettimeofday(&_timestamp, NULL);
 
   std::stringstream ss(line);
   std::string       word;
@@ -241,7 +227,7 @@ bool HttpRequest::_parseHeaderField(const std::string& line) {
   }
 
   _headerSize += line.size() + 1;
-  gettimeofday(&_timestamp, NULL);
+  ft::syscall::gettimeofday(&_timestamp, NULL);
 
   std::stringstream ss(line);
   std::string       word;
@@ -312,7 +298,7 @@ bool HttpRequest::_parseChunk() {
       break;
     }
   }
-  gettimeofday(&_timestamp, NULL);
+  ft::syscall::gettimeofday(&_timestamp, NULL);
   return false;
 }
 

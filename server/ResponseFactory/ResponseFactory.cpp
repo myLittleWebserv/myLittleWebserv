@@ -139,7 +139,7 @@ HttpResponse* ResponseFactory::_headResponse(HttpRequest& request, LocationInfo&
   _statusCode  = STATUS_OK;
   _message     = _getMessage(_statusCode);
   _contentType = _getContentType(file_manager.filePath());
-  // Log::log()(LOG_LOCATION, "Head request processed.");
+  Log::log()(LOG_LOCATION, "Head request processed.");
   return new HttpResponse(TYPE_DEL, HTTP_SENDING_STORAGE, _makeHeader(), _statusCode, 0);
 }
 
@@ -195,7 +195,7 @@ HttpResponse* ResponseFactory::_postResponse(HttpRequest& request, LocationInfo&
   _httpVersion = request.httpVersion();
   _statusCode  = STATUS_CREATED;
   _message     = _getMessage(_statusCode);
-  // Log::log()(LOG_LOCATION, "Post request processed.");
+  Log::log()(LOG_LOCATION, "Post request processed.");
   return new HttpResponse(TYPE_GET, HTTP_SENDING_STORAGE, _makeHeader(), _statusCode, 0, fd);
 }
 
@@ -222,7 +222,7 @@ HttpResponse* ResponseFactory::_putResponse(HttpRequest& request, LocationInfo& 
 
   _httpVersion = request.httpVersion();
   _message     = _getMessage(_statusCode);
-  // Log::log()(LOG_LOCATION, "Put request processed.");
+  Log::log()(LOG_LOCATION, "Put request processed.");
   return new HttpResponse(TYPE_POST, HTTP_SENDING_STORAGE, _makeHeader(), _statusCode, 0, fd);
 }
 
@@ -239,7 +239,7 @@ HttpResponse* ResponseFactory::_deleteResponse(HttpRequest& request, LocationInf
   _statusCode  = STATUS_OK;
   _message     = _getMessage(_statusCode);
 
-  // Log::log()(LOG_LOCATION, "Delete request processed.");
+  Log::log()(LOG_LOCATION, "Delete request processed.");
   return new HttpResponse(TYPE_DEL, HTTP_SENDING_STORAGE, _makeHeader(), _statusCode);
 }
 
@@ -268,16 +268,12 @@ HttpResponse* ResponseFactory::errorResponse(HttpResponseStatusCode error_code, 
     file_manager.appendToPath(location_info.defaultErrorPages[error_code]);
     fd = ::open(file_manager.filePath().c_str(), O_RDONLY);
     ft::syscall::fcntl(fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("fcntl"));
-    // Log::log()(true, "file open STATUS", fd, INFILE);
-    // Log::log()(true, "file name", file_name, INFILE);
   }
 
   if (fd == -1) {
     default_error_page << DEFAULT_ERROR_PAGE_DIR << '/' << error_code << ".html";
     fd = ft::syscall::open(default_error_page.str().c_str(), O_RDONLY);
     ft::syscall::fcntl(fd, F_SETFL, O_NONBLOCK, Router::ServerSystemCallException("fcntl"));
-    // Log::log()(true, "file open STATUS", fd, INFILE);
-    // Log::log()(true, "file name", default_error_page.str(), INFILE);
   }
 
   if (request.method() == HEAD) {
@@ -321,7 +317,7 @@ HttpResponse* ResponseFactory::_redirResponse(HttpResponseStatusCode redir_code,
     type = TYPE_FLUSH;
   }
 
-  // Log::log()(LOG_LOCATION, "Redirection address returned.");
+  Log::log()(LOG_LOCATION, "Redirection address returned.");
   return new HttpResponse(type, state, _makeHeader(), _statusCode);
 }
 
@@ -436,7 +432,6 @@ std::string ResponseFactory::_makeHeader() {
     response_stream << "Location: " << _location << "\r\n";
   }
   response_stream << "\r\n";
-  // _initialize();
   return response_stream.str();
 }
 

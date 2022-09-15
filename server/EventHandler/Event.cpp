@@ -4,6 +4,7 @@
 
 #include "FileManager.hpp"
 #include "Log.hpp"
+#include "syscall.hpp"
 
 Event::Event(EventType t, int kevent_id)
     : type(t),
@@ -16,7 +17,7 @@ Event::Event(EventType t, int kevent_id)
       httpResponse(NULL),
       timestamp(),
       baseClock(clock()) {
-  gettimeofday(&timestamp, NULL);
+  ft::syscall::gettimeofday(&timestamp, NULL);
 }
 
 void Event::initialize() {
@@ -32,7 +33,7 @@ void Event::initialize() {
   cgiResponse.initialize();
   delete httpResponse;
   httpResponse = NULL;
-  // Log::log()(LOG_LOCATION, "(init) event", INFILE);
+  ft::syscall::gettimeofday(&timestamp, NULL);
 }
 
 void Event::setDataFlow(int from_fd, int to_fd) {

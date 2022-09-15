@@ -48,10 +48,6 @@ HttpResponse::~HttpResponse() {}
 // Interface
 
 void HttpResponse::sendResponse(int send_fd) {
-  // Log::log()(LOG_LOCATION, "");
-  // Log::log()(true, "recv_fd", recv_fd);
-  // Log::log()(true, "send_fd", send_fd);
-  // Log::log()(true, "(START) _sendingState", _sendingState);
   ssize_t moved;
   switch (_sendingState) {
     case HTTP_SENDING_STORAGE:
@@ -68,15 +64,12 @@ void HttpResponse::sendResponse(int send_fd) {
     default:
       break;
   }
-  // Log::log()(true, "(END) _sendingState", _sendingState);
 }
 
 void HttpResponse::downloadResponse(int recv_fd, clock_t base_clock) {
   (void)base_clock;
   std::string line;
   ssize_t     moved;
-
-  // Log::log()(true, "(START) downloadResponse _sendingState", _sendingState);
 
   switch (_sendingState) {
     case HTTP_DOWNLOADING_INIT:
@@ -86,8 +79,6 @@ void HttpResponse::downloadResponse(int recv_fd, clock_t base_clock) {
         break;
       }
       _downloadedSize += moved;
-      Log::log()(_contentLength > 50000000, "_downloadedSize", _downloadedSize);
-      // Log::log()(true, "_contentLength", _contentLength);
       if (_contentLength == _downloadedSize)
         _sendingState = HTTP_SENDING_STORAGE;
       else
@@ -96,5 +87,4 @@ void HttpResponse::downloadResponse(int recv_fd, clock_t base_clock) {
     default:
       break;
   }
-  // Log::log()(true, "(END) downloadResponse _sendingState", _sendingState);
 }

@@ -7,7 +7,7 @@
 #include "Request.hpp"
 #include "Storage.hpp"
 
-#define TIME_OUT_HTTP_PARSING 10000
+#define TIME_OUT_HTTP_PARSING 100000
 #define HTTP_DEFAULT_PORT 4242
 #define HTTP_MAX_HEADER_SIZE 8192
 
@@ -77,7 +77,9 @@ class HttpRequest : public Request {
         _bodyFirst(0),
         _method(NOT_IMPL),
         _contentLength(0),
-        _hostPort(HTTP_DEFAULT_PORT) {}
+        _hostPort(HTTP_DEFAULT_PORT) {
+    ft::syscall::gettimeofday(&_timestamp, NULL);
+  }
 
   // Interface
  public:

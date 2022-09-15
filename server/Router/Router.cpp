@@ -75,8 +75,5 @@ int Router::findServerId(HttpRequest& request) const {
       return i;
     }
   }
-  // Log::log()(LOG_LOCATION, "(Not Found) ServerId ", INFILE);
-  // Log::log()(true, "HttpRequest.hostPort", request.hostPort(), INFILE);
-  // Log::log()(true, "HttpRequest.hostName", request.hostName(), INFILE);
   return 0;
 }
