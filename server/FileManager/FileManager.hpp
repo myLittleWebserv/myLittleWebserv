@@ -57,7 +57,6 @@ class FileManager {
   bool               isConflict();
   bool               isFileExist() { return _isExist; }
   bool               isDirectory() { return _isDirectoy; }
-  bool               isConflict();
   const std::string& filePath() { return _absolutePath; }
   void               openDirectoy();
   void               removeFile();
