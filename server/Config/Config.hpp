@@ -15,7 +15,7 @@
 #define ERROR_PAGES_COUNT 11
 #define ERROR_PAGES_PATH "/error_pages/"
 #define HTTP_DEFAULT_PORT 4242
-#define DEFAULT_MAX_BODY_SIZE 200000000
+#define DEFAULT_MAX_BODY_SIZE INT_MAX
 #define PORT_MAX 65535
 
 struct LocationInfo {
@@ -82,8 +82,10 @@ class Config {
   void                        _locatinInfoString(std::stringstream& _ss, const LocationInfo& info);
   void                        _parsedConfigResult();
   void                        _setPorts();
+  bool                        _isNumber(const std::string& s);
   std::string                 _itoa(int i);
-  void                        _error(const char* file, int line, const char* function, std::string message);
+
+  void _error(const char* file, int line, const char* function, std::string message);
 
   // Constructor
  public:
