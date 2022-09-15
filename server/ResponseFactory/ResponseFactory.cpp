@@ -156,8 +156,10 @@ HttpResponse* ResponseFactory::_autoIndexResponse(HttpRequest& request, Location
   while (!file_name.empty()) {
     if (file_name != ".") {
       body += "<pre><a href = \"";
-      body += file_manager.filePath().substr(location_info.root.size() + 1) + '/' + file_name + "\">" + file_name +
-              "/</a></pre>\n";
+      body += file_manager.filePath().substr(location_info.root.size());
+      if (*body.rbegin() != '/')
+        body += '/';
+      body += file_name + "\">" + file_name + "/</a></pre>\n";
     }
     file_name = file_manager.readDirectoryEntry();
   }
