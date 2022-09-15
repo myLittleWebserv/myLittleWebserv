@@ -12,24 +12,23 @@
 // Interface
 
 void HttpRequest::initialize() {
+  _parsingState = HTTP_PARSING_INIT;
+  _storage.clear();
+  _headerSize = 0;
+  _chunkSize  = -1;
+  ft::syscall::gettimeofday(&_timestamp, NULL);
+  _isBodyExisted       = false;
+  _isChunked           = false;
+  _isKeepAlive         = true;
+  _secretHeaderForTest = 0;
+  _uploadedSize        = 0;
+  _uploadedTotalSize   = 0;
   _method              = NOT_IMPL;
   _uri                 = "";
   _contentLength       = 0;
   _contentType         = "";
   _hostName            = "";
   _hostPort            = HTTP_DEFAULT_PORT;
-  _parsingState        = HTTP_PARSING_INIT;
-  _headerSize          = 0;
-  _isBodyExisted       = false;
-  _isChunked           = false;
-  _isKeepAlive         = true;
-  _chunkSize           = -1;
-  _secretHeaderForTest = 0;
-  _uploadedSize        = 0;
-  _uploadedTotalSize   = 0;
-  // _storage.preserveRemains();
-  _storage.clear();
-  gettimeofday(&_timestamp, NULL);
 }
 
 bool HttpRequest::isParsingEnd() {
@@ -100,11 +99,14 @@ void HttpRequest::uploadRequest(int send_fd, clock_t base_clock) {
       gettimeofday(&_timestamp, NULL);
       _uploadedSize += moved;
       _uploadedTotalSize += moved;
-      if (_isChunked && _chunkSize == _uploadedSize)
+      if (_isChunked && _chunkSize == _uploadedSize) {
         _parsingState = HTTP_UPLOADING_READ_LINE;
-      else if (!_isChunked && _chunkSize == _uploadedSize)
+        Log::log()(_uploadedTotalSize > 50000000, "_uploadedTotalSize", _uploadedTotalSize);
+
+      } else if (!_isChunked && _chunkSize == _uploadedSize) {
+        Log::log()(_uploadedTotalSize > 50000000, "_uploadedTotalSize", _uploadedTotalSize);
         _parsingState = HTTP_UPLOADING_DONE;
-      else
+      } else
         _parsingState = HTTP_UPLOADING_INIT;
 
     default:
@@ -151,7 +153,7 @@ void HttpRequest::parseRequest(int recv_fd, clock_t base_clock) {
       if (_isChunked && _parseChunk()) {
         _storage.setReadPos(_bodyFirst);
         _parsingState = HTTP_UPLOADING_CHUNK_INIT;
-        // Log::log()(true, "_bodyFirst", _bodyFirst);
+        Log::log()(_storage.remains() > 50000000, "_storage.remains", _storage.remains());
       } else if (!_isChunked && _storage.remains() >= _contentLength) {
         _chunkSize    = _contentLength;
         _parsingState = HTTP_UPLOADING_INIT;

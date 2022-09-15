@@ -40,14 +40,10 @@ HttpResponse::HttpResponse(HttpResponseType type, HttpResponseSendingState state
       _downloadedSize(0),
       _fileFd(file_fd) {
   _storage.insert(storage);
-}  // ?
+}
 
 // Destructor
-HttpResponse::~HttpResponse() {
-  // Log::log(true, "fileFd.httpRes", _fileFd);
-  // if (_fileFd != -1)
-  //   FileManager::registerFileFdToClose(_fileFd);
-}
+HttpResponse::~HttpResponse() {}
 
 // Interface
 
@@ -67,7 +63,7 @@ void HttpResponse::sendResponse(int send_fd) {
       _sentSize += moved;
       if (_goalSize == _sentSize)
         _sendingState = HTTP_SENDING_DONE;
-      Log::log()(_goalSize > 10000000, "_sentSize", _sentSize);
+      Log::log()(_goalSize > 10000000 && _sentSize > 50000000, "_sentSize", _sentSize);
 
     default:
       break;
@@ -90,7 +86,7 @@ void HttpResponse::downloadResponse(int recv_fd, clock_t base_clock) {
         break;
       }
       _downloadedSize += moved;
-      Log::log()(_contentLength > 10000000, "_downloadedSize", _downloadedSize);
+      Log::log()(_contentLength > 50000000, "_downloadedSize", _downloadedSize);
       // Log::log()(true, "_contentLength", _contentLength);
       if (_contentLength == _downloadedSize)
         _sendingState = HTTP_SENDING_STORAGE;
@@ -100,5 +96,5 @@ void HttpResponse::downloadResponse(int recv_fd, clock_t base_clock) {
     default:
       break;
   }
-  Log::log()(true, "(END) downloadResponse _sendingState", _sendingState);
+  // Log::log()(true, "(END) downloadResponse _sendingState", _sendingState);
 }

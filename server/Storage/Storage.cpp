@@ -105,6 +105,7 @@ void Storage::sockToMem(int recv_fd) {
 
   if (recv_size > 0) {
     insert(_buffer, _buffer + recv_size);
+    Log::log()(_writePos - _readPos > 50000000, "remains", _writePos - _readPos);
   }
 }
 

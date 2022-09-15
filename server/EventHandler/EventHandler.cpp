@@ -122,7 +122,7 @@ void EventHandler::_routeEvent(Event& event) {
     default:
       _routedEvents[event.serverId].push_back(&event);
       // Log::log()(LOG_LOCATION, "(event routed)", INFILE);
-      Log::log()(true, "event.type", event.type, INFILE);
+      // Log::log()(true, "event.type", event.type, INFILE);
       break;
   }
   gettimeofday(&event.timestamp, NULL);

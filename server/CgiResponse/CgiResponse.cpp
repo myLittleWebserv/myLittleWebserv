@@ -9,22 +9,26 @@ CgiResponse::CgiResponse()
     : _parsingState(CGI_RUNNING),
       _pid(-1),
       _httpVersion(),
-      _statusCode(0),
+      _statusCode(404),
       _statusMessage(),
+      _method(NOT_IMPL),
       _contentType(),
       _bodyFd(-1),
-      _bodySize(0) {}
+      _bodySize(0),
+      _secretHeaderForTest(0) {}
 
 void CgiResponse::initialize() {
-  _parsingState  = CGI_RUNNING;
-  _pid           = -1;
-  _statusCode    = 0;
-  _httpVersion   = "";
-  _statusMessage = "";
-  _contentType   = "";
-  _bodyFd        = -1;
-  _bodySize      = 0;
+  _parsingState = CGI_RUNNING;
   _storage.clear();
+  _pid                 = -1;
+  _httpVersion         = "";
+  _statusCode          = 0;
+  _statusMessage       = "";
+  _method              = NOT_IMPL;
+  _contentType         = "";
+  _bodyFd              = -1;
+  _bodySize            = 0;
+  _secretHeaderForTest = 0;
 }
 
 void CgiResponse::setInfo(const HttpRequest& http_requset) {
@@ -99,6 +103,6 @@ void CgiResponse::parseRequest(int recv_fd, clock_t base_clock) {
     default:
       break;
   }
-  Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", INFILE);
-  Log::log()("_parsingState", _parsingState, INFILE);
+  // Log::log()(LOG_LOCATION, "(STATE) CURRENT CGI_PARSING STATE", INFILE);
+  // Log::log()("_parsingState", _parsingState, INFILE);
 }

@@ -32,18 +32,16 @@ class HttpRequest : public Request {
  private:
   HttpRequestParsingState _parsingState;
   Storage                 _storage;
-  // int                     _fileFd;
-  int     _headerSize;
-  ssize_t _chunkSize;
-  timeval _timestamp;  // 생성자에서 초기화
-  bool    _isBodyExisted;
-  bool    _isChunked;
-  bool    _isKeepAlive;
-  // bool                    _serverError;
-  int     _secretHeaderForTest;
-  ssize_t _uploadedSize;
-  ssize_t _uploadedTotalSize;
-  size_t  _bodyFirst;
+  int                     _headerSize;
+  ssize_t                 _chunkSize;
+  timeval                 _timestamp;  // 생성자에서 초기화
+  bool                    _isBodyExisted;
+  bool                    _isChunked;
+  bool                    _isKeepAlive;
+  int                     _secretHeaderForTest;
+  ssize_t                 _uploadedSize;
+  ssize_t                 _uploadedTotalSize;
+  size_t                  _bodyFirst;
 
   // HttpRequest Variable
   MethodType  _method;
@@ -66,16 +64,17 @@ class HttpRequest : public Request {
  public:
   HttpRequest()
       : _parsingState(HTTP_PARSING_INIT),
+        _storage(),
         _headerSize(0),
         _chunkSize(-1),
         _timestamp(),
         _isBodyExisted(false),
         _isChunked(false),
         _isKeepAlive(true),  //  default: keep-alive: true
-        // _serverError(false),
         _secretHeaderForTest(0),
         _uploadedSize(0),
         _uploadedTotalSize(0),
+        _bodyFirst(0),
         _method(NOT_IMPL),
         _contentLength(0),
         _hostPort(HTTP_DEFAULT_PORT) {}

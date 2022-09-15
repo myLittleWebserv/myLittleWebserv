@@ -58,7 +58,7 @@ struct Storage : private std::vector<unsigned char> {
 template <typename BeginIter, typename EndIter>
 void Storage::insert(BeginIter bi, EndIter ei) {
   // Log::log()(LOG_LOCATION, "");
-  Log::log()(true, "_writePos", _writePos);
+  // Log::log()(_writePos > 10000000, "_writePos", _writePos);
   // Log::log()(true, "capacity()", capacity());
   // Log::log()(true, "bi", bi);
   // Log::log()(true, "ei", ei);
@@ -70,6 +70,5 @@ void Storage::insert(BeginIter bi, EndIter ei) {
 }
 
 template <typename BeginIter, typename EndIter>
-Storage::Storage(BeginIter bi, EndIter ei) : vector(bi, ei), _readPos(0) {
-  _writePos = vector::size();
-}
+Storage::Storage(BeginIter bi, EndIter ei)
+    : vector(bi, ei), _readPos(0), _writePos(vector::size()), _state(RECEIVING) {}

@@ -79,7 +79,6 @@ clean-log:
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(TMP_DIR)
-	rm -rf $(LOG_DIR)/*
 
 fclean: clean
 	rm -rf $(CLIENT)

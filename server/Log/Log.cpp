@@ -121,15 +121,15 @@ void Log::printHttpRequest(HttpRequest& request, LogLocationType location) {
 void Log::printHttpResponse(HttpResponse& response, LogLocationType location) {
   std::stringstream logMessage;
 
+  (void)response;
   logMessage << "HttpResponse:\n";
 
-  (void)response;
-  if (response._storage.size() < 1000) {
-    for (Storage::vector::pointer it = response._storage.currentReadPos(); it != response._storage.currentWritePos();
-         ++it) {
-      logMessage << *it;
-    }
-  }
+  // if (response._storage.size() < 1000) {
+  //   for (Storage::vector::pointer it = response._storage.currentReadPos(); it != response._storage.currentWritePos();
+  //        ++it) {
+  //     logMessage << *it;
+  //   }
+  // }
 
   if (location == ALL || location == CONSOLE) {
     std::cerr << logMessage.str() << std::endl;

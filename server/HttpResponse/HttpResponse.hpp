@@ -57,16 +57,14 @@ class HttpResponse {
   // Member Variable
  private:
   enum HttpResponseSendingState _sendingState;
-
- public:
-  HttpResponseType       _type;
-  Storage                _storage;
-  size_t                 _sentSize;
-  HttpResponseStatusCode _statusCode;
-  size_t                 _goalSize;
-  size_t                 _contentLength;
-  size_t                 _downloadedSize;
-  int                    _fileFd;
+  HttpResponseType              _type;
+  Storage                       _storage;
+  size_t                        _sentSize;
+  HttpResponseStatusCode        _statusCode;
+  size_t                        _goalSize;
+  size_t                        _contentLength;
+  size_t                        _downloadedSize;
+  int                           _fileFd;
 
   // Constructor
  public:

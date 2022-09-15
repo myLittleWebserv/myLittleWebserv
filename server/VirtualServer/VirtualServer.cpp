@@ -27,7 +27,6 @@ void VirtualServer::_processEvent(Event& event) {
   LocationInfo& location_info = _findLocationInfo(event.httpRequest);
   switch (event.type) {
     case HTTP_REQUEST_READABLE:
-      Log::log().printHttpRequest(event.httpRequest, INFILE);
       _processHttpRequestReadable(event, location_info);
       break;
 
@@ -113,7 +112,7 @@ void VirtualServer::_downloadFile(Event& event, LocationInfo& location_info) {
 
       Log::log()(true, "HTTP_RESPONSE_DOWNLOAD DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC,
                  CONSOLE);
-      Log::log().printHttpResponse(*event.httpResponse, INFILE);
+      // Log::log().printHttpResponse(*event.httpResponse, INFILE);
 
     default:
       break;
@@ -238,60 +237,15 @@ void VirtualServer::_redirectUploadError(Event& event) {
       throw "wrong routine of evnet";
       break;
   }
-
-  // if (event.httpResponse->fileFd() == -1) {
-  //   event.type = HTTP_RESPONSE_WRITABLE;
-  //   _eventHandler.enableWriteEvent(event.clientFd, &event);
-  //   event.setDataFlow(event.httpResponse->fileFd(), event.clientFd);
-  // } else {
-  //   event.type = HTTP_RESPONSE_DOWNLOAD;
-  //   _eventHandler.addReadEvent(event.httpResponse->fileFd(), &event);
-  //   event.setDataFlow(event.httpResponse->fileFd(), event.clientFd);
-  // }
 }
-
-// void VirtualServer::_directDownloadToClient(Event& event) {
-//   event.type = HTTP_RESPONSE_WRITABLE;
-//   _eventHandler.deleteReadEvent(event.toRecvFd, NULL);
-//   _eventHandler.enableWriteEvent(event.clientFd, &event);
-//   event.setDataFlow(event.toRecvFd, event.clientFd);
-//   event.httpResponse->setFileFd(event.toRecvFd);  // ?
-// }
-
-// void VirtualServer::_directUploadToClient(Event& event) {
-//   event.type = HTTP_RESPONSE_WRITABLE;
-//   _eventHandler.enableWriteEvent(event.clientFd, &event);
-//   _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
-//   event.setDataFlow(-1, event.clientFd);
-// }
-
-// void VirtualServer::_directClientToUpload(Event& event, int fd) {  // -1 (x)
-//   event.type = HTTP_REQUEST_UPLOAD;
-//   event.setDataFlow(event.clientFd, fd);
-//   _eventHandler.addWriteEvent(event.toSendFd, &event);
-//   _eventHandler.disableReadEvent(event.clientFd, &event);
-// }
-
-// void VirtualServer::_directClientToDownload(Event& event, int fd) {
-//   event.type = HTTP_RESPONSE_DOWNLOAD;
-//   event.setDataFlow(fd, event.clientFd);
-//   _eventHandler.addReadEvent(event.toRecvFd, &event);
-//   _eventHandler.disableReadEvent(event.clientFd, &event);
-// }
-
-// void VirtualServer::_directUploadToDownload(Event& event, int fd) {  // -1 (x)
-//   event.type = CGI_RESPONSE_READABLE;
-//   FileManager::registerFileFdToClose(event.toSendFd);
-//   _eventHandler.deleteWriteEvent(event.toSendFd, NULL);
-//   _eventHandler.addReadEvent(fd, &event);
-//   event.setDataFlow(fd, event.clientFd);
-// }
 
 void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& location_info) {
   HttpRequest& request = event.httpRequest;
   int          tempfile_fd;
   std::string  tempfile_path;
   int          fd_received = event.toRecvFd;
+
+  // Log::log().printHttpRequest(event.httpRequest, INFILE);
 
   switch (request.method()) {
     case POST:
@@ -398,7 +352,6 @@ int VirtualServer::_callCgi(Event& event, LocationInfo& location_info) {
 }
 
 void VirtualServer::_execveCgi(Event& event) {
-  event.baseClock          = clock();
   std::string fd           = _intToString(event.clientFd);
   std::string req_filepath = TEMP_REQUEST_PREFIX + fd;
   std::string res_filepath = TEMP_RESPONSE_PREFIX + fd;
