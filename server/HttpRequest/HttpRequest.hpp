@@ -8,7 +8,7 @@
 #include "Storage.hpp"
 #include "syscall.hpp"
 
-#define TIME_OUT_HTTP_PARSING 100000
+#define TIME_OUT_HTTP_PARSING 100000000
 #define HTTP_DEFAULT_PORT 4242
 #define HTTP_MAX_HEADER_SIZE 8192
 
