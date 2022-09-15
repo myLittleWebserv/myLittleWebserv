@@ -182,7 +182,7 @@ HttpResponse* ResponseFactory::_postResponse(HttpRequest& request, LocationInfo&
 
   if (file_manager.isFileExist()) {
     std::string file_name = request.uri().substr(location_info.id.size());
-    return _redirResponse(STATUS_SEE_OTHER, request, location_info, file_name);
+    return _redirResponse(STATUS_MOVED_PERMANENTLY, request, location_info, file_name);
   }
 
   if (file_manager.isConflict()) {
@@ -196,7 +196,7 @@ HttpResponse* ResponseFactory::_postResponse(HttpRequest& request, LocationInfo&
   _statusCode  = STATUS_CREATED;
   _message     = _getMessage(_statusCode);
   Log::log()(LOG_LOCATION, "Post request processed.");
-  return new HttpResponse(TYPE_GET, HTTP_SENDING_STORAGE, _makeHeader(), _statusCode, 0, fd);
+  return new HttpResponse(TYPE_POST, HTTP_SENDING_STORAGE, _makeHeader(), _statusCode, 0, fd);
 }
 
 HttpResponse* ResponseFactory::_putResponse(HttpRequest& request, LocationInfo& location_info) {

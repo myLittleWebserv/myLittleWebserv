@@ -14,13 +14,13 @@ CGI_TEST="client/CGI_TEST"
 echo "====================================== POST TEST ======================================"
 read input
 
-# ./myLittleClient $PORT1 $POST_TEST/PostRequest_0.infile
-# echo $NEXT_TEST_MSG
-# read input
+./myLittleClient $PORT1 $POST_TEST/PostRequest_0.infile
+echo $NEXT_TEST_MSG
+read input
 
-# ./myLittleClient $PORT1 $POST_TEST/PostRequest_1.infile
-# echo $NEXT_TEST_MSG
-# read input
+./myLittleClient $PORT1 $POST_TEST/PostRequest_1.infile
+echo $NEXT_TEST_MSG
+read input
 
 # ./myLittleClient $PORT1 $POST_TEST/PostRequest_2.infile
 # echo $NEXT_TEST_MSG
@@ -42,9 +42,9 @@ read input
 # echo $NEXT_TEST_MSG
 # read input
 
-./myLittleClient $PORT1 $POST_TEST/PostRequest_7.infile
-echo $NEXT_TEST_MSG
-read input
+# ./myLittleClient $PORT1 $POST_TEST/PostRequest_7.infile
+# echo $NEXT_TEST_MSG
+# read input
 
 
 # ./myLittleClient $PORT1 $POST_TEST/PostRequest_8.infile
@@ -59,15 +59,15 @@ read input
 
 # GET TEST
 
-# echo "====================================== GET TEST ======================================"
+echo "====================================== GET TEST ======================================"
 
-# ./myLittleClient $PORT1 $GET_TEST/GetRequest_0.infile
-# echo $NEXT_TEST_MSG
-# read input
+./myLittleClient $PORT1 $GET_TEST/GetRequest_0.infile
+echo $NEXT_TEST_MSG
+read input
 
-# ./myLittleClient $PORT1 $GET_TEST/GetRequest_1.infile
-# echo $NEXT_TEST_MSG
-# read input
+./myLittleClient $PORT1 $GET_TEST/GetRequest_1.infile
+echo $NEXT_TEST_MSG
+read input
 
 # ./myLittleClient $PORT1 $GET_TEST/GetRequest_2.infile
 # echo $NEXT_TEST_MSG

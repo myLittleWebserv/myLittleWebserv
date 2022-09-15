@@ -29,7 +29,6 @@ void Router::start() {
     _eventHandler.routeEvents();
     for (std::vector<VirtualServer>::size_type i = 0; i < _virtualServers.size(); ++i) {
       _virtualServers[i].start();
-      throw std::range_error("test");
     }
   }
 }
