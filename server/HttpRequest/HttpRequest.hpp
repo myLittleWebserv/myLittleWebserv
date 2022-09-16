@@ -52,6 +52,7 @@ class HttpRequest : public Request {
   std::string _contentType;
   int         _hostPort;
   std::string _hostName;
+  std::string _cookies;
 
   // Method
  private:
@@ -105,5 +106,6 @@ class HttpRequest : public Request {
   bool                    isChunked() { return _isChunked; }
   size_t                  uploadedTotalSize() { return _uploadedTotalSize; }
   HttpRequestParsingState state() { return _parsingState; }
+  const std::string&      cookies() const { return _cookies; }
   // Storage&           storage() { return _storage; }
 };

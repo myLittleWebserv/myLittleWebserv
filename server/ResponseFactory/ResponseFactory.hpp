@@ -14,6 +14,7 @@ class ResponseFactory {
   static std::string                 _message;
   static size_t                      _contentLength;
   static std::string                 _contentType;
+  static std::string                 _cookies;
   static std::string                 _location;
 
  private:

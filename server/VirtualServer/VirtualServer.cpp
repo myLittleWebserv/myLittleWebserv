@@ -248,6 +248,7 @@ void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& loca
   // Log::log().printHttpRequest(event.httpRequest, INFILE);
 
   switch (request.method()) {
+    case GET:
     case POST:
     case PUT:
       if (request.isCgi(location_info.cgiExtension)) {
@@ -262,6 +263,7 @@ void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& loca
       }
 
     default:
+
       event.httpResponse     = ResponseFactory::makeResponse(request, location_info);  // redir ?
       HttpResponse& response = *event.httpResponse;
       _eventHandler.disableReadEvent(fd_received, &event);
@@ -366,24 +368,47 @@ void VirtualServer::_execveCgi(Event& event) {
   }
 
   std::string cgi_path = _findLocationInfo(event.httpRequest).cgiPath;
-  char*       argv[2]  = {0, 0};
+  char*       argv[3]  = {0, 0, 0};
   char*       envp[5]  = {0, 0, 0, 0, 0};
   argv[0]              = strdup(cgi_path.c_str());
 
+  _setArgv(argv, cgi_path);
   _setEnv(event.httpRequest, cgi_path, envp);
   _setFd(cgi_request, cgi_response);
 
-  execve(cgi_path.c_str(), argv, envp);
+  execve(argv[0], argv, envp);
   Log::log()(LOG_LOCATION, "(CGI) CALL FAILED after execve", INFILE);
   std::exit(EXIT_FAILURE);
+}
+
+void VirtualServer::_setArgv(char** argv, const std::string& cgi_path) {
+  std::stringstream ss(cgi_path);
+  std::string       word;
+
+  std::cout << cgi_path << std::endl;
+  ss >> word;
+  std::cout << word << std::endl;
+
+  argv[0] = strdup(word.c_str());
+  ss >> word;
+  std::cout << word << std::endl;
+
+  if (!ss.fail()) {
+    argv[1] = strdup(word.c_str());
+  }
+
+  int i = 0;
+  while (argv[i]) {
+    std::cout << argv[i++] << std::endl;
+  }
 }
 
 void VirtualServer::_setEnv(const HttpRequest& http_request, const std::string& cgi_path, char** envp) const {
   std::string       server_protocol("SERVER_PROTOCOL=");
   std::string       request_method("REQUEST_METHOD=");
   std::string       path_info("PATH_INFO=");
+  std::string       http_cookies("HTTP-COOKIE=");
   std::stringstream secret_header_for_test;
-  ;
 
   switch (http_request.method()) {
     case GET:
@@ -401,6 +426,7 @@ void VirtualServer::_setEnv(const HttpRequest& http_request, const std::string& 
 
   server_protocol += http_request.httpVersion();
   path_info += cgi_path;
+  http_cookies += http_request.cookies();
   // Log::log()(true, "server_protocol", server_protocol, INFILE);
   // Log::log()(true, "request_method", request_method, INFILE);
   // Log::log()(true, "path_info", path_info, INFILE);
@@ -408,10 +434,11 @@ void VirtualServer::_setEnv(const HttpRequest& http_request, const std::string& 
   envp[0] = strdup(server_protocol.c_str());
   envp[1] = strdup(request_method.c_str());
   envp[2] = strdup(path_info.c_str());
+  envp[3] = strdup(http_cookies.c_str());
   if (http_request.secretHeaderForTest() > 0) {
     secret_header_for_test << "HTTP_X_SECRET_HEADER_FOR_TEST=";
     secret_header_for_test << http_request.secretHeaderForTest();
-    envp[3] = strdup(secret_header_for_test.str().c_str());
+    envp[4] = strdup(secret_header_for_test.str().c_str());
   }
 
   if (envp[0] == NULL || envp[1] == NULL || envp[2] == NULL) {

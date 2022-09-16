@@ -18,6 +18,7 @@ std::string                 ResponseFactory::_message;
 size_t                      ResponseFactory::_contentLength;
 std::string                 ResponseFactory::_contentType;
 std::string                 ResponseFactory::_location;
+std::string                 ResponseFactory::_cookies;
 
 HttpResponse* ResponseFactory::makeResponse(HttpRequest& request, LocationInfo& location_info) {
   _initialize();
@@ -69,6 +70,7 @@ HttpResponse* ResponseFactory::makeResponse(CgiResponse& cgi_response, LocationI
   _message       = cgi_response.statusMessage();
   _contentLength = cgi_response.bodySize();
   _contentType   = cgi_response.contentType();
+  _cookies       = cgi_response.cookies();
 
   return new HttpResponse(TYPE_CGI, HTTP_DOWNLOADING_INIT, cgi_response.storage(), _makeHeader(), _statusCode,
                           _contentLength, cgi_response.bodyFd());
@@ -433,6 +435,9 @@ std::string ResponseFactory::_makeHeader() {
   if (!_location.empty()) {
     response_stream << "Location: " << _location << "\r\n";
   }
+  if (!_cookies.empty()) {
+    response_stream << "Set-Cookie: " << _cookies << "\r\n";
+  }
   response_stream << "\r\n";
   return response_stream.str();
 }
@@ -444,4 +449,5 @@ void ResponseFactory::_initialize() {
   _contentLength = 0;
   _contentType   = "";
   _location      = "";
+  _cookies       = "";
 }

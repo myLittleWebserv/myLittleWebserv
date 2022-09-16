@@ -264,6 +264,8 @@ bool HttpRequest::_parseHeaderField(const std::string& line) {
     }
   } else if (word == "X-Secret-Header-For-Test:") {
     ss >> _secretHeaderForTest;
+  } else if (word == "Cookie:") {
+    std::getline(ss, _cookies, '\r');
   } else {
     // Log::log()(true, "header-field", word);
     ss >> word;

@@ -15,6 +15,7 @@ CgiResponse::CgiResponse()
       _contentType(),
       _bodyFd(-1),
       _bodySize(0),
+      _cookies(),
       _secretHeaderForTest(0) {}
 
 void CgiResponse::initialize() {
@@ -28,6 +29,7 @@ void CgiResponse::initialize() {
   _contentType         = "";
   _bodyFd              = -1;
   _bodySize            = 0;
+  _cookies             = "";
   _secretHeaderForTest = 0;
 }
 
@@ -68,6 +70,8 @@ bool CgiResponse::_parseLine(const std::string& line) {
     ss >> _statusMessage;
   } else if (word == "Content-Type:") {
     std::getline(ss, _contentType, '\r');
+  } else if (word == "Set-Cookie:") {
+    std::getline(ss, _cookies, '\r');
   }
   return true;
 }

@@ -30,6 +30,7 @@ class CgiResponse : public Request {
   std::string             _contentType;
   int                     _bodyFd;
   int                     _bodySize;
+  std::string             _cookies;
   int                     _secretHeaderForTest;
 
   std::vector<std::string> _split(const std::string& str, const std::string& delimiter);
@@ -54,6 +55,7 @@ class CgiResponse : public Request {
   int                statusCode() const { return _statusCode; }
   const std::string& statusMessage() const { return _statusMessage; }
   const std::string& contentType() const { return _contentType; }
+  const std::string& cookies() const { return _cookies; }
   int                secretHeaderForTest() const { return _secretHeaderForTest; }
   int                bodyFd() { return _bodyFd; }
   size_t             bodySize() { return _bodySize; }
