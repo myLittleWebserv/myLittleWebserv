@@ -88,4 +88,5 @@ class HttpResponse {
   HttpResponseSendingState state() { return _sendingState; }
   void                     setState(HttpResponseSendingState state) { _sendingState = state; }
   HttpResponseType         type() { return _type; }
+  Storage&                 storage() { return _storage; }
 };

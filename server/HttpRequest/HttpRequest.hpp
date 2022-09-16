@@ -107,5 +107,5 @@ class HttpRequest : public Request {
   size_t                  uploadedTotalSize() { return _uploadedTotalSize; }
   HttpRequestParsingState state() { return _parsingState; }
   const std::string&      cookies() const { return _cookies; }
-  // Storage&           storage() { return _storage; }
+  Storage&                storage() { return _storage; }
 };

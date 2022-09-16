@@ -123,6 +123,12 @@ void Log::printHttpResponse(HttpResponse& response, LogLocationType location) {
 
   (void)response;
   logMessage << "HttpResponse:\n";
+  if (response.storage().size() < 1000) {
+    Storage::vector::pointer it = response.storage().currentReadPos();
+    for (; it != response.storage().currentWritePos(); ++it) {
+      logMessage << *it;
+    }
+  }
 
   if (location == ALL || location == CONSOLE) {
     std::cerr << logMessage.str() << std::endl;

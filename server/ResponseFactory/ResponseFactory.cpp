@@ -35,6 +35,10 @@ HttpResponse* ResponseFactory::makeResponse(HttpRequest& request, LocationInfo& 
     return errorResponse(STATUS_METHOD_NOT_ALLOWED, request, location_info);
   }
 
+  if (!request.isChunked() && request.storage().remains() > location_info.maxBodySize) {
+    return errorResponse(STATUS_PAYLOAD_TOO_LARGE, request, location_info);
+  }
+
   if (location_info.redirStatus != -1) {
     return _redirResponse(static_cast<HttpResponseStatusCode>(location_info.redirStatus), request, location_info);
   }
@@ -57,6 +61,8 @@ HttpResponse* ResponseFactory::makeResponse(HttpRequest& request, LocationInfo& 
 
 HttpResponse* ResponseFactory::makeResponse(CgiResponse& cgi_response, LocationInfo& location_info) {
   _initialize();
+  HttpResponseSendingState state = HTTP_DOWNLOADING_INIT;
+
   if (cgi_response.isExecError()) {
     return errorResponse(STATUS_INTERNAL_SERVER_ERROR, cgi_response, location_info);
   }
@@ -72,8 +78,12 @@ HttpResponse* ResponseFactory::makeResponse(CgiResponse& cgi_response, LocationI
   _contentType   = cgi_response.contentType();
   _cookies       = cgi_response.cookies();
 
-  return new HttpResponse(TYPE_CGI, HTTP_DOWNLOADING_INIT, cgi_response.storage(), _makeHeader(), _statusCode,
-                          _contentLength, cgi_response.bodyFd());
+  if (_contentLength == 0) {
+    state = HTTP_SENDING_STORAGE;
+  }
+
+  return new HttpResponse(TYPE_CGI, state, cgi_response.storage(), _makeHeader(), _statusCode, _contentLength,
+                          cgi_response.bodyFd());
 }
 
 HttpResponse* ResponseFactory::_getResponse(HttpRequest& request, LocationInfo& location_info) {

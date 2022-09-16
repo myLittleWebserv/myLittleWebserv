@@ -56,6 +56,7 @@ void VirtualServer::_processEvent(Event& event) {
 
 void VirtualServer::_sendResponse(Event& event) {
   HttpResponse& response = *event.httpResponse;
+  Log::log().printHttpResponse(response, INFILE);
   response.sendResponse(event.toSendFd);
   if (response.isConnectionClosed()) {
     Log::log()(LOG_LOCATION, "CLOSE BECAUSE CONNECTION CLOSED FOR SENDING");
@@ -92,7 +93,7 @@ void VirtualServer::_downloadFile(Event& event, LocationInfo& location_info) {
   HttpResponse& response    = *event.httpResponse;
   int           fd_received = event.toRecvFd;
   response.downloadResponse(event.toRecvFd, event.baseClock);
-  // Log::log()(true, "downloadTotalSize", response.downloadTotalSize());
+  Log::log()(true, "downloadTotalSize", "");
 
   switch (response.state()) {
     case HTTP_SENDING_TIME_OUT:
@@ -305,8 +306,16 @@ void VirtualServer::_processHttpRequestReadable(Event& event, LocationInfo& loca
 
 void VirtualServer::_cgiResponseToHttpResponse(Event& event, LocationInfo& location_info) {
   event.httpResponse = ResponseFactory::makeResponse(event.cgiResponse, location_info);
-  event.type         = HTTP_RESPONSE_DOWNLOAD;
-  event.httpResponse->setFileFd(event.toRecvFd);
+  if (event.cgiResponse.bodySize() != 0) {
+    event.type = HTTP_RESPONSE_DOWNLOAD;
+    event.httpResponse->setFileFd(event.toRecvFd);
+  } else {
+    FileManager::registerFileFdToClose(event.toRecvFd);
+    event.type     = HTTP_RESPONSE_WRITABLE;
+    event.toSendFd = event.clientFd;
+    _eventHandler.deleteReadEvent(event.toRecvFd, NULL);
+    _eventHandler.enableWriteEvent(event.clientFd, &event);
+  }
   Log::log()(true, "(DONE) making Http Response using CGI RESPONSE", INFILE);
   Log::log()(true, "CGI_RESPONSE_READABLE  DONE TIME", (double)(clock() - event.baseClock) / CLOCKS_PER_SEC, CONSOLE);
 }
@@ -369,7 +378,7 @@ void VirtualServer::_execveCgi(Event& event) {
 
   std::string cgi_path = _findLocationInfo(event.httpRequest).cgiPath;
   char*       argv[3]  = {0, 0, 0};
-  char*       envp[5]  = {0, 0, 0, 0, 0};
+  char*       envp[6]  = {0, 0, 0, 0, 0, 0};
   argv[0]              = strdup(cgi_path.c_str());
 
   _setArgv(argv, cgi_path);
@@ -385,21 +394,11 @@ void VirtualServer::_setArgv(char** argv, const std::string& cgi_path) {
   std::stringstream ss(cgi_path);
   std::string       word;
 
-  std::cout << cgi_path << std::endl;
   ss >> word;
-  std::cout << word << std::endl;
-
   argv[0] = strdup(word.c_str());
   ss >> word;
-  std::cout << word << std::endl;
-
   if (!ss.fail()) {
     argv[1] = strdup(word.c_str());
-  }
-
-  int i = 0;
-  while (argv[i]) {
-    std::cout << argv[i++] << std::endl;
   }
 }
 
